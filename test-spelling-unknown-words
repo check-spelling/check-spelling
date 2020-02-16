@@ -174,15 +174,21 @@ bullet_words() {
   echo "$1" | perl -pne 's/^(.)/* $1/'
   rm -f "$run_warnings"
   export tokens="$1"
-  if [ -z "$ONLY_REPORT_HEAD" ] && !git log HEAD^ 2>/dev/null >/dev/null; then
+  base=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.base.sha' -M || echo HEAD^)
+  if [ "$base" != "HEAD^" ]; then
+    head=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.sha' -M || echo HEAD^)
+  else
+    head=HEAD
+  fi
+  if [ -z "$ONLY_REPORT_HEAD" ] && !git log $base 2>/dev/null >/dev/null; then
     ONLY_REPORT_HEAD=1
   fi
   if [ -z "$ONLY_REPORT_HEAD" ]; then
     rm -f "$run_files"
     export with_blame=1
-    git diff-tree --no-commit-id --name-only -r HEAD -z 2> /dev/null |
+    git diff-tree --no-commit-id --name-only -r $base..$head -z 2> /dev/null |
     "$spellchecker/exclude.pl" |
-    xargs_zero git blame -b -f -s HEAD^..HEAD -- > "$run_files"
+    xargs_zero git blame -b -f -s $head -- > "$run_files"
     $spellchecker/reporter.pl < "$run_files" > "$run_warnings.raw"
     rm -f "$run_files"
   else
