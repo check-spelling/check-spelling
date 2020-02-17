@@ -6,6 +6,19 @@
 set -e
 if [ -n "$DEBUG" ]; then
   set -x
+  begin_group() {
+    echo "::group::$1"
+  }
+  end_group() {
+    echo '::end_group::'
+  }
+else
+  begin_group() {
+    :
+  }
+  end_group() {
+    :
+  }
 fi
 
 now() {
@@ -86,12 +99,14 @@ xargs_zero() {
     arguments="$*" "$spellchecker/xargs_zero"
   fi
 }
+begin_group 'Spell check'
 (git 'ls-files' -z 2> /dev/null) |\
   "$spellchecker/exclude.pl" |\
   xargs_zero "$word_splitter" |\
   "$word_splitter" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
+  end_group
   if [ "$word_splitter_status" != '0 0' ]; then
     echo "$word_splitter failed ($word_splitter_status)"
     exit 2
@@ -197,6 +212,8 @@ bullet_words() {
   fi
   if [ -s "$run_warnings.raw" ]; then
     (
+      end_group
+      begin_group 'Misspellings'
       echo "::add-matcher::.git/reporter.json"
       cat "$run_warnings.raw"
       echo "::remove-matcher owner=jsoref-spelling::"
@@ -245,6 +262,7 @@ comment() {
 }
 
 if [ ! -e "$whitelist_path" ]; then
+  begin_group 'No whitelist'
   title="No preexisting $whitelist_path file"
   instructions=$(
     echo 'cat > '"$whitelist_path"' <<EOF=EOF'
@@ -253,22 +271,30 @@ if [ ! -e "$whitelist_path" ]; then
     to_publish_whitelist
   )
       spelling_info "$title" "$(bullet_words "$(cat "$run_output")")" "$instructions"
+  end_group
   quit 2
 fi
+
+begin_group 'Compare whitelist with new output'
 sorted_whitelist="$temp/$(basename $whitelist_path)"
 (sort -u -f "$whitelist_path" | grep . || true) > "$sorted_whitelist"
 whitelist_path="$sorted_whitelist"
 
 diff_output=$(diff -U0 "$whitelist_path" "$run_output" |grep -v "$spellchecker" || true)
+end_group
 
 if [ -z "$diff_output" ]; then
+  begin_group 'No misspellings'
   title="No new words with misspellings found"
       spelling_info "$title" "There are currently $(wc -l $whitelist_path|sed -e 's/ .*//') whitelisted items." ""
+  end_group
   quit 0
 fi
 
+begin_group 'New output'
 new_output=$(diff -i -U0 "$whitelist_path" "$run_output" |grep -v "$spellchecker" |\
   perl -n -w -e 'next unless /^\+/; next if /^\+{3} /; s/^.//; print;')
+end_group
 
 make_instructions() {
   patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; print')
@@ -292,16 +318,20 @@ make_instructions() {
 }
 
 if [ -z "$new_output" ]; then
+  begin_group 'Fewer misspellings'
   title='There are now fewer misspellings than before'
   instructions=$(
     make_instructions
   )
       spelling_info "$title" "$(bullet_words "$(new_words "$diff_output")")" "$instructions"
+  end_group
   quit
 fi
+begin_group 'New misspellings'
 title='New misspellings found, please review'
 instructions=$(
   make_instructions
 )
     spelling_warning "$title" "$(bullet_words "$new_output")" "$instructions"
+end_group
 quit 1
