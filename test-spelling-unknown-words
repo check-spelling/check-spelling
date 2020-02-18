@@ -36,23 +36,6 @@ run_files="$temp/reporter-input.txt"
 run_warnings="$temp/matcher.txt"
 wordlist=$bucket/english.words.txt
 
-if [ -z "$bucket" ]; then
-  if [ -z "$1" ]; then
-    echo "$0 requires "'$bucket be set to your bucket (gs://your-project-bucket-path)' >&2
-    exit 1
-  fi
-  bucket=$1
-  shift
-fi
-if [ -z "$project" ]; then
-  if [ -z "$1" ]; then
-    echo "$0 requires "'$project to be set to your project' >&2
-    exit 1
-  fi
-  project=$1
-  shift
-fi
-
 project_file_path() {
   echo $bucket/$project/$1.txt
 }
