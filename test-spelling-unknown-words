@@ -228,7 +228,11 @@ comment() {
       PAYLOAD=$(echo '{}' | jq --arg body "$OUTPUT" '.body = $body')
       echo $PAYLOAD
       echo $COMMENTS_URL
-      curl -s -S -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" --data "$PAYLOAD" "$COMMENTS_URL"
+      curl -s -S \
+           -H "Authorization: token $GITHUB_TOKEN" \
+           --header "Content-Type: application/json" \
+           --data "$PAYLOAD" \
+           "$COMMENTS_URL"
     else
       echo "$OUTPUT"
     fi
