@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 $/="\0";
 while (<>) {
-  my $cmd="$ENV{args} $_";
+  my $cmd="$ENV{arguments} $_";
   print `$cmd`;
 }
