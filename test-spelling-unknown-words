@@ -231,6 +231,7 @@ comment() {
       curl -s -S \
            -H "Authorization: token $GITHUB_TOKEN" \
            --header "Content-Type: application/json" \
+           -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
            --data "$PAYLOAD" \
            "$COMMENTS_URL"
     else
