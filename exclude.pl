@@ -4,12 +4,15 @@
 # output is null delimited to match input
 use File::Basename;
 my $dirname = dirname(__FILE__);
-
+my $exclude_file = $dirname.'/excludes.txt';
 my @excludes;
-open EXCLUDES, '<', $dirname.'/excludes.txt';
-while (<EXCLUDES>) {
-  s/^\s*(.*)\s*$/$1/;
-  push @excludes, $_;
+
+if (-e $exclude_file) {
+  open EXCLUDES, '<', $exclude_file;
+  while (<EXCLUDES>) {
+    s/^\s*(.*)\s*$/$1/;
+    push @excludes, $_;
+  }
 }
 $/="\0";
 my $exclude = scalar @excludes ? join "|", @excludes : '^$';
