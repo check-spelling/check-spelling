@@ -28,9 +28,24 @@ into word-like things for checking against a dictionary.
 
 | Variable | Description |
 | ------------- | ------------- |
-| bucket | a `gsutil` or `curl` compatible url for which the tool has read access to a couple of files. |
+| bucket | (optional) file/url for which the tool has read access to a couple of files. |
 | project      | a folder within `bucket`. This allows you to share common items across projects. |
 | GITHUB_TOKEN | Secret used to retrieve your code. |
+
+#### bucket url
+
+* unset - especially initially...
+* `./path` - a local directory
+* `ssh://git@*`, `git@*` - git urls (if the url isn't for github, you'll need to have set up credentials)
+* `https://` (or `http://`) - curl compatible
+* `gs://` - gsutil url
+
+#### project
+
+* unset - especially initially
+* branch - for git urls
+* `./` - if you don't need an extra nesting layer
+* directory - especially for sharing a general bucket across multiple projects
 
 ### Optional Configuration Variables
 
