@@ -81,9 +81,9 @@ fi
 
 xargs_zero() {
   if [ $(uname) = "Linux" ]; then
-    xargs --no-run-if-empty -0 "$@"
+    xargs --no-run-if-empty -0 -n1 "$@"
   else
-    args="$*" "$spellchecker/xargs_zero"
+    arguments="$*" "$spellchecker/xargs_zero"
   fi
 }
 (git 'ls-files' -z 2> /dev/null) |\
