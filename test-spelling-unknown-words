@@ -216,7 +216,6 @@ quit() {
 comment() {
   if [ -n "$OUTPUT" ]; then
     echo "Preparing a comment"
-    PAYLOAD=$(echo '{}' | jq --arg body "$OUTPUT" '.body = $body')
     if [ -n "$GITHUB_EVENT_PATH" ]; then
       case "$GITHUB_EVENT_NAME" in
         pull_request)
@@ -226,6 +225,7 @@ comment() {
       esac
     fi
     if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
+      PAYLOAD=$(echo '{}' | jq --arg body "$OUTPUT" '.body = $body')
       echo $PAYLOAD
       echo $COMMENTS_URL
       curl -s -S -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" --data "$PAYLOAD" "$COMMENTS_URL" > /dev/null
