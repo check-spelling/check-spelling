@@ -47,6 +47,8 @@ get_project_files() {
     from=$(project_file_path $file)
     echo "Retrieving cached $file from $from"
     case "$from" in
+      .*)
+        cp $from $dest;;
       ssh://git@*|git@*)
         (
           cd $temp
