@@ -43,7 +43,7 @@ project_file_path() {
 get_project_files() {
   file=$1
   dest=$2
-  if [ ! -e "$dest" ]; then
+  if [ ! -e "$dest" ] && [ -n "$bucket" ] && [ -n "$project" ]; then
     from=$(project_file_path $file)
     echo "Retrieving cached $file from $from"
     case "$from" in
@@ -104,6 +104,8 @@ printDetails() {
 
 to_retrieve_whitelist() {
   case "$bucket" in
+    '')
+      echo '# no bucket defined -- you can specify one per the README.md using the file defined below:';;
     ssh://git@*|git@*)
       echo "git clone --depth 1 $bucket --single-branch --branch $project metadata; cp metadata/whitelist.txt .";;
     gs://*)
@@ -116,6 +118,8 @@ to_retrieve_whitelist() {
 }
 to_publish_whitelist() {
   case "$bucket" in
+    '')
+      echo '# no bucket defined -- copy the whitelist.txt to a bucket and configure it per the README.md';;
     ssh://git@*|git@*)
       echo "cp whitelist.txt metadata; (cd metadata; git commit whitelist.txt -m 'Updating whitelist'; git push)";;
     gs://*)
