@@ -168,12 +168,13 @@ spelling_body() {
     OUTPUT="$OUTPUT
 $1
 
-#### To accept these changes, run the following commands:
+<details><summary>To accept these changes, run the following commands</summary>
 (They can be run anywhere with permissions to update the bucket.)
 
 "'```'"
 $err
-"'```'
+"'```
+</details>'
   fi
 }
 new_words() {
