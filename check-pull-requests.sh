@@ -60,5 +60,5 @@ for a in $(cat "$escaped"); do
   export GITHUB_EVENT_PATH="$fake_event"
   git fetch origin $merge_commit_sha
   git checkout $merge_commit_sha
-  "$spellchecker/unknown-words.sh"
+  "$spellchecker/unknown-words.sh" || true
 done
