@@ -14,4 +14,3 @@ jobs:
         bucket: ssh://git@github.com/check-spelling/check-spelling.git
         project: spelling-data
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        DEBUG: 1
