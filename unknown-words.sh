@@ -228,6 +228,10 @@ quit() {
 }
 
 comment() {
+  if [ -e "$run_warnings" ]; then
+    cat "$run_warnings"
+    rm -f "$run_warnings"
+  fi
   if [ -n "$OUTPUT" ]; then
     echo "Preparing a comment"
     if [ -n "$GITHUB_EVENT_PATH" ]; then
@@ -251,10 +255,6 @@ comment() {
     else
       echo "$OUTPUT"
     fi
-  fi
-  if [ -e "$run_warnings" ]; then
-    cat "$run_warnings"
-    rm -f "$run_warnings"
   fi
 }
 
