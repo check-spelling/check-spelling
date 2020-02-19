@@ -28,7 +28,16 @@ if [ -e "$pulls" ]; then
 else
   curl -s -s -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" -H "Accept: application/vnd.github.shadow-cat-preview+json" https://api.github.com/repos/check-spelling/examples-testing/pulls > $pulls
 fi
-cat "$pulls" | jq -c '.[]'|jq -c -r '{head_repo : .head.repo.full_name, base_repo: .base.repo.full_name, head_sha:.head.sha, base_sha:.base.sha, merge_commit_sha: .merge_commit_sha, updated_at: .updated_at, commits_url: .commits_url, comments_url: .comments_url } | @base64' > "$escaped"
+cat "$pulls" | jq -c '.[]'|jq -c -r '{
+ head_repo : .head.repo.full_name,
+ base_repo: .base.repo.full_name,
+ head_sha: .head.sha,
+ base_sha: .base.sha,
+ merge_commit_sha: .merge_commit_sha,
+ updated_at: .updated_at,
+ commits_url: .commits_url,
+ comments_url: .comments_url
+ } | @base64' > "$escaped"
 
 for a in $(cat "$escaped"); do
   echo "$a" | base64 --decode | jq -r . > $pull
