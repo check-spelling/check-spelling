@@ -249,7 +249,8 @@ comment() {
            --header "Content-Type: application/json" \
            -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
            --data "$PAYLOAD" \
-           "$COMMENTS_URL"
+           "$COMMENTS_URL" ||
+      true
     else
       echo "$OUTPUT"
     fi
