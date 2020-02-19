@@ -6,16 +6,16 @@ RUN\
 
 WORKDIR /app
 COPY \
- docker-setup \
+ docker-setup.sh \
  exclude.pl \
  reporter.json \
  reporter.pl \
  spelling-unknown-word-splitter.pl \
- test-spelling-unknown-words \
+ unknown-words.sh \
  ./
 
-RUN ./docker-setup &&\
- rm docker-setup
+RUN ./docker-setup.sh &&\
+ rm docker-setup.sh
 
 LABEL "com.github.actions.name"="Spell Checker"\
  "com.github.actions.description"="Check repository for spelling errors"\
@@ -25,4 +25,4 @@ LABEL "com.github.actions.name"="Spell Checker"\
  "homepage"="http://github.com/jsoref/spelling-action/tree/master/README.md"\
  "maintainer"="Josh Soref <jsoref@noreply.users.github.com>"
 
-ENTRYPOINT ["/app/test-spelling-unknown-words"]
+ENTRYPOINT ["/app/unknown-words.sh"]
