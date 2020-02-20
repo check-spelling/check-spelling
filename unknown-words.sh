@@ -189,11 +189,14 @@ bullet_words() {
   fi
   if [ -z "$ONLY_REPORT_HEAD" ]; then
     rm -f "$run_files"
+    (
     export with_blame=1
+    export HEAD=$head;
     git diff-tree --no-commit-id --name-only -r $base..$head -z 2> /dev/null |
     "$spellchecker/exclude.pl" |
-    xargs_zero git blame -b -f -s $head -- > "$run_files"
+    xargs_zero "$spellchecker/porcelain.pl" > "$run_files"
     $spellchecker/reporter.pl < "$run_files" > "$run_warnings.raw"
+    )
     rm -f "$run_files"
   else
     git ls-files -z 2> /dev/null |

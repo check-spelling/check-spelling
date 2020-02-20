@@ -8,6 +8,7 @@ WORKDIR /app
 COPY \
  docker-setup.sh \
  exclude.pl \
+ porcelain.pl \
  reporter.json \
  reporter.pl \
  spelling-unknown-word-splitter.pl \
