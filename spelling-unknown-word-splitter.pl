@@ -19,7 +19,7 @@ if (scalar @ARGV) {
   @ARGV = grep {-r || $_ eq '-'} @ARGV;
   unless (scalar @ARGV) {
     print STDERR "None of the provided files are readable\n";
-    exit 1;
+    exit 0;
   }
 }
 
