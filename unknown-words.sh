@@ -26,12 +26,12 @@ now() {
 }
 start=$(now)
 export spellchecker=${spellchecker:-/app}
+export temp='/tmp/spelling'
 
 if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
   exec "$spellchecker/check-pull-requests.sh"
 fi
 
-temp='/tmp/spelling'
 dict="$temp/english.words"
 whitelist_path="$spellchecker/whitelist.words.txt"
 excludelist_path="$spellchecker/excludes.txt"

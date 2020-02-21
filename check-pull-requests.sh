@@ -18,10 +18,11 @@ now() {
 }
 start=$(now)
 
-pulls=/tmp/spelling/pulls.json
-escaped=/tmp/spelling/escaped.b64
-pull=/tmp/spelling/pull.json
-fake_event=/tmp/spelling/fake_event.json
+pulls=$temp/pulls.json
+escaped=$temp/escaped.b64
+pull=$temp/pull.json
+fake_event=$temp/fake_event.json
+headers=$temp/headers
 
 if [ -e "$pulls" ]; then
   echo using cached $pulls
