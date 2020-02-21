@@ -9,7 +9,8 @@ else
     date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$1" +'%s'
   }
 fi
-one_hour=$(( 60 * 60 ))
+timeframe=${timeframe:-60}
+time_limit=$(( $timeframe * 60 ))
 strip_quotes() {
   tr '"' ' '
 }
@@ -46,7 +47,7 @@ for a in $(cat "$escaped"); do
   echo "$a" | base64 --decode | jq -r . > $pull
   updated_at=$(cat $pull | jq -r .updated_at)
   age=$(( $start - $(date_to_epoch $updated_at) ))
-  if [ $age -gt $one_hour ]; then
+  if [ $age -gt $time_limit ]; then
     continue
   fi
   head_repo=$(cat $pull | jq -r .head_repo)
