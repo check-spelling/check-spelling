@@ -78,8 +78,12 @@ rm -f "$run_output"
 
 echo "Checking spelling..."
 if [ -n "$DEBUG" ]; then
-  echo 'Excluded paths:'
-  cat "$excludelist_path"
+  if [ -e "$excludelist_path" ]; then
+    echo 'Excluded paths:'
+    cat "$excludelist_path"
+  else
+    echo 'No excluded paths file'
+  fi
 fi
 
 xargs_zero() {
