@@ -2,7 +2,7 @@
 
 my $head=$ENV{HEAD};
 my $file=$ARGV[0];
-open LOG, qq<git log --oneline -s --no-abbrev-commit -2 "$head" -- "$file"|>;
+open LOG, qq<git log --oneline -s --no-abbrev-commit -1 "$head" -- "$file"|>;
 my $sha;
 while (<LOG>) {
   s/\s.*$//;
