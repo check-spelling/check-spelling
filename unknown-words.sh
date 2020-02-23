@@ -191,8 +191,14 @@ bullet_words() {
   rm -f "$run_warnings"
   export tokens="$1"
   base=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.base.sha' -M || echo HEAD^)
+  if [ "$base" = "null" ]; then
+    base=$(cat $GITHUB_EVENT_PATH |jq -r '.before' -M)
+  fi
   if [ "$base" != "HEAD^" ]; then
     head=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.sha' -M || echo HEAD^)
+    if [ "$head" = "null" ]; then
+      head=${GITHUB_SHA:-HEAD}
+    fi
   else
     head=HEAD
   fi
