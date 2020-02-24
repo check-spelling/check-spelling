@@ -190,16 +190,15 @@ bullet_words() {
   echo "$1" | perl -pne 's/^(.)/* $1/'
   rm -f "$run_warnings"
   export tokens="$1"
-  base=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.base.sha // .before // "HEAD^"' -M)
-  if [ "$base" != "HEAD^" ]; then
-    head=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.sha' -M)
-    if [ "$head" = "null" ]; then
-      head=${GITHUB_SHA:-HEAD}
-    fi
-  else
-    head=HEAD
+  head=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.sha' -M)
+  if [ "$head" = "null" ]; then
+    head=${GITHUB_SHA:-HEAD}
   fi
-  if [ -z "$ONLY_REPORT_HEAD" ] && !git log $base 2>/dev/null >/dev/null; then
+  base=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.base.sha // .before // "HEAD^"' -M)
+  if ! git show $base 2>/dev/null >/dev/null; then
+    base=$head^
+  fi
+  if [ -z "$ONLY_REPORT_HEAD" ] && !git show $base 2>/dev/null >/dev/null; then
     ONLY_REPORT_HEAD=1
   fi
   if [ -z "$ONLY_REPORT_HEAD" ]; then
