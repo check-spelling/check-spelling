@@ -3,8 +3,13 @@
 # it drops paths that match the listed exclusions
 # output is null delimited to match input
 use File::Basename;
-my $dirname = dirname(__FILE__);
-my $exclude_file = $dirname.'/excludes.txt';
+my $exclude_file;
+if (defined $ENV{exclude_file}) {
+  $exclude_file=$ENV{exclude_file};
+} else {
+  my $dirname = dirname(__FILE__);
+  $exclude_file = $dirname.'/excludes.txt';
+}
 my @excludes;
 
 if (-e $exclude_file) {
