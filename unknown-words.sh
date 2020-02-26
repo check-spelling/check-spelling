@@ -36,10 +36,10 @@ if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -e "$GITHUB_EVENT_PATH" ]; then
 fi
 
 dict="$temp/english.words"
-whitelist_path="$spellchecker/whitelist.words.txt"
-excludelist_path="$spellchecker/excludes.txt"
+whitelist_path="$temp/whitelist.words.txt"
+excludelist_path="$temp/excludes.txt"
 word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
-run_output="$spellchecker/unknown.words.txt"
+run_output="$temp/unknown.words.txt"
 run_files="$temp/reporter-input.txt"
 run_warnings="$temp/matcher.txt"
 wordlist=$bucket/english.words.txt
@@ -288,7 +288,7 @@ if [ ! -e "$whitelist_path" ]; then
 fi
 
 begin_group 'Compare whitelist with new output'
-sorted_whitelist="$temp/$(basename $whitelist_path)"
+sorted_whitelist="$temp/whitelist.sorted.txt"
 (sort -u -f "$whitelist_path" | grep . || true) > "$sorted_whitelist"
 whitelist_path="$sorted_whitelist"
 
