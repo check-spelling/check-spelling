@@ -31,6 +31,9 @@ export temp='/tmp/spelling'
 if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
   exec "$spellchecker/check-pull-requests.sh"
 fi
+if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -e "$GITHUB_EVENT_PATH" ]; then
+  GITHUB_EVENT_PATH=/dev/null
+fi
 
 dict="$temp/english.words"
 whitelist_path="$spellchecker/whitelist.words.txt"
