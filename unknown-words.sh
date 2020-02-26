@@ -99,8 +99,10 @@ xargs_zero() {
   fi
 }
 begin_group 'Spell check'
-(git 'ls-files' -z 2> /dev/null) |\
-  "$spellchecker/exclude.pl" |\
+(
+  export exclude_file=$excludelist_path;
+  git 'ls-files' -z 2> /dev/null |\
+  "$spellchecker/exclude.pl") |\
   xargs_zero "$word_splitter" |\
   "$word_splitter" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
