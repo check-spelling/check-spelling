@@ -35,10 +35,11 @@ while (<>) {
   while (s/([A-Z]{2,})([A-Z][a-z]{2,})/ $1 $2 /g) {}
   while (s/([a-z']+)([A-Z])/$1 $2/g) {}
   for my $token (split /\s+/, $_) {
-    $token =~ s/^'+(.*)/$1/;
+    $token =~ s/^.?'+(.*)/$1/;
     $token =~ s/(.*?)'+$/$1/;
     next unless $token =~ /./;
     my $key = lc $token;
+    $key =~ s/''+/'/g;
     $key =~ s/'[sd]$//;
     my $char = substr $key, 0, 1;
     $letter_map{$char} = () unless defined $letter_map{$char};
