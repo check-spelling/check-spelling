@@ -118,7 +118,19 @@ printDetails() {
   echo 'If you are ok with the output of this run, you will need to'
 }
 
+relative_note() {
+  if [ -n "$bucket" ] && [ -n "$project" ]; then
+    from=$(project_file_path $file)
+    case "$from" in
+      .*)
+        ;;
+      ssh://git@*|git@*|gs://|*://*)
+        echo '(They can be run anywhere with permissions to update the bucket.)';;
+    esac
+  fi
+}
 to_retrieve_whitelist() {
+  whitelist_file=whitelist.txt
   case "$bucket" in
     '')
       echo '# no bucket defined -- you can specify one per the README.md using the file defined below:';;
@@ -129,7 +141,7 @@ to_retrieve_whitelist() {
     *://*)
       echo curl -L -s "$(project_file_path whitelist)" -o whitelist.txt;;
     *)
-      echo cp "$(project_file_path whitelist)" whitelist.txt;;
+      whitelist_file="$(project_file_path whitelist)";;
   esac
 }
 to_publish_whitelist() {
@@ -142,8 +154,6 @@ to_publish_whitelist() {
       echo gsutil cp -Z whitelist.txt $(project_file_path whitelist);;
     *://*)
       echo "# command to publish is not known. URL: $(project_file_path whitelist)";;
-    *)
-      echo cp whitelist.txt $(project_file_path whitelist);;
   esac
 }
 
@@ -180,7 +190,7 @@ spelling_body() {
 $1
 
 <details><summary>To accept these changes, run the following commands</summary>
-(They can be run anywhere with permissions to update the bucket.)
+"$(relative_note)"
 
 "'```'"
 $err
@@ -315,17 +325,17 @@ make_instructions() {
   echo "$(
   echo '('
   if [ -n "$patch_remove" ]; then
-    echo 'egrep -v "$(echo "'"$patch_remove"'" | tr "\n" " " | perl -pne '"'"'s/^/^(/;s/\s$/)\$/;s/\s/|/g'"'"')" whitelist.txt;'
+    echo 'egrep -v "$(echo "'"$patch_remove"'" | tr "\n" " " | perl -pne '"'"'s/^/^(/;s/\s$/)\$/;s/\s/|/g'"'"')" "'"$whitelist_file"'";'
   else
-    echo 'cat whitelist.txt;'
+    echo 'cat "'"$whitelist_file"'";'
   fi
   if [ -n "$patch_add" ]; then
     echo 'echo "'
     echo "$patch_add"
     echo '"'
   fi
-  echo ') | sort -u -f | grep . > new_whitelist.txt && mv new_whitelist.txt whitelist.txt'
-)"
+  echo ') | sort -u -f | grep . > new_whitelist.txt && mv new_whitelist.txt "'"$whitelist_file"'"
+')"
   to_publish_whitelist
 }
 
