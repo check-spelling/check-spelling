@@ -31,6 +31,7 @@ into word-like things for checking against a dictionary.
 | ------------- | ------------- |
 | [bucket](#bucket) | file/url for which the tool has read access to a couple of files. |
 | [project](#project) | a folder within `bucket`. This allows you to share common items across projects. |
+| [timeframe](#timeframe) | number of minutes (default 60) to consider when a **schedule** workflow checks for updated PRs. |
 | GITHUB_TOKEN | Secret used to retrieve your code and comment on PRs/commits. |
 
 ##### bucket
@@ -47,6 +48,11 @@ into word-like things for checking against a dictionary.
 * branch - for git urls
 * `./` - if you don't need an extra nesting layer
 * directory - especially for sharing a general bucket across multiple projects
+
+##### timeframe
+
+Used by the **schedule** action. Any open pull requests from another repository
+will be checked, and if the commit is within that timeframe, it will be processed.
 
 #### Files
 
@@ -81,6 +87,7 @@ doesn't recognize.
 
 * GitHub Actions generally don't run on forked repositories unless the forking user enables them.
 * Pull Requests from forked repositories run with read-only permissions.
+  - To ensure some coverage for such PRs, you can add a **schedule**.
 
 # License
 
