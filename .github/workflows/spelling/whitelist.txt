@@ -6,6 +6,7 @@ bdc
 cbeaff
 cmp
 config
+cron
 Cwd
 debian
 dest
