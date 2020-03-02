@@ -23,16 +23,17 @@ into word-like things for checking against a dictionary.
 
 [More information](https://github.com/jsoref/spelling#overview)
 
-### Required Configuration Variables
+### Basic Configuration
 
+#### Variables
 
 | Variable | Description |
 | ------------- | ------------- |
-| bucket | (optional) file/url for which the tool has read access to a couple of files. |
-| project      | a folder within `bucket`. This allows you to share common items across projects. |
-| GITHUB_TOKEN | Secret used to retrieve your code. |
+| [bucket](#bucket) | file/url for which the tool has read access to a couple of files. |
+| [project](#project) | a folder within `bucket`. This allows you to share common items across projects. |
+| GITHUB_TOKEN | Secret used to retrieve your code and comment on PRs/commits. |
 
-#### bucket url
+##### bucket
 
 * unset - especially initially...
 * `./path` - a local directory
@@ -40,12 +41,29 @@ into word-like things for checking against a dictionary.
 * `https://` (or `http://`) - curl compatible
 * `gs://` - gsutil url
 
-#### project
+##### project
 
 * unset - especially initially
 * branch - for git urls
 * `./` - if you don't need an extra nesting layer
 * directory - especially for sharing a general bucket across multiple projects
+
+#### Files
+
+##### excludes.txt
+
+This file contains Perl regular expressions.
+Generally, one regular expression per line.
+They are merging using an `OR` (`|`).
+
+##### whitelist.txt
+
+This contains whitelisted "words", one word per line.
+Whitelisted words that are not otherwise present in the corpus will be suggested for removal,
+but will not trigger a failure.
+Words that are present (i.e. not matched by the excludes file) in the repository
+and which are not listed in the whitelist will trigger a failure as part of **push** and
+**pull_request** actions.
 
 ### Optional Configuration Variables
 
@@ -61,9 +79,8 @@ doesn't recognize.
 
 ## Limitations
 
-* It will not add comments to the first version of a file - if you want
-to ensure it assigns blame, insert a commit with an empty file before you
-fill the file.
+* GitHub Actions generally don't run on forked repositories unless the forking user enables them.
+* Pull Requests from forked repositories run with read-only permissions.
 
 # License
 
