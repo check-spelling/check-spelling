@@ -16,6 +16,7 @@ strip_quotes() {
   tr '"' ' '
 }
 
+begin_group 'Retrieving open pull requests'
 pulls=$temp/pulls.json
 escaped=$temp/escaped.b64
 pull=$temp/pull.json
@@ -40,6 +41,7 @@ cat "$pulls" | jq -c '.[]'|jq -c -r '{
  commits_url: .commits_url,
  comments_url: .comments_url
  } | @base64' > "$escaped"
+end_group
 
 get_created_from_events() {
   rm -f "$headers"
@@ -69,18 +71,22 @@ get_created_from_events() {
 
 for a in $(cat "$escaped"); do
   echo "$a" | base64 --decode | jq -r . > $pull
+  url=$(cat $pull | jq -r .url | perl -pne 's{://api.github.com/repos/(.*/pull)s}{://github.com/$1}')
   issue_url=$(cat $pull | jq -r .issue_url)
+  begin_group "Considering $url"
   created_at=$(get_created_from_events "${issue_url}/events")
   if [ "$created_at" -eq 0 ]; then
     created_at=$(date_to_epoch $(cat $pull | jq -r .created_at))
   fi
   age=$(( $start - $created_at ))
   if [ $age -gt $time_limit ]; then
+    end_group
     continue
   fi
   head_repo=$(cat $pull | jq -r .head_repo)
   base_repo=$(cat $pull | jq -r .base_repo)
   if [ "$head_repo" = "$base_repo" ]; then
+    end_group
     continue
   fi
   head_sha=$(cat $pull | jq -r .head_sha)
@@ -108,5 +114,6 @@ for a in $(cat "$escaped"); do
   git fetch pr $head_ref
   git checkout $head_sha
   git remote rm pr 2>/dev/null || true
+  end_group
   "$spellchecker/unknown-words.sh" || true
 done
