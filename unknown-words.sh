@@ -4,29 +4,8 @@
 # It is conceptually `f` which runs `w` (spelling-unknown-word-splitter)
 # plus `fchurn` which uses `dn` mostly rolled together.
 set -e
-if [ -n "$DEBUG" ]; then
-  set -x
-  begin_group() {
-    echo "::group::$1"
-  }
-  end_group() {
-    echo '::end_group::'
-  }
-else
-  begin_group() {
-    :
-  }
-  end_group() {
-    :
-  }
-fi
-
-now() {
-  date +'%s%N'
-}
-start=$(now)
 export spellchecker=${spellchecker:-/app}
-export temp='/tmp/spelling'
+. "$spellchecker/common.sh"
 
 if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
   exec "$spellchecker/check-pull-requests.sh"

@@ -7,6 +7,7 @@ RUN\
 WORKDIR /app
 COPY \
  check-pull-requests.sh \
+ common.sh \
  docker-setup.sh \
  exclude.pl \
  porcelain.pl \
