@@ -1,5 +1,6 @@
 #!/bin/bash
 
+. "$spellchecker/common.sh"
 if [ $(uname) = "Linux" ]; then
   date_to_epoch() {
     date -u -d "$1" +'%s'
@@ -14,10 +15,6 @@ time_limit=$(( $timeframe * 60 ))
 strip_quotes() {
   tr '"' ' '
 }
-now() {
-  date +'%s'
-}
-start=$(now)
 
 pulls=$temp/pulls.json
 escaped=$temp/escaped.b64
