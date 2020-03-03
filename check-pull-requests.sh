@@ -28,7 +28,7 @@ headers=$temp/headers
 if [ -e "$pulls" ]; then
   echo using cached $pulls
 else
-  curl -s -s -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" -H "Accept: application/vnd.github.shadow-cat-preview+json" https://api.github.com/repos/check-spelling/examples-testing/pulls > $pulls
+  curl -s -s -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" -H "Accept: application/vnd.github.shadow-cat-preview+json" https://api.github.com/repos/$GITHUB_REPOSITORY/pulls > $pulls
 fi
 cat "$pulls" | jq -c '.[]'|jq -c -r '{
  head_repo : .head.repo.full_name,
