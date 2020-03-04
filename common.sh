@@ -9,7 +9,7 @@ if [ -n "$DEBUG" ]; then
   }
 else
   begin_group() {
-    :
+    echo "(...$1...)"
   }
   end_group() {
     :
