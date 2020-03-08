@@ -177,9 +177,6 @@ $err
 </details>'
   fi
 }
-new_words() {
-  echo "$1" | perl -ne 'next unless s/^\+//;print'
-}
 bullet_words() {
   echo "$1" | perl -pne 's/^(.)/* $1/'
   rm -f "$run_warnings"
@@ -324,7 +321,7 @@ if [ -z "$new_output" ]; then
   instructions=$(
     make_instructions
   )
-      spelling_info "$title" "$(bullet_words "$(new_words "$diff_output")")" "$instructions"
+      spelling_info "$title" "$(bullet_words "$patch_add")" "$instructions"
   end_group
   quit
 fi
