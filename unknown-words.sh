@@ -280,7 +280,7 @@ fi
 
 begin_group 'Compare whitelist with new output'
 sorted_whitelist="$temp/whitelist.sorted.txt"
-(sort -u -f "$whitelist_path" | grep . || true) > "$sorted_whitelist"
+(sed -e 's/#.*//' "$whitelist_path" | sort -u -f | grep . || true) > "$sorted_whitelist"
 whitelist_path="$sorted_whitelist"
 
 diff_output=$(diff -U0 "$whitelist_path" "$run_output" |grep -v "$spellchecker" || true)
