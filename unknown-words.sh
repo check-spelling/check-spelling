@@ -218,7 +218,7 @@ bullet_words() {
       begin_group 'Misspellings'
       echo "::add-matcher::.git/reporter.json"
       cat "$run_warnings.raw"
-      echo "::remove-matcher owner=jsoref-spelling::"
+      echo "::remove-matcher owner=check-spelling::"
       cp $spellchecker/reporter.json .git/
     ) > "$run_warnings"
     rm -f "$run_warnings.raw"
