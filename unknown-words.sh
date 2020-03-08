@@ -200,6 +200,7 @@ bullet_words() {
     git diff-tree \
       --no-commit-id \
       --name-only \
+      --diff-filter=d \
       -r $base..$head \
       -z 2> /dev/null |
     "$spellchecker/exclude.pl" |
