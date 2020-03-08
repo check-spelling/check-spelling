@@ -24,7 +24,7 @@ if (scalar @ARGV) {
 }
 
 # read all input
-while (<>) {
+while (<<>>) {
   next unless /./;
   s/^/ /;
   while (s/([^\\])\\[rtn]/$1 /g) {}
