@@ -14,7 +14,8 @@ if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -e "$GITHUB_EVENT_PATH" ]; then
   GITHUB_EVENT_PATH=/dev/null
 fi
 
-dict="$temp/english.words"
+dict="$spellchecker/words"
+dictionary_path="$temp/dictionary.txt"
 whitelist_path="$temp/whitelist.words.txt"
 excludelist_path="$temp/excludes.txt"
 word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
@@ -82,6 +83,10 @@ get_project_files whitelist $whitelist_path
 whitelist_files=$from_expanded
 new_whitelist_file=$append_to
 get_project_files excludes $excludelist_path
+get_project_files dictionary $dictionary_path
+if [ -s "$dictionary_path" ]; then
+  cp "$dictionary_path" "$dict"
+fi
 
 if [ -n "$debug" ]; then
   echo "Clean up from previous run"
