@@ -32,25 +32,55 @@ get_project_files() {
   dest=$2
   if [ ! -e "$dest" ] && [ -n "$bucket" ] && [ -n "$project" ]; then
     from=$(project_file_path $file)
-    echo "Retrieving cached $file from $from"
     case "$from" in
       .*)
-        cp $from $dest;;
+        append_to="$from"
+        if [ -f "$from" ]; then
+          echo "Retrieving $file from $from"
+          cp "$from" $dest
+          from_expanded="$from"
+        else
+          if [ ! -e "$from" ]; then
+            ext=$(echo "$from" | sed -e 's/^.*\.//')
+            from=$(echo $from | sed -e "s/\.$ext$//")
+            echo "Retrieving $file from $from"
+          fi
+          if [ -d "$from" ]; then
+            from_expanded=$from/*$ext
+            append_to=$from/${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
+            sort -u -f $from_expanded | grep . > $dest
+            echo "Retrieving $file from $from_expanded"
+          else
+            from_expanded=$(echo $from*$ext)
+            if [ "$from*$ext" != "$from_expanded" ]; then
+              sort -u -f $from_expanded | grep . > $dest
+              append_to=$from_${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
+            else
+              touch $dest
+            fi
+            echo "Retrieving $file from $from_expanded"
+          fi
+        fi;;
       ssh://git@*|git@*)
         (
+          echo "Retrieving $file from $from"
           cd $temp
           repo=$(echo "$bucket" | perl -pne 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')
           [ -d metadata ] || git clone --depth 1 $repo --single-branch --branch $project metadata
           cp metadata/$file.txt $dest
         );;
       gs://*)
+        echo "Retrieving $file from $from"
         gsutil cp -Z $from $dest >/dev/null 2>/dev/null;;
       *://*)
+        echo "Retrieving $file from $from"
         curl -L -s "$from" -o "$dest";;
     esac
   fi
 }
 get_project_files whitelist $whitelist_path
+whitelist_files=$from_expanded
+new_whitelist_file=$append_to
 get_project_files excludes $excludelist_path
 
 if [ -n "$debug" ]; then
@@ -302,22 +332,37 @@ end_group
 make_instructions() {
   patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; print')
   patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; print')
-  to_retrieve_whitelist
-  echo "$(
-  echo '('
+  instructions=$(mktemp)
+  to_retrieve_whitelist >> $instructions
   if [ -n "$patch_remove" ]; then
-    echo 'egrep -v "$(echo "'"$patch_remove"'" | tr "\n" " " | perl -pne '"'"'s/^/^(/;s/\s$/)\$/;s/\s/|/g'"'"')" "'"$whitelist_file"'";'
-  else
-    echo 'cat "'"$whitelist_file"'";'
+    if [ -z "$whitelist_files" ]; then
+      whitelist_files=$whitelist_file
+    fi
+    perl_header='#!/usr/bin/perl -ni'
+    echo 'remove_obsolete_words=$(mktemp)
+echo '"'$perl_header"'
+my $re=join "|", qw(' >> $instructions
+    echo "$patch_remove"  >> $instructions
+    echo ');
+next if /^($re)(?:$| .*)/;
+print;'"'"' > $remove_obsolete_words
+chmod +x $remove_obsolete_words
+for file in '$whitelist_files'; do $remove_obsolete_words $file; done
+rm $remove_obsolete_words' >> $instructions
   fi
+  echo '(' >> $instructions
   if [ -n "$patch_add" ]; then
-    echo 'echo "'
-    echo "$patch_add"
-    echo '"'
+    if [ -e "$new_whitelist_file" ]; then
+      echo 'cat "'"$new_whitelist_file"'"' >> $instructions;
+    fi
+    echo 'echo "
+'"$patch_add"'
+"' >> $instructions
   fi
-  echo ') | sort -u -f | grep . > new_whitelist.txt && mv new_whitelist.txt "'"$whitelist_file"'"
-')"
-  to_publish_whitelist
+  echo ') | sort -u -f | grep . > new_whitelist.txt && mv new_whitelist.txt "'"$new_whitelist_file"'"' >> $instructions
+  to_publish_whitelist >> $instructions
+  cat $instructions
+  rm $instructions
 }
 
 if [ -z "$new_output" ]; then
