@@ -67,14 +67,14 @@ get_project_files() {
           cd $temp
           repo=$(echo "$bucket" | perl -pne 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')
           [ -d metadata ] || git clone --depth 1 $repo --single-branch --branch $project metadata
-          cp metadata/$file.txt $dest
+          cp metadata/$file.txt $dest 2> /dev/null || touch $dest
         );;
       gs://*)
         echo "Retrieving $file from $from"
-        gsutil cp -Z $from $dest >/dev/null 2>/dev/null;;
+        gsutil cp -Z $from $dest >/dev/null 2>/dev/null || touch $dest;;
       *://*)
         echo "Retrieving $file from $from"
-        curl -L -s "$from" -o "$dest";;
+        curl -L -s "$from" -o "$dest" || touch $dest;;
     esac
   fi
 }
