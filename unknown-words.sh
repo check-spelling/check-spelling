@@ -22,7 +22,6 @@ word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
 run_output="$temp/unknown.words.txt"
 run_files="$temp/reporter-input.txt"
 run_warnings="$temp/matcher.txt"
-wordlist=$bucket/english.words.txt
 
 project_file_path() {
   echo $bucket/$project/$1.txt
