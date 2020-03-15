@@ -43,21 +43,12 @@ get_project_files() {
           if [ ! -e "$from" ]; then
             ext=$(echo "$from" | sed -e 's/^.*\.//')
             from=$(echo $from | sed -e "s/\.$ext$//")
-            echo "Retrieving $file from $from"
           fi
           if [ -d "$from" ]; then
             from_expanded=$from/*$ext
             append_to=$from/${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
             sort -u -f $from_expanded | grep . > $dest
-            echo "Retrieving $file from $from_expanded"
-          else
-            from_expanded=$(echo $from*$ext)
-            if [ "$from*$ext" != "$from_expanded" ]; then
-              sort -u -f $from_expanded | grep . > $dest
-              append_to=$from_${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
-            else
-              touch $dest
-            fi
+            from="$from/$(basename "$from")".$ext
             echo "Retrieving $file from $from_expanded"
           fi
         fi;;
@@ -80,6 +71,7 @@ get_project_files() {
 }
 get_project_files whitelist $whitelist_path
 whitelist_files=$from_expanded
+whitelist_file=$from
 new_whitelist_file=$append_to
 get_project_files excludes $excludelist_path
 get_project_files dictionary $dictionary_path
@@ -153,8 +145,6 @@ to_retrieve_whitelist() {
       echo gsutil cp -Z $(project_file_path whitelist) whitelist.txt;;
     *://*)
       echo curl -L -s "$(project_file_path whitelist)" -o whitelist.txt;;
-    *)
-      whitelist_file="$(project_file_path whitelist)";;
   esac
 }
 to_publish_whitelist() {
