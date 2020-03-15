@@ -29,6 +29,7 @@ if (scalar @ARGV) {
 # read all input
 while (<<>>) {
   next unless /./;
+  # This is to make it easier to deal w/ rules:
   s/^/ /;
   while (s/([^\\])\\[rtn]/$1 /g) {}
   # https://www.fileformat.info/info/unicode/char/2019/
