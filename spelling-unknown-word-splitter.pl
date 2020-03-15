@@ -26,9 +26,23 @@ if (scalar @ARGV) {
   }
 }
 
+my $patterns_re = '^$';
+if (open(PATTERNS, '<', "$dirname/patterns.txt")) {
+  my @patterns;
+  while (<PATTERNS>) {
+    next if /^#/;
+    chomp;
+    push @patterns, $_;
+  }
+  close PATTERNS;
+  $patterns_re = join "|", @patterns if scalar @patterns;
+}
+
 # read all input
 while (<<>>) {
   next unless /./;
+  # hook for custom line based text exclusions:
+  s/$patterns_re/ /g;
   # This is to make it easier to deal w/ rules:
   s/^/ /;
   while (s/([^\\])\\[rtn]/$1 /g) {}

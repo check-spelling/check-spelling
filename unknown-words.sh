@@ -15,9 +15,11 @@ if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -e "$GITHUB_EVENT_PATH" ]; then
 fi
 
 dict="$spellchecker/words"
+patterns="$spellchecker/patterns.txt"
 dictionary_path="$temp/dictionary.txt"
 whitelist_path="$temp/whitelist.words.txt"
 excludelist_path="$temp/excludes.txt"
+patterns_path="$temp/patterns.txt"
 word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
 run_output="$temp/unknown.words.txt"
 run_files="$temp/reporter-input.txt"
@@ -77,6 +79,10 @@ get_project_files excludes $excludelist_path
 get_project_files dictionary $dictionary_path
 if [ -s "$dictionary_path" ]; then
   cp "$dictionary_path" "$dict"
+fi
+get_project_files patterns $patterns_path
+if [ -s "$patterns_path" ]; then
+  cp "$patterns_path" "$patterns"
 fi
 
 if [ -n "$debug" ]; then
