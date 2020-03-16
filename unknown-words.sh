@@ -16,6 +16,8 @@ fi
 
 dict="$spellchecker/words"
 patterns="$spellchecker/patterns.txt"
+excludes="$spellchecker/excludes.txt"
+excludes_path="$temp/excludes.txt"
 dictionary_path="$temp/dictionary.txt"
 whitelist_path="$temp/whitelist.words.txt"
 excludelist_path="$temp/excludes.txt"
@@ -80,6 +82,9 @@ whitelist_files=$from_expanded
 whitelist_file=$from
 new_whitelist_file=$append_to
 get_project_files excludes $excludelist_path
+if [ -s "$excludes_path" ]; then
+  cp "$excludes_path" "$excludes"
+fi
 get_project_files dictionary $dictionary_path
 if [ -s "$dictionary_path" ]; then
   cp "$dictionary_path" "$dict"
@@ -115,7 +120,6 @@ xargs_zero() {
 }
 begin_group 'Spell check'
 (
-  export exclude_file=$excludelist_path;
   git 'ls-files' -z 2> /dev/null |\
   "$spellchecker/exclude.pl") |\
   xargs_zero "$word_splitter" |\
