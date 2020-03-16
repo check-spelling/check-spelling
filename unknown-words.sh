@@ -25,6 +25,10 @@ run_output="$temp/unknown.words.txt"
 run_files="$temp/reporter-input.txt"
 run_warnings="$temp/matcher.txt"
 
+sort_unique() {
+  sort -u -f "$@" | perl -ne 'next unless /./; print'
+}
+
 project_file_path() {
   echo $bucket/$project/$1.txt
 }
@@ -49,7 +53,7 @@ get_project_files() {
           if [ -d "$from" ]; then
             from_expanded=$from/*$ext
             append_to=$from/${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
-            sort -u -f $from_expanded | grep . > $dest
+            sort_unique $from_expanded > $dest
             from="$from/$(basename "$from")".$ext
             echo "Retrieving $file from $from_expanded"
           fi
@@ -308,12 +312,18 @@ if [ ! -e "$whitelist_path" ]; then
   quit 2
 fi
 
+grep_v_spellchecker() {
+  perl -ne "next if m{$spellchecker}; print"
+}
+
 begin_group 'Compare whitelist with new output'
 sorted_whitelist="$temp/whitelist.sorted.txt"
-(sed -e 's/#.*//' "$whitelist_path" | sort -u -f | grep . || true) > "$sorted_whitelist"
+(sed -e 's/#.*//' "$whitelist_path" | sort_unique) > "$sorted_whitelist"
 whitelist_path="$sorted_whitelist"
 
-diff_output=$(diff -U0 "$whitelist_path" "$run_output" |grep -v "$spellchecker" || true)
+diff_output=$(
+  diff -U0 "$whitelist_path" "$run_output" |
+  grep_v_spellchecker)
 end_group
 
 if [ -z "$diff_output" ]; then
@@ -325,7 +335,9 @@ if [ -z "$diff_output" ]; then
 fi
 
 begin_group 'New output'
-new_output=$(diff -i -U0 "$whitelist_path" "$run_output" |grep -v "$spellchecker" |\
+new_output=$(
+  diff -i -U0 "$whitelist_path" "$run_output" |
+  grep_v_spellchecker |\
   perl -n -w -e 'next unless /^\+/; next if /^\+{3} /; s/^.//; print;')
 end_group
 
@@ -359,7 +371,7 @@ rm $remove_obsolete_words' >> $instructions
 '"$patch_add"'
 "' >> $instructions
   fi
-  echo ') | sort -u -f | grep . > new_whitelist.txt && mv new_whitelist.txt "'"$new_whitelist_file"'"' >> $instructions
+  echo ") | sort -u -f | perl -ne 'next unless /./; print' > new_whitelist.txt && mv new_whitelist.txt '$new_whitelist_file'" >> $instructions
   to_publish_whitelist >> $instructions
   cat $instructions
   rm $instructions
