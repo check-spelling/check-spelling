@@ -56,13 +56,46 @@ will be checked, and if the commit is within that timeframe, it will be processe
 
 #### Files
 
-##### excludes.txt
+Note that each of the below items can either be a file w/ a `.txt` suffix,
+or a directory, where each file with a `.txt` suffix will be merged together.
+
+##### dictionary
+
+This replaces the default dictionary.
+One word per line.
+
+##### excludes
 
 This file contains Perl regular expressions.
 Generally, one regular expression per line.
-They are merging using an `OR` (`|`).
+They are merged using an `OR` (`|`).
 
-##### whitelist.txt
+Files matching these patterns will be skipped.
+
+Possible examples include:
+
+```
+^\.github/workflows/
+```
+
+##### patterns
+
+This file contains Perl regular expressions.
+Generally, one regular expression per line.
+Lines that begin with `#` will be skipped.
+They are merged using an `OR` (`|`).
+
+Tokens within files that match these expressions will be skipped.
+
+Possible examples include:
+
+```
+https://(?:(?:www\.|)youtube\.com|youtu.be)/[-a-zA-Z0-9?&=]*
+data:[a-zA-Z=;,/0-9+]+
+0x[a-f0-9A-F]{2,}[Uu]?[Ll]?
+```
+
+##### whitelist
 
 This contains whitelisted "words", one word per line.
 Whitelisted words that are not otherwise present in the corpus will be suggested for removal,
@@ -70,6 +103,9 @@ but will not trigger a failure.
 Words that are present (i.e. not matched by the excludes file) in the repository
 and which are not listed in the whitelist will trigger a failure as part of **push** and
 **pull_request** actions.
+
+You can use `#` followed by a comment at the end of a whitelisting entry.
+Note that some automatic pruning may not properly handle this.
 
 ### Optional Configuration Variables
 
