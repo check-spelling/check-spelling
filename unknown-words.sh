@@ -220,10 +220,13 @@ bullet_words() {
   rm -f "$run_warnings"
   export tokens="$1"
   head=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.sha' -M)
-  if [ "$head" = "null" ]; then
+  if [ -z "$head" ] || [ "$head" = "null" ]; then
     head=${GITHUB_SHA:-HEAD}
   fi
   base=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.base.sha // .before // "HEAD^"' -M)
+  if [ -z "$base" ]; then
+    base=$head^
+  fi
   if ! git show $base 2>/dev/null >/dev/null; then
     base=$head^
   fi
