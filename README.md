@@ -104,7 +104,7 @@ Words that are present (i.e. not matched by the excludes file) in the repository
 and which are not listed in the whitelist will trigger a failure as part of **push** and
 **pull_request** actions.
 
-You can use `#` followed by a comment at the end of a whitelisting entry.
+You can use `#` followed by text to add a comment at the end of a line..
 Note that some automatic pruning may not properly handle this.
 
 ### Optional Configuration Variables

@@ -16,6 +16,6 @@ jobs:
         fetch-depth: 2
     - uses: ./
       env:
-        bucket: ssh://git@github.com/check-spelling/check-spelling.git
-        project: spelling-data
+        bucket: .github/actions
+        project: spelling
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
