@@ -112,7 +112,9 @@ if [ -n "$DEBUG" ]; then
 fi
 
 xargs_zero() {
-  if [ $(uname) = "Linux" ]; then
+  if which parallel; then
+    parallel --no-notice --no-run-if-empty -0 -n1 "$@"
+  elif [ $(uname) = "Linux" ]; then
     xargs --no-run-if-empty -0 -n1 "$@"
   else
     arguments="$*" "$spellchecker/xargs_zero"

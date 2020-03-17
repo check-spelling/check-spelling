@@ -2,7 +2,7 @@ FROM debian:9.5-slim
 
 RUN\
  DEBIAN_FRONTEND=noninteractive apt-get -qq update < /dev/null > /dev/null &&\
- DEBIAN_FRONTEND=noninteractive apt-get install -qq curl git jq < /dev/null > /dev/null
+ DEBIAN_FRONTEND=noninteractive apt-get install -qq curl git jq parallel < /dev/null > /dev/null
 
 WORKDIR /app
 COPY \

@@ -2,6 +2,7 @@ bdc
 cbeaff
 chmod
 dest
+elif
 esac
 excludelist
 fchurn
