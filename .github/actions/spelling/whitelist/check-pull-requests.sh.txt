@@ -1,0 +1,14 @@
+api
+config
+github
+http
+jq
+json
+perl
+pne
+spellchecker
+SZ
+timeframe
+uname
+url
+vnd
