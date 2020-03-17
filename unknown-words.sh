@@ -53,9 +53,9 @@ get_project_files() {
             from=$(echo $from | sed -e "s/\.$ext$//")
           fi
           if [ -d "$from" ]; then
-            from_expanded=$from/*$ext
+            from_expanded=$(ls $from/*$ext |sort)
             append_to=$from/${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
-            sort_unique $from_expanded > $dest
+            cat $from_expanded > $dest
             from="$from/$(basename "$from")".$ext
             echo "Retrieving $file from $from_expanded"
           fi
