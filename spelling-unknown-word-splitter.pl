@@ -32,6 +32,7 @@ if (open(PATTERNS, '<', "$dirname/patterns.txt")) {
   while (<PATTERNS>) {
     next if /^#/;
     chomp;
+    next unless /./;
     push @patterns, $_;
   }
   close PATTERNS;
