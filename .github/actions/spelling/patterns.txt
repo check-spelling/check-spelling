@@ -1,3 +1,4 @@
 ^(?:https|data):\S*[*+]$
-^\(?:0\[Xx\]\S*\?\\b$
+^..:0.Xx\S*\?\\b$
 catching 'templatesz'
+\\templates(?![a-z])

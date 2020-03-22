@@ -93,9 +93,19 @@ Tokens within files that match these expressions will be skipped.
 Possible examples include:
 
 ```
+# this is a comment
 https://(?:(?:www\.|)youtube\.com|youtu.be)/[-a-zA-Z0-9?&=]*
 data:[a-zA-Z=;,/0-9+]+
-0x[a-f0-9A-F]{2,}[Uu]?[Ll]?
+# hex digits including css/html color classes:
+(?:0[Xx]|U\+|#)[a-f0-9A-FGgRr]{2,}[Uu]?[Ll]?\b
+# uuid:
+\{[0-9A-FA-F]{8}-(?:[0-9A-FA-F]{4}-){3}[0-9A-FA-F]{12}\}
+# the negative lookahead here is to allow catching 'templatesz' as a misspelling
+# but to otherwise recognize a Windows path with \templates\foo.template or similar:
+\\templates(?![a-z])
+# Note that the next example is no longer necessary if you are using
+# to match a string starting with a `#`, use a character-class:
+[#]backwards
 ```
 
 ##### whitelist

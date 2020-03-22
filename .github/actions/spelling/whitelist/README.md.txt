@@ -1,5 +1,7 @@
+css
 github
 gsutil
+html
 http
 jsoref
 spellchecking
@@ -7,6 +9,7 @@ ssh
 svg
 timeframe
 url
+uuid
 whitelist
 workflow
 www
