@@ -61,8 +61,11 @@ or a directory, where each file with a `.txt` suffix will be merged together.
 
 ##### dictionary
 
-This replaces the default dictionary.
+This replaces the [default dictionary](https://github.com/check-spelling/check-spelling/raw/dictionary/dict.txt).
 One word per line.
+
+If you want to include the default dictionary,
+place it into the directory next to your own.
 
 ##### excludes
 
