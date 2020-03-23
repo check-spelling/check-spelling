@@ -351,6 +351,8 @@ new_output=$(
 end_group
 
 make_instructions() {
+  Q='"'
+  q="'"
   patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; print')
   patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; print')
   instructions=$(mktemp)
@@ -361,12 +363,12 @@ make_instructions() {
     fi
     perl_header='#!/usr/bin/perl -ni'
     echo 'remove_obsolete_words=$(mktemp)
-echo '"'$perl_header"'
-my $re=join "|", qw(' >> $instructions
-    echo "$patch_remove"  >> $instructions
-    echo ');
+echo '$q$perl_header'
+my $re=join "|", qw('$q$Q >> $instructions
+    echo "$patch_remove" >> $instructions
+    echo $Q$q');
 next if /^($re)(?:$| .*)/;
-print;'"'"' > $remove_obsolete_words
+print;'$q' > $remove_obsolete_words
 chmod +x $remove_obsolete_words
 for file in '$whitelist_files'; do $remove_obsolete_words $file; done
 rm $remove_obsolete_words' >> $instructions
