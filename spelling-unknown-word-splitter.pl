@@ -54,7 +54,7 @@ while (<<>>) {
   while (s/([A-Z]{2,})([A-Z][a-z]{2,})/ $1 $2 /g) {}
   while (s/([a-z']+)([A-Z])/$1 $2/g) {}
   for my $token (split /\s+/, $_) {
-    $token =~ s/^.?'+(.*)/$1/;
+    $token =~ s/^[^Ii]?'+(.*)/$1/;
     $token =~ s/(.*?)'+$/$1/;
     next unless $token =~ /./;
     my $key = lc $token;
