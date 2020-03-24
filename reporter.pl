@@ -1,18 +1,17 @@
 #!/usr/bin/env perl
 
 die 'Please set $tokens_file' unless defined $ENV{tokens_file};
-my $tokens=$ENV{tokens_file};
-if ($tokens =~ m{^/}) {
-  if (open(TOKENS, '<', $tokens)) {
-    local $/ = undef;
-    $tokens = <TOKENS>;
-    chomp $tokens;
-    close TOKENS;
-  } else {
-    print STDERR "$0 could not read $tokens\n";
-    $tokens = '';
-  }
+my $tokens_file=$ENV{tokens_file};
+unless (open(TOKENS, '<', $tokens_file)) {
+  print STDERR "$0 could not read $tokens_file\n";
+  exit 0;
 }
+my $tokens;
+{
+  local $/= undef;
+  $tokens = <TOKENS>;
+}
+$tokens = join '|', ($tokens=~/\S+/g);
 exit 0 unless $tokens =~ /\w/;
 $tokens=~ s/\s+/|/g;
 my $re = "\\b($tokens)\\b";
