@@ -23,7 +23,7 @@ while (<>) {
   my $line;
   if ($blame) {
     next if /^ /;
-    s/^[0-9a-f^]+\s+(.*?)\s(\d+)\) //;
+    next unless s/^[0-9a-f^]+\s+(.*?)\s(\d+)\) //;
     ($ARGV, $line) = ($1, $2);
   } else {
     if ($previous ne $ARGV) {
