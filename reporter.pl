@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
-die 'Please set $tokens' unless defined $ENV{tokens};
-my $tokens=$ENV{tokens};
+die 'Please set $tokens_file' unless defined $ENV{tokens_file};
+my $tokens=$ENV{tokens_file};
 if ($tokens =~ m{^/}) {
   if (open(TOKENS, '<', $tokens)) {
     local $/ = undef;

@@ -222,7 +222,7 @@ bullet_words() {
   echo "$1" > "$tokens_file"
   perl -pne 's/^(.)/* $1/' "$tokens_file"
   rm -f "$run_warnings"
-  export tokens="$tokens_file"
+  export tokens_file
   head=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.sha' -M)
   if [ -z "$head" ] || [ "$head" = "null" ]; then
     head=${GITHUB_SHA:-HEAD}
@@ -269,7 +269,6 @@ bullet_words() {
     rm -f "$run_warnings.raw"
   fi
   rm -f "$tokens_file"
-  tokens=''
 }
 
 quit() {
