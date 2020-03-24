@@ -26,6 +26,7 @@ word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
 run_output="$temp/unknown.words.txt"
 run_files="$temp/reporter-input.txt"
 run_warnings="$temp/matcher.txt"
+tokens_file="$temp/tokens.txt"
 
 sort_unique() {
   sort -u -f "$@" | perl -ne 'next unless /./; print'
@@ -218,9 +219,10 @@ $err
   fi
 }
 bullet_words() {
-  echo "$1" | perl -pne 's/^(.)/* $1/'
+  echo "$1" > "$tokens_file"
+  perl -pne 's/^(.)/* $1/' "$tokens_file"
   rm -f "$run_warnings"
-  export tokens="$1"
+  export tokens="$tokens_file"
   head=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.sha' -M)
   if [ -z "$head" ] || [ "$head" = "null" ]; then
     head=${GITHUB_SHA:-HEAD}
@@ -266,6 +268,8 @@ bullet_words() {
     ) > "$run_warnings"
     rm -f "$run_warnings.raw"
   fi
+  rm -f "$tokens_file"
+  tokens=''
 }
 
 quit() {

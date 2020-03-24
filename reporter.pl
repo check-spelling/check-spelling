@@ -2,6 +2,17 @@
 
 die 'Please set $tokens' unless defined $ENV{tokens};
 my $tokens=$ENV{tokens};
+if ($tokens =~ m{^/}) {
+  if (open(TOKENS, '<', $tokens)) {
+    local $/ = undef;
+    $tokens = <TOKENS>;
+    chomp $tokens;
+    close TOKENS;
+  } else {
+    print STDERR "$0 could not read $tokens\n";
+    $tokens = '';
+  }
+}
 exit 0 unless $tokens =~ /\w/;
 $tokens=~ s/\s+/|/g;
 my $re = "\\b($tokens)\\b";
