@@ -59,6 +59,13 @@ will be checked, and if the commit is within that timeframe, it will be processe
 Note that each of the below items can either be a file w/ a `.txt` suffix,
 or a directory, where each file with a `.txt` suffix will be merged together.
 
+##### advice
+
+This adds a supplemental portion to the comment
+posted to github. It's freeform. You can use
+it to explain how contributors should decide
+where to put new entries.
+
 ##### dictionary
 
 This replaces the [default dictionary](https://github.com/check-spelling/check-spelling/raw/dictionary/dict.txt).

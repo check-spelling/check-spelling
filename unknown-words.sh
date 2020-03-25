@@ -22,6 +22,7 @@ dictionary_path="$temp/dictionary.txt"
 whitelist_path="$temp/whitelist.words.txt"
 excludelist_path="$temp/excludes.txt"
 patterns_path="$temp/patterns.txt"
+advice_path="$temp/advice.txt"
 word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
 run_output="$temp/unknown.words.txt"
 run_files="$temp/reporter-input.txt"
@@ -94,6 +95,7 @@ get_project_files patterns $patterns_path
 if [ -s "$patterns_path" ]; then
   cp "$patterns_path" "$patterns"
 fi
+get_project_files advice $advice_path
 
 if [ -n "$debug" ]; then
   echo "Clean up from previous run"
@@ -216,6 +218,12 @@ $1
 $err
 "'```
 </details>'
+    if [ -s "$advice_path" ]; then
+      OUTPUT="$OUTPUT
+
+`cat "$advice_path"`
+"
+    fi
   fi
 }
 bullet_words() {
