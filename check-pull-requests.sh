@@ -78,7 +78,7 @@ for a in $(cat "$escaped"); do
   if [ "$created_at" -eq 0 ]; then
     created_at=$(date_to_epoch $(cat $pull | jq -r .created_at))
   fi
-  age=$(( $start - $created_at ))
+  age=$(( $start / 1000000000 - $created_at ))
   if [ $age -gt $time_limit ]; then
     end_group
     continue
