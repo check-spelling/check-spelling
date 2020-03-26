@@ -21,6 +21,8 @@ pulls=$temp/pulls.json
 escaped=$temp/escaped.b64
 pull=$temp/pull.json
 fake_event=$temp/fake_event.json
+tree_config="$bucket/$project/"
+stored_config=$temp/config/
 headers=$temp/headers
 
 if [ -e "$pulls" ]; then
@@ -28,6 +30,7 @@ if [ -e "$pulls" ]; then
 else
   curl -s -s -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" -H "Accept: application/vnd.github.shadow-cat-preview+json" https://api.github.com/repos/$GITHUB_REPOSITORY/pulls > $pulls
 fi
+
 cat "$pulls" | jq -c '.[]'|jq -c -r '{
  head_repo: .head.repo.full_name,
  base_repo: .base.repo.full_name,
@@ -41,6 +44,12 @@ cat "$pulls" | jq -c '.[]'|jq -c -r '{
  commits_url: .commits_url,
  comments_url: .comments_url
  } | @base64' > "$escaped"
+if [ -s "$escaped" ]; then
+  if [ -d "$tree_config" ]; then
+    mkdir -p "$stored_config"
+    rsync -a "$tree_config" "$stored_config"
+  fi
+fi
 end_group
 
 get_created_from_events() {
@@ -115,5 +124,17 @@ for a in $(cat "$escaped"); do
   git checkout $head_sha
   git remote rm pr 2>/dev/null || true
   end_group
-  "$spellchecker/unknown-words.sh" || true
+  (
+    temp=$(mktemp -d)
+    if [ -d "$stored_config" ] && [ ! -d "$tree_config" ]; then
+      mkdir -p "$tree_config"
+      rsync -a "$stored_config" "$tree_config"
+      cleanup_tree_config=1
+    fi
+    "$spellchecker/unknown-words.sh" || true
+    rm -rf "$temp"
+    if [ -n "$cleanup_tree_config" ]; then
+      rm -rf "$tree_config"
+    fi
+  )
 done

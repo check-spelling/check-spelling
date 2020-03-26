@@ -20,4 +20,5 @@ now() {
   date +'%s%N'
 }
 start=$(now)
-export temp='/tmp/spelling'
+temp="${temp:-/tmp/spelling}"
+export temp
