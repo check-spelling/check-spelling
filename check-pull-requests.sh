@@ -71,7 +71,7 @@ get_created_from_events() {
 
 for a in $(cat "$escaped"); do
   echo "$a" | base64 --decode | jq -r . > $pull
-  url=$(cat $pull | jq -r .url | perl -pne 's{://api.github.com/repos/(.*/pull)s}{://github.com/$1}')
+  url=$(cat $pull | jq -r .commits_url | perl -pne 's{://api.github.com/repos/(.*/pull)s}{://github.com/$1}')
   issue_url=$(cat $pull | jq -r .issue_url)
   begin_group "Considering $url"
   created_at=$(get_created_from_events "${issue_url}/events")
