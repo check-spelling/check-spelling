@@ -25,24 +25,84 @@ tree_config="$bucket/$project/"
 stored_config=$temp/config/
 headers=$temp/headers
 
-if [ -e "$pulls" ]; then
-  echo using cached $pulls
+Q='"'
+
+owner=${GITHUB_REPOSITORY%/*}
+repo=${GITHUB_REPOSITORY#*/}
+length=20
+
+get_open_pulls() {
+query=$(echo "query {
+  repository(owner:${Q}$owner${Q} name:${Q}$repo${Q}) {
+    pullRequests(first: $length states: OPEN $continue) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        baseRefName
+        baseRefOid
+        baseRepository {
+          nameWithOwner
+        }
+        headRefName
+        headRefOid
+        headRepository {
+          nameWithOwner
+          url
+        }
+        potentialMergeCommit {
+          oid
+        }
+        createdAt
+        url
+        commits(last: 1) {
+          nodes {
+            commit {
+              pushedDate
+            }
+          }
+        }
+      }
+    }
+  }
+}")
+echo '{}' | jq --arg query "$query" '.query = $query'
+}
+
+if [ -e "$pulls.nodes" ]; then
+  echo using cached $pulls.nodes
 else
-  curl -s -s -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" -H "Accept: application/vnd.github.shadow-cat-preview+json" https://api.github.com/repos/$GITHUB_REPOSITORY/pulls > $pulls
+  rm -f "$pulls.nodes"
+  touch "$pulls.nodes"
+  while :
+  do
+    curl -s -s -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" --data-binary "$(get_open_pulls)" https://api.github.com/graphql > $pulls
+    cat "$pulls" | jq .data.repository.pullRequests > "$pulls.pull_requests"
+    cat "$pulls.pull_requests" | jq -c '.nodes[]' >> "$pulls.nodes"
+    cat "$pulls.pull_requests" | jq .pageInfo > "$pulls.page_info"
+    if [ "$(cat "$pulls.page_info" | jq -c -r .hasNextPage)" != "true" ]; then
+      continue=''
+      break
+    fi
+    continue="after: ${Q}$(cat "$pulls.page_info"|jq -c -r .endCursor)${Q}"
+  done
 fi
 
-cat "$pulls" | jq -c '.[]'|jq -c -r '{
- head_repo: .head.repo.full_name,
- base_repo: .base.repo.full_name,
- head_ref: .head.ref,
- head_sha: .head.sha,
- base_sha: .base.sha,
- clone_url: .head.repo.clone_url,
- merge_commit_sha: .merge_commit_sha,
- created_at: .created_at,
- issue_url: .issue_url,
- commits_url: .commits_url,
- comments_url: .comments_url
+cat "$pulls.nodes" |jq -c -r '{
+ head_repo: .headRepository.nameWithOwner,
+ base_repo: .baseRepository.nameWithOwner,
+ head_ref: .headRefName,
+ head_sha: .headRefOid,
+ base_sha: .baseRefOid,
+ clone_url: .headRepository.url,
+ merge_commit_sha: .potentialMergeCommit.oid,
+ created_at: .createdAt,
+ updated_at: .commits.nodes[0].commit.pushedDate,
+ issue_url: .url | sub("github.com"; "api.github.com/repos") | sub("/pull/(?<id>[0-9]+)$"; "/issues/\(.id)"),
+ commits_url: .url | sub("github.com"; "api.github.com/repos") | sub("/pull/(?<id>[0-9]+)$"; "/pulls/\(.id)/commits"),
+ comments_url: .url | sub("github.com"; "api.github.com/repos") | sub("/pull/(?<id>[0-9]+)$"; "/issues/\(.id)/comments"),
  } | @base64' > "$escaped"
 if [ -s "$escaped" ]; then
   if [ -d "$tree_config" ]; then
@@ -52,41 +112,13 @@ if [ -s "$escaped" ]; then
 fi
 end_group
 
-get_created_from_events() {
-  rm -f "$headers"
-  created_at=$(curl -s -S \
-    -H "Authorization: token $GITHUB_TOKEN" \
-    --header "Content-Type: application/json" \
-    -D "$headers" \
-    "$1" |
-    jq -M -r '[ .[]|select (.event=="head_ref_force_pushed") ][-1].created_at')
-  if [ "$created_at" = "null" ]; then
-    created_time=0
-  else
-    created_time=$(date_to_epoch $created_at)
-  fi
-  if [ -e "$headers" ]; then
-    next_url=$(perl -ne 'next unless s/^Link: //;s/,\s+/\n/g; print "$1" if /<(.*)>; rel="last"/' $headers)
-    rm -f "$headers"
-    if [ -n "$next_url" ]; then
-      other_time=$(get_created_from_events "$next_url")
-      if [ "$created_time" -lt "$other_time" ]; then
-        created_time=$other_time
-      fi
-    fi
-  fi
-  echo "$created_time"
-}
-
 for a in $(cat "$escaped"); do
   echo "$a" | base64 --decode | jq -r . > $pull
   url=$(cat $pull | jq -r .commits_url | perl -pne 's{://api.github.com/repos/(.*/pull)s}{://github.com/$1}')
   issue_url=$(cat $pull | jq -r .issue_url)
   begin_group "Considering $url"
-  created_at=$(get_created_from_events "${issue_url}/events")
-  if [ "$created_at" -eq 0 ]; then
-    created_at=$(date_to_epoch $(cat $pull | jq -r .created_at))
-  fi
+  created_at=$(cat $pull | jq -r '.updated_at // .created_at')
+  created_at=$(date_to_epoch $created_at)
   age=$(( $start / 1000000000 - $created_at ))
   if [ $age -gt $time_limit ]; then
     end_group

@@ -1,9 +1,11 @@
 api
 config
 github
+graphql
 http
 jq
 json
+oid
 perl
 pne
 rsync
