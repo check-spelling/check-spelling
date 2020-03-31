@@ -19,6 +19,7 @@ perl
 PIPESTATUS
 pne
 qw
+rawfile
 README
 spellchecker
 ssh

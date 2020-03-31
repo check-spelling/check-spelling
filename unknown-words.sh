@@ -302,8 +302,11 @@ comment() {
       esac
     fi
     if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
+      BODY=$(mktemp)
+      echo "$OUTPUT" > $BODY
       PAYLOAD=$(mktemp)
-      echo '{}' | jq --arg body "$OUTPUT" '.body = $body' > $PAYLOAD
+      echo '{}' | jq --rawfile body $BODY '.body = $body' > $PAYLOAD
+      rm -f $BODY
       cat $PAYLOAD
       echo $COMMENTS_URL
       curl -s -S \

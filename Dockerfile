@@ -1,4 +1,4 @@
-FROM debian:9.5-slim
+FROM debian:bullseye-slim
 
 RUN\
  DEBIAN_FRONTEND=noninteractive apt-get -qq update < /dev/null > /dev/null &&\
