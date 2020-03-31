@@ -302,16 +302,18 @@ comment() {
       esac
     fi
     if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
-      PAYLOAD=$(echo '{}' | jq --arg body "$OUTPUT" '.body = $body')
-      echo $PAYLOAD
+      PAYLOAD=$(mktemp)
+      echo '{}' | jq --arg body "$OUTPUT" '.body = $body' > $PAYLOAD
+      cat $PAYLOAD
       echo $COMMENTS_URL
       curl -s -S \
            -H "Authorization: token $GITHUB_TOKEN" \
            --header "Content-Type: application/json" \
            -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
-           --data "$PAYLOAD" \
+           --data "@$PAYLOAD" \
            "$COMMENTS_URL" ||
       true
+      rm -f $PAYLOAD
     else
       echo "$OUTPUT"
     fi
