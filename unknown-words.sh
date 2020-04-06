@@ -253,6 +253,8 @@ $2"
   OUTPUT="$OUTPUT$spelling_footer"
   if [ -n "$VERBOSE" ]; then
     comment
+  else
+    echo "$OUTPUT"
   fi
 }
 spelling_body() {
