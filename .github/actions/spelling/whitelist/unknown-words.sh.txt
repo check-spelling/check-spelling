@@ -22,6 +22,7 @@ pne
 qw
 rawfile
 README
+regex
 spellchecker
 ssh
 uname

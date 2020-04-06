@@ -37,6 +37,22 @@ project_file_path() {
   echo $bucket/$project/$1.txt
 }
 
+check_pattern_file() {
+  perl -i -e 'while (<>) {
+    if (eval {qr/$_/}) {
+      print;
+    } else {
+      $@ =~ s/(.*?)\n.*/$1/m;
+      chomp $@;
+      my $err = $@;
+      $err =~ s{^.*? in regex; marked by <-- HERE in m/(.*) <-- HERE.*$}{$1};
+      my $start = length $err;
+      print STDERR "$ARGV: line $., columns $start-$start, Warning - bad regex (bad-regex)\n$@\n";
+      print "^\$\n";
+    }
+  }' $1
+}
+
 check_for_newline_at_eof() {
   maybe_missing_eol="$1"
   if [ $(tail -1 "$maybe_missing_eol" | wc -l) -eq 0 ]; then
@@ -51,6 +67,9 @@ check_for_newline_at_eof() {
 cleanup_file() {
   maybe_bad="$1"
   type="$2"
+  if [ $2 = 'patterns' ]; then
+    check_pattern_file "$1"
+  fi
   check_for_newline_at_eof "$1"
 }
 
@@ -108,6 +127,9 @@ get_project_files() {
     esac
   fi
 }
+
+cp $spellchecker/reporter.json .git/
+echo "::add-matcher::.git/reporter.json"
 get_project_files whitelist $whitelist_path
 whitelist_files=$from_expanded
 whitelist_file=$from
@@ -125,6 +147,7 @@ if [ -s "$patterns_path" ]; then
   cp "$patterns_path" "$patterns"
 fi
 get_project_files advice $advice_path
+echo "::remove-matcher owner=check-spelling::"
 
 if [ -n "$debug" ]; then
   echo "Clean up from previous run"
@@ -301,7 +324,6 @@ bullet_words() {
       echo "::add-matcher::.git/reporter.json"
       cat "$run_warnings.raw"
       echo "::remove-matcher owner=check-spelling::"
-      cp $spellchecker/reporter.json .git/
     ) > "$run_warnings"
     rm -f "$run_warnings.raw"
   fi
