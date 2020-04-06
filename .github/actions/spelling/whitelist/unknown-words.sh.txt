@@ -3,6 +3,7 @@ cbeaff
 chmod
 dest
 elif
+eol
 esac
 excludelist
 fchurn

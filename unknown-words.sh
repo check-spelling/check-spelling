@@ -37,6 +37,23 @@ project_file_path() {
   echo $bucket/$project/$1.txt
 }
 
+check_for_newline_at_eof() {
+  maybe_missing_eol="$1"
+  if [ $(tail -1 "$maybe_missing_eol" | wc -l) -eq 0 ]; then
+    line=$(( $(cat "$maybe_missing_eol" | wc -l) + 1 ))
+    start=$(tail -1 "$maybe_missing_eol" | wc -c)
+    stop=$(( $start + 1 ))
+    echo "$maybe_missing_eol: line $line, columns $start-$stop, Warning - no newline at eof (no-newline-at-eof)" >&2
+    echo >> "$maybe_missing_eol"
+  fi
+}
+
+cleanup_file() {
+  maybe_bad="$1"
+  type="$2"
+  check_for_newline_at_eof "$1"
+}
+
 get_project_files() {
   file=$1
   dest=$2
@@ -47,6 +64,7 @@ get_project_files() {
         append_to="$from"
         if [ -f "$from" ]; then
           echo "Retrieving $file from $from"
+          cleanup_file "$from" "$file"
           cp "$from" $dest
           from_expanded="$from"
         else
@@ -57,7 +75,13 @@ get_project_files() {
           if [ -d "$from" ]; then
             from_expanded=$(ls $from/*$ext |sort)
             append_to=$from/${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
-            cat $from_expanded > $dest
+            touch $dest
+            for item in $from_expanded; do
+              if [ -s $item ]; then
+                cleanup_file "$item" "$file"
+                cat "$item" >> $dest
+              fi
+            done
             from="$from/$(basename "$from")".$ext
             echo "Retrieving $file from $from_expanded"
           fi
@@ -68,14 +92,19 @@ get_project_files() {
           cd $temp
           repo=$(echo "$bucket" | perl -pne 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')
           [ -d metadata ] || git clone --depth 1 $repo --single-branch --branch $project metadata
+          cleanup_file "metadata/$file.txt" "$file"
           cp metadata/$file.txt $dest 2> /dev/null || touch $dest
         );;
       gs://*)
         echo "Retrieving $file from $from"
-        gsutil cp -Z $from $dest >/dev/null 2>/dev/null || touch $dest;;
+        gsutil cp -Z $from $dest >/dev/null 2>/dev/null || touch $dest
+        cleanup_file "$dest" "$file"
+        ;;
       *://*)
         echo "Retrieving $file from $from"
-        curl -L -s "$from" -o "$dest" || touch $dest;;
+        curl -L -s "$from" -o "$dest" || touch $dest
+        cleanup_file "$dest" "$file"
+        ;;
     esac
   fi
 }
