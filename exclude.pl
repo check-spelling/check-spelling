@@ -10,7 +10,9 @@ my @excludes;
 
 if (-e $exclude_file) {
   open EXCLUDES, '<', $exclude_file;
-  while (<EXCLUDES>) {
+  local $/=undef;
+  local $file=<EXCLUDES>;
+  for (split /\R/, $file) {
     s/^\s*(.*)\s*$/$1/;
     push @excludes, $_;
   }

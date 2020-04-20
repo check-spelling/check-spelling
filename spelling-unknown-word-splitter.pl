@@ -29,13 +29,15 @@ if (scalar @ARGV) {
 my $patterns_re = '^$';
 if (open(PATTERNS, '<', "$dirname/patterns.txt")) {
   my @patterns;
-  while (<PATTERNS>) {
+  local $/=undef;
+  local $file=<PATTERNS>;
+  close PATTERNS;
+  for (split /\R/, $file) {
     next if /^#/;
     chomp;
     next unless /./;
     push @patterns, $_;
   }
-  close PATTERNS;
   $patterns_re = join "|", @patterns if scalar @patterns;
 }
 

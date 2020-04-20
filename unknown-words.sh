@@ -398,7 +398,7 @@ sorted_whitelist="$temp/whitelist.sorted.txt"
 whitelist_path="$sorted_whitelist"
 
 diff_output=$(
-  diff -U0 "$whitelist_path" "$run_output" |
+  diff -w -U0 "$whitelist_path" "$run_output" |
   grep_v_spellchecker)
 end_group
 
@@ -412,7 +412,7 @@ fi
 
 begin_group 'New output'
 new_output=$(
-  diff -i -U0 "$whitelist_path" "$run_output" |
+  diff -i -w -U0 "$whitelist_path" "$run_output" |
   grep_v_spellchecker |\
   perl -n -w -e 'next unless /^\+/; next if /^\+{3} /; s/^.//; print;')
 end_group
