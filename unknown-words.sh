@@ -440,16 +440,16 @@ chmod +x $remove_obsolete_words
 for file in '$whitelist_files'; do $remove_obsolete_words $file; done
 rm $remove_obsolete_words' >> $instructions
   fi
-  echo '(' >> $instructions
   if [ -n "$patch_add" ]; then
+    echo '(' >> $instructions
     if [ -e "$new_whitelist_file" ]; then
       echo 'cat "'"$new_whitelist_file"'"' >> $instructions;
     fi
     echo 'echo "
 '"$patch_add"'
 "' >> $instructions
+    echo ") | sort -u -f | perl -ne 'next unless /./; print' > new_whitelist.txt && mv new_whitelist.txt '$new_whitelist_file'" >> $instructions
   fi
-  echo ") | sort -u -f | perl -ne 'next unless /./; print' > new_whitelist.txt && mv new_whitelist.txt '$new_whitelist_file'" >> $instructions
   to_publish_whitelist >> $instructions
   cat $instructions
   rm $instructions
