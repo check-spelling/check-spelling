@@ -147,7 +147,6 @@ if [ -s "$patterns_path" ]; then
   cp "$patterns_path" "$patterns"
 fi
 get_project_files advice $advice_path
-echo "::remove-matcher owner=check-spelling::"
 
 if [ -n "$debug" ]; then
   echo "Clean up from previous run"
@@ -323,9 +322,7 @@ bullet_words() {
     (
       end_group
       begin_group 'Misspellings'
-      echo "::add-matcher::.git/reporter.json"
       cat "$run_warnings.raw"
-      echo "::remove-matcher owner=check-spelling::"
     ) > "$run_warnings"
     rm -f "$run_warnings.raw"
   fi
@@ -333,6 +330,7 @@ bullet_words() {
 }
 
 quit() {
+  echo "::remove-matcher owner=check-spelling::"
   if [ -n "$junit" ]; then
     exit
   fi
