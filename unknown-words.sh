@@ -68,9 +68,11 @@ check_for_newline_at_eof() {
 cleanup_file() {
   maybe_bad="$1"
   type="$2"
-  if [ $2 = 'patterns' ]; then
-    check_pattern_file "$1"
-  fi
+  case "$type" in
+    patterns|excludes)
+      check_pattern_file "$1"
+    ;;
+  esac
   check_for_newline_at_eof "$1"
 }
 
