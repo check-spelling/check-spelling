@@ -88,6 +88,8 @@ Possible examples include:
 ^\.github/workflows/
 ```
 
+Lines that start with `#` will be ignored.
+
 ##### patterns
 
 This file contains Perl regular expressions.

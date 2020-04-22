@@ -13,6 +13,7 @@ if (-e $exclude_file) {
   local $/=undef;
   local $file=<EXCLUDES>;
   for (split /\R/, $file) {
+    next if /^#/;
     s/^\s*(.*)\s*$/$1/;
     push @excludes, $_;
   }
