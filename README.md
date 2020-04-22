@@ -134,6 +134,8 @@ data:[a-zA-Z=;,/0-9+]+
 # the negative lookahead here is to allow catching 'templatesz' as a misspelling
 # but to otherwise recognize a Windows path with \templates\foo.template or similar:
 \\templates(?![a-z])
+# ignore long runs of a single character:
+\b([A-Za-z])\1{3,}\b
 # Note that the next example is no longer necessary if you are using
 # to match a string starting with a `#`, use a character-class:
 [#]backwards
