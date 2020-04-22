@@ -4,6 +4,7 @@ gsutil
 html
 http
 jsoref
+py
 spellchecking
 ssh
 svg

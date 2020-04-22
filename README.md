@@ -90,6 +90,24 @@ Possible examples include:
 
 Lines that start with `#` will be ignored.
 
+##### only
+
+This file contains Perl regular expressions.
+Generally, one regular expression per line.
+They are merged using an `OR` (`|`).
+
+Files not matching these patterns will be skipped.
+
+Possible examples include:
+
+```
+\.pl$
+\.js$
+\.py$
+```
+
+Lines that start with `#` will be ignored.
+
 ##### patterns
 
 This file contains Perl regular expressions.

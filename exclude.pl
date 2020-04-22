@@ -6,22 +6,32 @@ use File::Basename;
 
 my $dirname = dirname(__FILE__);
 my $exclude_file = $dirname.'/excludes.txt';
-my @excludes;
+my $only_file = $dirname.'/only.txt';
 
-if (-e $exclude_file) {
-  open EXCLUDES, '<', $exclude_file;
-  local $/=undef;
-  local $file=<EXCLUDES>;
-  for (split /\R/, $file) {
-    next if /^#/;
-    s/^\s*(.*)\s*$/$1/;
-    push @excludes, $_;
+sub file_to_re {
+  my ($file, $fallback) = @_;
+  my @items;
+  if (-e $file) {
+    open FILE, '<', $file;
+    local $/=undef;
+    my $file=<FILE>;
+    for (split /\R/, $file) {
+      next if /^#/;
+      s/^\s*(.*)\s*$/$1/;
+      push @items, $_;
+    }
   }
+  my $pattern = scalar @items ? join "|", @items : $fallback;
+  return $pattern;
 }
+
+my $exclude = file_to_re($exclude_file, '^$');
+my $only = file_to_re($only_file, '.');
+
 $/="\0";
-my $exclude = scalar @excludes ? join "|", @excludes : '^$';
 while (<>) {
   chomp;
   next if m{$exclude};
+  next unless m{$only};
   print "$_$/";
 }

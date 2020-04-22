@@ -18,6 +18,8 @@ dict="$spellchecker/words"
 patterns="$spellchecker/patterns.txt"
 excludes="$spellchecker/excludes.txt"
 excludes_path="$temp/excludes.txt"
+only="$spellchecker/only.txt"
+only_path="$temp/only.txt"
 dictionary_path="$temp/dictionary.txt"
 whitelist_path="$temp/whitelist.words.txt"
 excludelist_path="$temp/excludes.txt"
@@ -69,7 +71,7 @@ cleanup_file() {
   maybe_bad="$1"
   type="$2"
   case "$type" in
-    patterns|excludes)
+    patterns|excludes|only)
       check_pattern_file "$1"
     ;;
   esac
@@ -145,6 +147,10 @@ get_project_files dictionary $dictionary_path
 if [ -s "$dictionary_path" ]; then
   cp "$dictionary_path" "$dict"
 fi
+get_project_files only $only_path
+if [ -s "$only_path" ]; then
+  cp "$only_path" "$only"
+fi
 get_project_files patterns $patterns_path
 if [ -s "$patterns_path" ]; then
   cp "$patterns_path" "$patterns"
@@ -164,6 +170,14 @@ if [ -n "$DEBUG" ]; then
     cat "$excludes"
   else
     echo 'No excluded paths file'
+  fi
+  end_group
+  begin_group 'Only paths restriction'
+  if [ -e "$only" ]; then
+    echo 'Only paths restriction:'
+    cat "$only"
+  else
+    echo 'No only paths restriction file'
   fi
   end_group
 fi
