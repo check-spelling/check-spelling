@@ -39,6 +39,7 @@ project_file_path() {
 
 check_pattern_file() {
   perl -i -e 'while (<>) {
+    next if /^#/;
     if (eval {qr/$_/}) {
       print;
     } else {
