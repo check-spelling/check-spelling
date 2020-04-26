@@ -7,12 +7,14 @@ set -e
 export spellchecker=${spellchecker:-/app}
 . "$spellchecker/common.sh"
 
-if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
-  exec "$spellchecker/check-pull-requests.sh"
-fi
 if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -e "$GITHUB_EVENT_PATH" ]; then
   GITHUB_EVENT_PATH=/dev/null
 fi
+case "$GITHUB_EVENT_NAME" in
+  schedule)
+    exec "$spellchecker/check-pull-requests.sh"
+    ;;
+esac
 
 dict="$spellchecker/words"
 patterns="$spellchecker/patterns.txt"
