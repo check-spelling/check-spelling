@@ -1,6 +1,7 @@
 .git
 .github
 .hg
+.images
 action.yml
 Dockerfile
 words

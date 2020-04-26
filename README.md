@@ -23,6 +23,20 @@ into word-like things for checking against a dictionary.
 
 [More information](https://github.com/jsoref/spelling#overview)
 
+### Sample output
+
+#### Comment as seen in a PR
+
+![github action comment](images/check-spelling-comment.png)
+
+#### Comment as seen in a commit
+
+![github action annotation](images/check-spelling-annotation.png)
+
+#### The GitHub Action Run log
+
+![github action log](images/check-spelling-log.png)
+
 ### Basic Configuration
 
 #### Variables
