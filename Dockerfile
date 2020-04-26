@@ -24,8 +24,8 @@ LABEL "com.github.actions.name"="Spell Checker"\
  "com.github.actions.description"="Check repository for spelling errors"\
  "com.github.actions.icon"="edit-3"\
  "com.github.actions.color"="red"\
- "repository"="http://github.com/jsoref/spelling-action"\
- "homepage"="http://github.com/jsoref/spelling-action/tree/master/README.md"\
+ "repository"="http://github.com/check-spelling/check-spelling"\
+ "homepage"="http://github.com/check-spelling/check-spelling/tree/master/README.md"\
  "maintainer"="Josh Soref <jsoref@noreply.users.github.com>"
 
 ENTRYPOINT ["/app/unknown-words.sh"]
