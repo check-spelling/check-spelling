@@ -198,4 +198,4 @@ doesn't recognize.
 
 # License
 
-MIT
+[MIT](LICENSE.txt)
