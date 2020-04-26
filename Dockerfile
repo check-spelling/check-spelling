@@ -6,15 +6,9 @@ RUN\
 
 WORKDIR /app
 COPY \
- check-pull-requests.sh \
- common.sh \
- docker-setup.sh \
- exclude.pl \
- porcelain.pl \
+ *.sh \
+ *.pl \
  reporter.json \
- reporter.pl \
- spelling-unknown-word-splitter.pl \
- unknown-words.sh \
  ./
 
 RUN ./docker-setup.sh &&\
