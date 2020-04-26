@@ -141,6 +141,8 @@ Possible examples include:
 # this is a comment
 https://(?:(?:www\.|)youtube\.com|youtu.be)/[-a-zA-Z0-9?&=]*
 data:[a-zA-Z=;,/0-9+]+
+# c99 hex digits (not the full format, just one I've seen)
+0x[0-9a-fA-F](?:\.[0-9a-fA-F]*|)[pP]
 # hex digits including css/html color classes:
 (?:0[Xx]|U\+|#)[a-f0-9A-FGgRr]{2,}[Uu]?[Ll]{0,2}\b
 # uuid:
