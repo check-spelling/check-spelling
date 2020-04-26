@@ -142,7 +142,7 @@ Possible examples include:
 https://(?:(?:www\.|)youtube\.com|youtu.be)/[-a-zA-Z0-9?&=]*
 data:[a-zA-Z=;,/0-9+]+
 # hex digits including css/html color classes:
-(?:0[Xx]|U\+|#)[a-f0-9A-FGgRr]{2,}[Uu]?[Ll]?\b
+(?:0[Xx]|U\+|#)[a-f0-9A-FGgRr]{2,}[Uu]?[Ll]{0,2}\b
 # uuid:
 \{[0-9A-FA-F]{8}-(?:[0-9A-FA-F]{4}-){3}[0-9A-FA-F]{12}\}
 # the negative lookahead here is to allow catching 'templatesz' as a misspelling
