@@ -393,7 +393,7 @@ comment() {
 
 if [ ! -e "$whitelist_path" ]; then
   begin_group 'No whitelist'
-  title="No preexisting $whitelist_path file"
+  title="No preexisting $whitelist_file file"
   instructions=$(
     echo 'cat > '"$whitelist_path"' <<EOF=EOF'
     cat "$run_output"
