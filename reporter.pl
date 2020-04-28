@@ -35,6 +35,8 @@ if (@lower_list) {
 }
 
 my $re = join '|', @re_list;
+my $rsqm = "\xE2\x80\x99";
+$re =~ s/'/(?:'|$rsqm){1,3}/g;
 
 my $blame=defined $ENV{with_blame};
 
