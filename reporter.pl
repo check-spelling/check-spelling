@@ -6,15 +6,36 @@ unless (open(TOKENS, '<', $tokens_file)) {
   print STDERR "$0 could not read $tokens_file\n";
   exit 0;
 }
+
 my $tokens;
 {
   local $/= undef;
   $tokens = <TOKENS>;
 }
-$tokens = join '|', ($tokens=~/\S+/g);
-exit 0 unless $tokens =~ /\w/;
-$tokens=~ s/\s+/|/g;
-my $re = "\\b($tokens)\\b";
+
+my @token_list = split (/\s+/g, $tokens);
+exit 0 unless @token_list;
+
+my @lower_list = grep /^[a-z]/, @token_list;
+my @title_list = grep /^[A-Z][a-z]/, @token_list;
+my @upper_list = grep /^[A-Z]+$/, @token_list;
+
+my @re_list = ();
+if (@upper_list) {
+  my $upper_tokens = join '|', @upper_list;
+  push @re_list, "(?:\\b|(?<=[a-z]))($upper_tokens)(?:\\b|(?=[A-Z][a-z]))";
+}
+if (@title_list) {
+  my $title_tokens = join '|', @title_list;
+  push @re_list, "(?:\\b|(?<=[a-z]))($title_tokens)(?:\\b|(?=[A-Z]))";
+}
+if (@lower_list) {
+  my $lower_tokens = join '|', @lower_list;
+  push @re_list, "(?:\\b|(?<=[A-Z]{2}))($lower_tokens)(?:\\b|(?![a-z]))";
+}
+
+my $re = join '|', @re_list;
+
 my $blame=defined $ENV{with_blame};
 
 my $previous='';
@@ -34,7 +55,7 @@ while (<>) {
   }
   next unless $_ =~ /$re/;
   while (/$re/g) {
-    my ($start, $token) = (1 + length $`, $1);
+    my ($start, $token) = (1 + length $`, $1 || $2 || $3);
     my $stop = $start + (length $token) - 1;
     print "$ARGV: line $line, columns $start-$stop, Warning - '$token' is not a recognized word. (unrecognized-spelling)\n";
   }
