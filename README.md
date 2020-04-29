@@ -101,6 +101,7 @@ Possible examples include:
 ```
 (?:^|/)vendor/
 (?:^|/)yarn\.lock$
+LICENSE
 \.pdf$
 \.png$
 \.xslx?$
