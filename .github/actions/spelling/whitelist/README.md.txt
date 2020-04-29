@@ -4,6 +4,8 @@ gsutil
 html
 http
 jsoref
+pdf
+png
 py
 spellchecking
 ssh
@@ -14,3 +16,4 @@ uuid
 whitelist
 workflow
 www
+xslx

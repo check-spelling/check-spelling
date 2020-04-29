@@ -85,6 +85,9 @@ Files matching these patterns will be skipped.
 Possible examples include:
 
 ```
+\.pdf$
+\.png$
+\.xslx?$
 ^\.github/action/spell-check/
 ^\.github/workflows/
 ```
