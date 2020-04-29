@@ -99,6 +99,7 @@ Files matching these patterns will be skipped.
 Possible examples include:
 
 ```
+(?:^|/)yarn\.lock$
 \.pdf$
 \.png$
 \.xslx?$
