@@ -85,6 +85,7 @@ Files matching these patterns will be skipped.
 Possible examples include:
 
 ```
+^\.github/action/spell-check/
 ^\.github/workflows/
 ```
 
