@@ -104,6 +104,7 @@ Possible examples include:
 \.pdf$
 \.png$
 \.xslx?$
+^CONTRIBUTING\.md$
 ^\.github/action/spell-check/
 ^\.github/workflows/
 ```
