@@ -112,6 +112,32 @@ LICENSE
 
 Lines that start with `#` will be ignored.
 
+##### expect
+
+This contains of expected "words" that aren't in the dictionary, one word per line.
+Expected words that are not otherwise present in the corpus will be suggested for removal,
+but will not trigger a failure.
+
+Words that are present (i.e. not matched by the excludes file) in the repository
+and which are not listed in the expect list will trigger a failure as part of **push** and
+**pull_request** actions (depending on how you've configured this action).
+
+You can use `#` followed by text to add a comment at the end of a line..
+Note that some automatic pruning may not properly handle this.
+
+:arrow_right: Until you add an `expect` file, the output will only be provided in the **GitHub
+Action Run Log**.
+
+* This is because it's assumed that you will want to perform
+some tuning (probably adding `excludes` and possibly adding `patterns`) before
+the action starts commenting on commits.
+* You can simply copy the list from that output.
+
+:warning: This was previously called `whitelist` -- that name is *deprecated*.
+Support for the deprecated name may be removed in a future release.
+Until then, warnings will be reported in the action run log.
+At a future date, comments may report this as well.
+
 ##### only
 
 This file contains Perl regular expressions.
@@ -160,32 +186,6 @@ data:[a-zA-Z=;,/0-9+]+
 # to match a string starting with a `#`, use a character-class:
 [#]backwards
 ```
-
-##### expect
-
-This contains of expected "words" that aren't in the dictionary, one word per line.
-Expected words that are not otherwise present in the corpus will be suggested for removal,
-but will not trigger a failure.
-
-Words that are present (i.e. not matched by the excludes file) in the repository
-and which are not listed in the expect list will trigger a failure as part of **push** and
-**pull_request** actions (depending on how you've configured this action).
-
-You can use `#` followed by text to add a comment at the end of a line..
-Note that some automatic pruning may not properly handle this.
-
-:arrow_right: Until you add an `expect` file, the output will only be provided in the **GitHub
-Action Run Log**.
-
-* This is because it's assumed that you will want to perform
-some tuning (probably adding `excludes` and possibly adding `patterns`) before
-the action starts commenting on commits.
-* You can simply copy the list from that output.
-
-:warning: This was previously called `whitelist` -- that name is *deprecated*.
-Support for the deprecated name may be removed in a future release.
-Until then, warnings will be reported in the action run log.
-At a future date, comments may report this as well.
 
 ### Optional Configuration Variables
 
