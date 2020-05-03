@@ -1,7 +1,5 @@
 aeiou
-ARGV
 cmp
-Cwd
 dirname
 elsif
 fileformat
@@ -11,7 +9,6 @@ misspellled
 perl
 rsqm
 rtn
-STDERR
 substr
 symlinks
 unicode

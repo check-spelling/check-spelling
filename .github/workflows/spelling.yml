@@ -18,7 +18,8 @@ jobs:
       with:
         fetch-depth: 2
     - uses: ./
-      env:
+      with:
         bucket: .github/actions
         project: spelling
+      env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

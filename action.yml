@@ -17,8 +17,5 @@ inputs:
   debug:
     description: 'Debug'
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  env:
-    bucket: ${{ inputs.bucket }}
-    project: ${{ inputs.project }}
+  using: 'node12'
+  main: 'trampoline.js'

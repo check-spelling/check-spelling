@@ -15,6 +15,8 @@ case "$GITHUB_EVENT_NAME" in
     exec "$spellchecker/check-pull-requests.sh"
     ;;
 esac
+bucket=${INPUT_BUCKET:-$bucket}
+project=${INPUT_PROJECT:-$project}
 
 dict="$spellchecker/words"
 patterns="$spellchecker/patterns.txt"

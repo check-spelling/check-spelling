@@ -1,4 +1,3 @@
-ARGV
 perl
 undef
 usr
