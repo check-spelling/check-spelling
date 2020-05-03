@@ -80,6 +80,11 @@ posted to github. It's freeform. You can use
 it to explain how contributors should decide
 where to put new entries.
 
+##### allow
+
+This allows you to add supplemental words to
+the dictionary without relacing the core dictionary.
+
 ##### dictionary
 
 This replaces the [default dictionary](https://github.com/check-spelling/check-spelling/raw/dictionary/dict.txt).
@@ -186,6 +191,15 @@ data:[a-zA-Z=;,/0-9+]+
 # to match a string starting with a `#`, use a character-class:
 [#]backwards
 ```
+
+##### reject
+
+This allows you to remove words from the dictionary
+without having to replace the core dictionary.
+
+The order of operations is:
+
+> `(dictionary + allows) - reject`
 
 ### Optional Configuration Variables
 

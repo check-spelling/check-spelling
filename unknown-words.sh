@@ -23,6 +23,8 @@ excludes_path="$temp/excludes.txt"
 only="$spellchecker/only.txt"
 only_path="$temp/only.txt"
 dictionary_path="$temp/dictionary.txt"
+allow_path="$temp/allow.txt"
+reject_path="$temp/reject.txt"
 expect_path="$temp/expect.words.txt"
 excludelist_path="$temp/excludes.txt"
 patterns_path="$temp/patterns.txt"
@@ -164,6 +166,17 @@ fi
 get_project_files dictionary $dictionary_path
 if [ -s "$dictionary_path" ]; then
   cp "$dictionary_path" "$dict"
+fi
+get_project_files allow $allow_path
+if [ -s "$allow_path" ]; then
+  cat "$allow_path" >> "$dict"
+fi
+get_project_files reject $reject_path
+if [ -s "reject_path" ]; then
+  dictionary_temp=$(mktemp)
+  if grep -v "$reject_path" "$dictionary_path" > $dictionary_temp; then
+    cat $dictionary_temp > "$dictionary_path"
+  fi
 fi
 get_project_files only $only_path
 if [ -s "$only_path" ]; then
