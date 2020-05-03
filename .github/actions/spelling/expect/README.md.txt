@@ -13,7 +13,6 @@ svg
 timeframe
 url
 uuid
-whitelist
 workflow
 www
 xslx

@@ -23,7 +23,7 @@ excludes_path="$temp/excludes.txt"
 only="$spellchecker/only.txt"
 only_path="$temp/only.txt"
 dictionary_path="$temp/dictionary.txt"
-whitelist_path="$temp/whitelist.words.txt"
+expect_path="$temp/expect.words.txt"
 excludelist_path="$temp/excludes.txt"
 patterns_path="$temp/patterns.txt"
 advice_path="$temp/advice.txt"
@@ -134,13 +134,29 @@ get_project_files() {
     esac
   fi
 }
+get_project_files_deprecated() {
+  # "preferred" "deprecated" "path"
+  if [ ! -s "$3" ]; then
+    get_project_files "$2" "$3"
+    if [ -s "$3" ]; then
+      example=$(for file in $from_expanded; do echo $file; done|head -1)
+      if [ $(basename $(dirname $example)) = "$2" ]; then
+        note=" directory"
+      else
+        note=""
+      fi
+      echo "::warning file=$example::deprecation: please rename '$2'$note to '$1'"
+    fi
+  fi
+}
 
 cp $spellchecker/reporter.json .git/
 echo "::add-matcher::.git/reporter.json"
-get_project_files whitelist $whitelist_path
-whitelist_files=$from_expanded
-whitelist_file=$from
-new_whitelist_file=$append_to
+get_project_files expect $expect_path
+get_project_files_deprecated expect whitelist $expect_path
+expect_files=$from_expanded
+expect_file=$from
+new_expect_file=$append_to
 get_project_files excludes $excludelist_path
 if [ -s "$excludes_path" ]; then
   cp "$excludes_path" "$excludes"
@@ -223,29 +239,29 @@ relative_note() {
     esac
   fi
 }
-to_retrieve_whitelist() {
-  whitelist_file=whitelist.txt
+to_retrieve_expect() {
+  expect_file=expect.txt
   case "$bucket" in
     '')
       echo '# no bucket defined -- you can specify one per the README.md using the file defined below:';;
     ssh://git@*|git@*)
-      echo "git clone --depth 1 $bucket --single-branch --branch $project metadata; cp metadata/whitelist.txt .";;
+      echo "git clone --depth 1 $bucket --single-branch --branch $project metadata; cp metadata/expect.txt .";;
     gs://*)
-      echo gsutil cp -Z $(project_file_path whitelist) whitelist.txt;;
+      echo gsutil cp -Z $(project_file_path expect) expect.txt;;
     *://*)
-      echo curl -L -s "$(project_file_path whitelist)" -o whitelist.txt;;
+      echo curl -L -s "$(project_file_path expect)" -o expect.txt;;
   esac
 }
-to_publish_whitelist() {
+to_publish_expect() {
   case "$bucket" in
     '')
-      echo '# no bucket defined -- copy the whitelist.txt to a bucket and configure it per the README.md';;
+      echo '# no bucket defined -- copy the expect.txt to a bucket and configure it per the README.md';;
     ssh://git@*|git@*)
-      echo "cp whitelist.txt metadata; (cd metadata; git commit whitelist.txt -m 'Updating whitelist'; git push)";;
+      echo "cp expect.txt metadata; (cd metadata; git commit expect.txt -m 'Updating expect'; git push)";;
     gs://*)
-      echo gsutil cp -Z whitelist.txt $(project_file_path whitelist);;
+      echo gsutil cp -Z expect.txt $(project_file_path expect);;
     *://*)
-      echo "# command to publish is not known. URL: $(project_file_path whitelist)";;
+      echo "# command to publish is not known. URL: $(project_file_path expect)";;
   esac
 }
 
@@ -393,14 +409,14 @@ comment() {
   fi
 }
 
-if [ ! -e "$whitelist_path" ]; then
-  begin_group 'No whitelist'
-  title="No preexisting $whitelist_file file"
+if [ ! -e "$expect_path" ]; then
+  begin_group 'No expect'
+  title="No preexisting $expect_file file"
   instructions=$(
-    echo 'cat > '"$whitelist_path"' <<EOF=EOF'
+    echo 'cat > '"$expect_path"' <<EOF=EOF'
     cat "$run_output"
     echo EOF=EOF
-    to_publish_whitelist
+    to_publish_expect
   )
       spelling_info "$title" "$(bullet_words "$(cat "$run_output")")" "$instructions"
   end_group
@@ -411,27 +427,27 @@ grep_v_spellchecker() {
   perl -ne "next if m{$spellchecker}; print"
 }
 
-begin_group 'Compare whitelist with new output'
-sorted_whitelist="$temp/whitelist.sorted.txt"
-(sed -e 's/#.*//' "$whitelist_path" | sort_unique) > "$sorted_whitelist"
-whitelist_path="$sorted_whitelist"
+begin_group 'Compare expect with new output'
+sorted_expect="$temp/expect.sorted.txt"
+(sed -e 's/#.*//' "$expect_path" | sort_unique) > "$sorted_expect"
+expect_path="$sorted_expect"
 
 diff_output=$(
-  diff -w -U0 "$whitelist_path" "$run_output" |
+  diff -w -U0 "$expect_path" "$run_output" |
   grep_v_spellchecker)
 end_group
 
 if [ -z "$diff_output" ]; then
   begin_group 'No misspellings'
   title="No new words with misspellings found"
-      spelling_info "$title" "There are currently $(wc -l $whitelist_path|sed -e 's/ .*//') whitelisted items." ""
+      spelling_info "$title" "There are currently $(wc -l $expect_path|sed -e 's/ .*//') expected items." ""
   end_group
   quit 0
 fi
 
 begin_group 'New output'
 new_output=$(
-  diff -i -w -U0 "$whitelist_path" "$run_output" |
+  diff -i -w -U0 "$expect_path" "$run_output" |
   grep_v_spellchecker |\
   perl -n -w -e 'next unless /^\+/; next if /^\+{3} /; s/^.//; print;')
 end_group
@@ -442,10 +458,10 @@ make_instructions() {
   patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; print')
   patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; print')
   instructions=$(mktemp)
-  to_retrieve_whitelist >> $instructions
+  to_retrieve_expect >> $instructions
   if [ -n "$patch_remove" ]; then
-    if [ -z "$whitelist_files" ]; then
-      whitelist_files=$whitelist_file
+    if [ -z "$expect_files" ]; then
+      expect_files=$expect_file
     fi
     perl_header='#!/usr/bin/perl -ni'
     echo 'remove_obsolete_words=$(mktemp)
@@ -456,20 +472,20 @@ my $re=join "|", qw('$q$Q >> $instructions
 next if /^($re)(?:$| .*)/;
 print;'$q' > $remove_obsolete_words
 chmod +x $remove_obsolete_words
-for file in '$whitelist_files'; do $remove_obsolete_words $file; done
+for file in '$expect_files'; do $remove_obsolete_words $file; done
 rm $remove_obsolete_words' >> $instructions
   fi
   if [ -n "$patch_add" ]; then
     echo '(' >> $instructions
-    if [ -e "$new_whitelist_file" ]; then
-      echo 'cat "'"$new_whitelist_file"'"' >> $instructions;
+    if [ -e "$new_expect_file" ]; then
+      echo 'cat "'"$new_expect_file"'"' >> $instructions;
     fi
     echo 'echo "
 '"$patch_add"'
 "' >> $instructions
-    echo ") | sort -u -f | perl -ne 'next unless /./; print' > new_whitelist.txt && mv new_whitelist.txt '$new_whitelist_file'" >> $instructions
+    echo ") | sort -u -f | perl -ne 'next unless /./; print' > new_expect.txt && mv new_expect.txt '$new_expect_file'" >> $instructions
   fi
-  to_publish_whitelist >> $instructions
+  to_publish_expect >> $instructions
   cat $instructions
   rm $instructions
 }
