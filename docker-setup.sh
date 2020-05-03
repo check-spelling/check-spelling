@@ -6,11 +6,8 @@
 set -e
 
 spellchecker='/app'
-w_location="$spellchecker/w"
 temp='/tmp/spelling'
 dict="$spellchecker/words"
-word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
-run_output="$spellchecker/unknown.words.txt"
 
 wordlist=https://github.com/check-spelling/check-spelling/raw/dictionary/dict.txt
 
