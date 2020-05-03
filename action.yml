@@ -8,10 +8,10 @@ inputs:
   repo-token:
     description: 'The GITHUB_TOKEN secret'
   bucket:
-    description: 'Container for spelling exclusions and whitelist'
+    description: 'Container for spelling configuration'
     required: true
   project:
-    description: 'Folder/Branch containing exclusions/whitelist'
+    description: 'Folder/Branch within bucket containing spelling configuration'
     required: true
 
   debug:
