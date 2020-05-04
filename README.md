@@ -73,6 +73,17 @@ will be checked, and if the commit is within that timeframe, it will be processe
 Note that each of the below items can either be a file w/ a `.txt` suffix,
 or a directory, where each file with a `.txt` suffix will be merged together.
 
+| Variable | Description |
+| ------------- | ------------- |
+| [advice](#advice) | This allows you to supplement the comment. |
+| [allow](#allow) | This allows you to supplement the dictionary. |
+| [dictionary](#dictionary) | This allows you to replace the dictionary. |
+| [excludes](#excludes) | This allows you to skip checking files/directories. |
+| [expect](#expect) | This defines the list of words in the repository that aren't in the dictionary. |
+| [only](#only) | This allows you to limit checking to certain files/directories. |
+| [patterns](#patterns) | This allows you to define patterns of acceptable strings. |
+| [reject](#reject) | This allows you to remove items from the default dictionary. |
+
 ##### advice
 
 This adds a supplemental portion to the comment
