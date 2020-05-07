@@ -159,9 +159,9 @@ rm -f "$run_output"
 echo "Checking spelling..."
 if [ -n "$DEBUG" ]; then
   begin_group 'Excluded paths'
-  if [ -e "$excludelist_path" ]; then
+  if [ -e "$excludes" ]; then
     echo 'Excluded paths:'
-    cat "$excludelist_path"
+    cat "$excludes"
   else
     echo 'No excluded paths file'
   fi
