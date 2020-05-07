@@ -270,13 +270,15 @@ to_retrieve_expect() {
 to_publish_expect() {
   case "$bucket" in
     '')
-      echo '# no bucket defined -- copy the expect.txt to a bucket and configure it per the README.md';;
+      echo "# no bucket defined -- copy $1 to a bucket and configure it per the README.md";;
     ssh://git@*|git@*)
-      echo "cp expect.txt metadata; (cd metadata; git commit expect.txt -m 'Updating expect'; git push)";;
+      echo "cp $1 metadata/expect.txt; (cd metadata; git commit expect.txt -m 'Updating expect'; git push)";;
     gs://*)
-      echo gsutil cp -Z expect.txt $(project_file_path expect);;
+      echo gsutil cp -Z $1 $(project_file_path expect);;
     *://*)
-      echo "# command to publish is not known. URL: $(project_file_path expect)";;
+      echo "# command to publish $1 is not known. URL: $(project_file_path expect)";;
+    *)
+      echo "git add $(dirname $1) || echo '... you want to ensure $1 is added to your repository...'";;
   esac
 }
 
@@ -431,7 +433,7 @@ if [ ! -e "$expect_path" ]; then
     echo 'cat > '"$expect_path"' <<EOF=EOF'
     cat "$run_output"
     echo EOF=EOF
-    to_publish_expect
+    to_publish_expect "$expect_path"
   )
       spelling_info "$title" "$(bullet_words "$(cat "$run_output")")" "$instructions"
   end_group
@@ -500,7 +502,7 @@ rm $remove_obsolete_words' >> $instructions
 "' >> $instructions
     echo ") | sort -u -f | perl -ne 'next unless /./; print' > new_expect.txt && mv new_expect.txt '$new_expect_file'" >> $instructions
   fi
-  to_publish_expect >> $instructions
+  to_publish_expect "$new_expect_file" >> $instructions
   cat $instructions
   rm $instructions
 }
