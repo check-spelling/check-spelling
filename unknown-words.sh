@@ -472,35 +472,36 @@ end_group
 make_instructions() {
   Q='"'
   q="'"
-  patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; print')
-  patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; print')
+  patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print')
+  patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; s/\n/ /; print')
   instructions=$(mktemp)
   to_retrieve_expect >> $instructions
   if [ -n "$patch_remove" ]; then
     if [ -z "$expect_files" ]; then
       expect_files=$expect_file
     fi
-    perl_header='#!/usr/bin/perl -ni'
-    echo 'remove_obsolete_words=$(mktemp)
-echo '$q$perl_header'
-my $re=join "|", qw('$q$Q >> $instructions
-    echo "$patch_remove" >> $instructions
-    echo $Q$q');
-next if /^($re)(?:$| .*)/;
-print;'$q' > $remove_obsolete_words
-chmod +x $remove_obsolete_words
-for file in '$expect_files'; do $remove_obsolete_words $file; done
-rm $remove_obsolete_words' >> $instructions
+    echo 'perl -e '$q'
+my @expect_files=qw('$q$Q"$expect_files"$Q$q');
+@ARGV=@expect_files;
+my @stale=qw('$q$Q"$patch_remove"$Q$q');
+my $re=join "|", @stale;
+my $suffix=".".time();
+my $previous="";
+sub maybe_unlink { unlink($_[0]) if $_[0]; }
+while (<>) {
+  if ($ARGV ne $old_argv) { maybe_unlink($previous); $previous="$ARGV$suffix"; rename($ARGV, $previous); open(ARGV_OUT, ">$ARGV"); select(ARGV_OUT); $old_argv = $ARGV; }
+  next if /^($re)(?:$| .*)/; print;
+}; maybe_unlink($previous);'$q >> $instructions
   fi
   if [ -n "$patch_add" ]; then
-    echo '(' >> $instructions
-    if [ -e "$new_expect_file" ]; then
-      echo 'cat "'"$new_expect_file"'"' >> $instructions;
-    fi
-    echo 'echo "
-'"$patch_add"'
-"' >> $instructions
-    echo ") | sort -u -f | perl -ne 'next unless /./; print' > new_expect.txt && mv new_expect.txt '$new_expect_file'" >> $instructions
+    echo 'perl -e '$q'
+my $new_expect_file="'$new_expect_file'";
+open FILE, q{<}, $new_expect_file; chomp(my @words = <FILE>); close FILE;
+my @add=qw('$q$Q"$patch_add"$Q$q');
+my %items; @items{@words} = @words x (1); @items{@add} = @add x (1);
+@words = sort {lc($a) cmp lc($b)} keys %items;
+open FILE, q{>}, $new_expect_file; for my $word (@words) { print FILE "$word\n" if $word =~ /\w/; };
+close FILE;'$q >> $instructions
   fi
   to_publish_expect "$new_expect_file" >> $instructions
   cat $instructions

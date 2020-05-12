@@ -5,3 +5,4 @@ stdin
 stdio
 stdout
 stedolan
+chmod

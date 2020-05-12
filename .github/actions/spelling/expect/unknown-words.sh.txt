@@ -1,6 +1,5 @@
 bdc
 cbeaff
-chmod
 dest
 elif
 eol
@@ -27,7 +26,6 @@ spellchecker
 ssh
 uname
 url
-usr
 vnd
 whitelist
 xargs
