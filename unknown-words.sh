@@ -427,6 +427,21 @@ body_to_payload() {
   echo "$PAYLOAD"
 }
 
+comment() {
+  comments_url="$1"
+  payload="$2"
+  if [ -n "$payload" ]; then
+    payload="--data @$payload"
+  fi
+  curl -L -s -S \
+    $method \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    --header "Content-Type: application/json" \
+    -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
+    $payload \
+    "$comments_url"
+}
+
 post_commit_comment() {
   if [ -e "$run_warnings" ]; then
     cat "$run_warnings"
@@ -448,14 +463,7 @@ post_commit_comment() {
       body_to_payload $BODY
       rm -f $BODY
       echo $COMMENTS_URL
-      curl -s -S \
-           -H "Authorization: token $GITHUB_TOKEN" \
-           --header "Content-Type: application/json" \
-           -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
-           --data "@$PAYLOAD" \
-           "$COMMENTS_URL" ||
-      true
-      rm -f $PAYLOAD
+      comment "$COMMENTS_URL" "$PAYLOAD"
     else
       echo "$OUTPUT"
     fi
