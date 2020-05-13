@@ -535,6 +535,10 @@ comment() {
   payload="$2"
   if [ -n "$payload" ]; then
     payload="--data @$payload"
+    method="$3"
+    if [ -n "$method" ]; then
+      method="-X $method"
+    fi
   fi
   curl -L -s -S \
     $method \
@@ -551,22 +555,35 @@ post_commit_comment() {
     rm -f "$run_warnings"
   fi
   if [ -n "$OUTPUT" ]; then
-    echo "Preparing a comment"
-    if [ -n "$GITHUB_EVENT_PATH" ]; then
-      case "$GITHUB_EVENT_NAME" in
-        pull_request|pull_request_target)
-          COMMENTS_URL=$(cat $GITHUB_EVENT_PATH | jq -r .pull_request.comments_url);;
-        push)
-          COMMENTS_URL=$(cat $GITHUB_EVENT_PATH | jq -r .repository.commits_url | perl -pne 's#\{/sha}#/'$GITHUB_SHA'/comments#');;
-      esac
-    fi
+    echo "Preparing a comment for $GITHUB_EVENT_NAME"
+    case "$GITHUB_EVENT_NAME" in
+      pull_request|pull_request_target)
+        COMMENTS_URL=$(cat $GITHUB_EVENT_PATH | jq -r .pull_request.comments_url);;
+      push)
+        COMMENTS_URL=$(cat $GITHUB_EVENT_PATH | jq -r .repository.commits_url | perl -pne 's#\{/sha}#/'$GITHUB_SHA'/comments#');;
+    esac
     if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
       BODY=$(mktemp)
       echo "$OUTPUT" > $BODY
       body_to_payload $BODY
-      rm -f $BODY
       echo $COMMENTS_URL
-      comment "$COMMENTS_URL" "$PAYLOAD"
+      response=$(mktemp)
+      comment "$COMMENTS_URL" "$PAYLOAD" > $response
+      cat $response
+      case "$GITHUB_EVENT_NAME" in
+        pull_request|pull_request_target)
+          COMMENTS_URL=$(jq -r .url < $response)
+          (
+            echo
+            echo "Alternatively, the bot can do this for you if you quote the following line:"
+            echo "@check-spelling-bot apply [changes]($COMMENT_URL)."
+          )>> $BODY
+          PAYLOAD=$(body_to_payload $BODY)
+          rm -f $BODY
+          comment "$COMMENTS_URL" "$PAYLOAD" "PATCH" > $response
+          cat $response
+          ;;
+      esac
     else
       echo "$OUTPUT"
     fi
