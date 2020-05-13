@@ -419,6 +419,14 @@ quit() {
   exit $1
 }
 
+body_to_payload() {
+  BODY="$1"
+  PAYLOAD=$(mktemp)
+  echo '{}' | jq --rawfile body "$BODY" '.body = $body' > $PAYLOAD
+  cat $PAYLOAD >&2
+  echo "$PAYLOAD"
+}
+
 comment() {
   if [ -e "$run_warnings" ]; then
     cat "$run_warnings"
@@ -437,10 +445,8 @@ comment() {
     if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
       BODY=$(mktemp)
       echo "$OUTPUT" > $BODY
-      PAYLOAD=$(mktemp)
-      echo '{}' | jq --rawfile body $BODY '.body = $body' > $PAYLOAD
+      body_to_payload $BODY
       rm -f $BODY
-      cat $PAYLOAD
       echo $COMMENTS_URL
       curl -s -S \
            -H "Authorization: token $GITHUB_TOKEN" \
