@@ -315,7 +315,7 @@ spelling_warning() {
   OUTPUT="#### $1:
 "
   spelling_body "$2" "$3"
-  comment
+  post_commit_comment
 }
 spelling_info() {
   if [ -z "$2" ]; then
@@ -327,7 +327,7 @@ $2"
   fi
   spelling_body "$out" "$3"
   if [ -n "$VERBOSE" ]; then
-    comment
+    post_commit_comment
   else
     echo "$OUTPUT"
   fi
@@ -427,7 +427,7 @@ body_to_payload() {
   echo "$PAYLOAD"
 }
 
-comment() {
+post_commit_comment() {
   if [ -e "$run_warnings" ]; then
     cat "$run_warnings"
     rm -f "$run_warnings"
