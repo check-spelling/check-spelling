@@ -7,35 +7,40 @@ set -e
 export spellchecker=${spellchecker:-/app}
 . "$spellchecker/common.sh"
 
-if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -e "$GITHUB_EVENT_PATH" ]; then
-  GITHUB_EVENT_PATH=/dev/null
-fi
-case "$GITHUB_EVENT_NAME" in
-  schedule)
-    exec "$spellchecker/check-pull-requests.sh"
-    ;;
-esac
-bucket=${INPUT_BUCKET:-$bucket}
-project=${INPUT_PROJECT:-$project}
+main() {
+  if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -e "$GITHUB_EVENT_PATH" ]; then
+    GITHUB_EVENT_PATH=/dev/null
+  fi
+  case "$GITHUB_EVENT_NAME" in
+    schedule)
+      exec "$spellchecker/check-pull-requests.sh"
+      ;;
+  esac
+}
 
-dict="$spellchecker/words"
-patterns="$spellchecker/patterns.txt"
-excludes="$spellchecker/excludes.txt"
-excludes_path="$temp/excludes.txt"
-only="$spellchecker/only.txt"
-only_path="$temp/only.txt"
-dictionary_path="$temp/dictionary.txt"
-allow_path="$temp/allow.txt"
-reject_path="$temp/reject.txt"
-expect_path="$temp/expect.words.txt"
-excludelist_path="$temp/excludes.txt"
-patterns_path="$temp/patterns.txt"
-advice_path="$temp/advice.txt"
-word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
-run_output="$temp/unknown.words.txt"
-run_files="$temp/reporter-input.txt"
-run_warnings="$temp/matcher.txt"
-tokens_file="$temp/tokens.txt"
+define_variables() {
+  bucket=${INPUT_BUCKET:-$bucket}
+  project=${INPUT_PROJECT:-$project}
+
+  dict="$spellchecker/words"
+  patterns="$spellchecker/patterns.txt"
+  excludes="$spellchecker/excludes.txt"
+  excludes_path="$temp/excludes.txt"
+  only="$spellchecker/only.txt"
+  only_path="$temp/only.txt"
+  dictionary_path="$temp/dictionary.txt"
+  allow_path="$temp/allow.txt"
+  reject_path="$temp/reject.txt"
+  expect_path="$temp/expect.words.txt"
+  excludelist_path="$temp/excludes.txt"
+  patterns_path="$temp/patterns.txt"
+  advice_path="$temp/advice.txt"
+  word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
+  run_output="$temp/unknown.words.txt"
+  run_files="$temp/reporter-input.txt"
+  run_warnings="$temp/matcher.txt"
+  tokens_file="$temp/tokens.txt"
+}
 
 sort_unique() {
   sort -u -f "$@" | perl -ne 'next unless /./; print'
@@ -172,69 +177,72 @@ set_up_tools() {
   fi
 }
 
-set_up_tools
-mkdir -p .git
-cp $spellchecker/reporter.json .git/
-echo "::add-matcher::.git/reporter.json"
-get_project_files expect $expect_path
-get_project_files_deprecated expect whitelist $expect_path
-expect_files=$from_expanded
-expect_file=$from
-new_expect_file=$append_to
-new_expect_file_new=$append_to_generated
-get_project_files excludes $excludelist_path
-if [ -s "$excludes_path" ]; then
-  cp "$excludes_path" "$excludes"
-fi
-get_project_files dictionary $dictionary_path
-if [ -s "$dictionary_path" ]; then
-  cp "$dictionary_path" "$dict"
-fi
-get_project_files allow $allow_path
-if [ -s "$allow_path" ]; then
-  cat "$allow_path" >> "$dict"
-fi
-get_project_files reject $reject_path
-if [ -s "reject_path" ]; then
-  dictionary_temp=$(mktemp)
-  if grep -v "$reject_path" "$dictionary_path" > $dictionary_temp; then
-    cat $dictionary_temp > "$dictionary_path"
+set_up_files() {
+  mkdir -p .git
+  cp $spellchecker/reporter.json .git/
+  echo "::add-matcher::.git/reporter.json"
+  get_project_files expect $expect_path
+  get_project_files_deprecated expect whitelist $expect_path
+  expect_files=$from_expanded
+  expect_file=$from
+  new_expect_file=$append_to
+  new_expect_file_new=$append_to_generated
+  get_project_files excludes $excludelist_path
+  if [ -s "$excludes_path" ]; then
+    cp "$excludes_path" "$excludes"
   fi
-fi
-get_project_files only $only_path
-if [ -s "$only_path" ]; then
-  cp "$only_path" "$only"
-fi
-get_project_files patterns $patterns_path
-if [ -s "$patterns_path" ]; then
-  cp "$patterns_path" "$patterns"
-fi
-get_project_files advice $advice_path
+  get_project_files dictionary $dictionary_path
+  if [ -s "$dictionary_path" ]; then
+    cp "$dictionary_path" "$dict"
+  fi
+  get_project_files allow $allow_path
+  if [ -s "$allow_path" ]; then
+    cat "$allow_path" >> "$dict"
+  fi
+  get_project_files reject $reject_path
+  if [ -s "reject_path" ]; then
+    dictionary_temp=$(mktemp)
+    if grep -v "$reject_path" "$dictionary_path" > $dictionary_temp; then
+      cat $dictionary_temp > "$dictionary_path"
+    fi
+  fi
+  get_project_files only $only_path
+  if [ -s "$only_path" ]; then
+    cp "$only_path" "$only"
+  fi
+  get_project_files patterns $patterns_path
+  if [ -s "$patterns_path" ]; then
+    cp "$patterns_path" "$patterns"
+  fi
+  get_project_files advice $advice_path
 
-if [ -n "$debug" ]; then
-  echo "Clean up from previous run"
-fi
-rm -f "$run_output"
+  if [ -n "$debug" ]; then
+    echo "Clean up from previous run"
+  fi
+  rm -f "$run_output"
+}
 
-echo "Checking spelling..."
-if [ -n "$DEBUG" ]; then
-  begin_group 'Excluded paths'
-  if [ -e "$excludes" ]; then
-    echo 'Excluded paths:'
-    cat "$excludes"
-  else
-    echo 'No excluded paths file'
+welcome() {
+  echo "Checking spelling..."
+  if [ -n "$DEBUG" ]; then
+    begin_group 'Excluded paths'
+    if [ -e "$excludes" ]; then
+      echo 'Excluded paths:'
+      cat "$excludes"
+    else
+      echo 'No excluded paths file'
+    fi
+    end_group
+    begin_group 'Only paths restriction'
+    if [ -e "$only" ]; then
+      echo 'Only paths restriction:'
+      cat "$only"
+    else
+      echo 'No only paths restriction file'
+    fi
+    end_group
   fi
-  end_group
-  begin_group 'Only paths restriction'
-  if [ -e "$only" ]; then
-    echo 'Only paths restriction:'
-    cat "$only"
-  else
-    echo 'No only paths restriction file'
-  fi
-  end_group
-fi
+}
 
 xargs_zero() {
   if command -v parallel >/dev/null; then
@@ -245,10 +253,12 @@ xargs_zero() {
     arguments="$*" "$spellchecker/xargs_zero"
   fi
 }
-begin_group 'Spell check'
-(
-  git 'ls-files' -z 2> /dev/null |\
-  "$spellchecker/exclude.pl") |\
+
+run_spell_check() {
+  begin_group 'Spell check'
+  (
+    git 'ls-files' -z 2> /dev/null |\
+    "$spellchecker/exclude.pl") |\
   xargs_zero "$word_splitter" |\
   "$word_splitter" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
@@ -258,6 +268,7 @@ begin_group 'Spell check'
     echo "$word_splitter failed ($word_splitter_status)"
     exit 2
   fi
+}
 
 printDetails() {
   echo ''
@@ -470,52 +481,56 @@ post_commit_comment() {
   fi
 }
 
-if [ ! -s "$run_output" ]; then
-  exit 0
-fi
-if [ ! -e "$expect_path" ]; then
-  begin_group 'No expect'
-  title="No preexisting $expect_file file"
-  instructions=$(
-    expect_path=/tmp/expect.txt
-    echo 'cat > '"$expect_path"' <<EOF=EOF'
-    cat "$run_output"
-    echo EOF=EOF
-    to_publish_expect "$expect_path" "new"
-  )
-      spelling_info "$title" "$(bullet_words "$(cat "$run_output")")" "$instructions"
-  end_group
-  quit 2
-fi
+report_first_run() {
+  if [ ! -s "$run_output" ]; then
+    quit 0
+  fi
+  if [ ! -e "$expect_path" ]; then
+    begin_group 'No expect'
+    title="No preexisting $expect_file file"
+    instructions=$(
+      expect_path=/tmp/expect.txt
+      echo 'cat > '"$expect_path"' <<EOF=EOF'
+      cat "$run_output"
+      echo EOF=EOF
+      to_publish_expect "$expect_path" "new"
+    )
+        spelling_info "$title" "$(bullet_words "$(cat "$run_output")")" "$instructions"
+    end_group
+    quit 2
+  fi
+}
 
 grep_v_spellchecker() {
   perl -ne "next if m{$spellchecker}; print"
 }
 
-begin_group 'Compare expect with new output'
-sorted_expect="$temp/expect.sorted.txt"
-(sed -e 's/#.*//' "$expect_path" | sort_unique) > "$sorted_expect"
-expect_path="$sorted_expect"
+compare_new_output() {
+  begin_group 'Compare expect with new output'
+    sorted_expect="$temp/expect.sorted.txt"
+    (sed -e 's/#.*//' "$expect_path" | sort_unique) > "$sorted_expect"
+    expect_path="$sorted_expect"
 
-diff_output=$(
-  diff -w -U0 "$expect_path" "$run_output" |
-  grep_v_spellchecker)
-end_group
-
-if [ -z "$diff_output" ]; then
-  begin_group 'No misspellings'
-  title="No new words with misspellings found"
-      spelling_info "$title" "There are currently $(wc -l $expect_path|sed -e 's/ .*//') expected items." ""
+    diff_output=$(
+      diff -w -U0 "$expect_path" "$run_output" |
+      grep_v_spellchecker)
   end_group
-  quit 0
-fi
 
-begin_group 'New output'
-new_output=$(
-  diff -i -w -U0 "$expect_path" "$run_output" |
-  grep_v_spellchecker |\
-  perl -n -w -e 'next unless /^\+/; next if /^\+{3} /; s/^.//; print;')
-end_group
+  if [ -z "$diff_output" ]; then
+    begin_group 'No misspellings'
+    title="No new words with misspellings found"
+      spelling_info "$title" "There are currently $(wc -l $expect_path|sed -e 's/ .*//') expected items." ""
+    end_group
+    quit 0
+  fi
+
+  begin_group 'New output'
+    new_output=$(
+      diff -i -w -U0 "$expect_path" "$run_output" |
+      grep_v_spellchecker |\
+      perl -n -w -e 'next unless /^\+/; next if /^\+{3} /; s/^.//; print;')
+  end_group
+}
 
 make_instructions() {
   . "$spellchecker/update-state.sh"
@@ -527,21 +542,36 @@ make_instructions() {
   rm $instructions
 }
 
-if [ -z "$new_output" ]; then
-  begin_group 'Fewer misspellings'
-  title='There are now fewer misspellings than before'
+fewer_misspellings() {
+  if [ -z "$new_output" ]; then
+    begin_group 'Fewer misspellings'
+    title='There are now fewer misspellings than before'
+    instructions=$(
+    make_instructions
+    )
+      spelling_info "$title" "$(bullet_words "$patch_add")" "$instructions"
+    end_group
+    quit
+  fi
+}
+more_misspellings() {
+  begin_group 'Misspellings'
+  title='Misspellings found, please review'
   instructions=$(
     make_instructions
   )
-      spelling_info "$title" "$(bullet_words "$patch_add")" "$instructions"
-  end_group
-  quit
-fi
-begin_group 'Misspellings'
-title='Misspellings found, please review'
-instructions=$(
-  make_instructions
-)
     spelling_warning "$title" "$(bullet_words "$new_output")" "$instructions"
-end_group
-quit 1
+  end_group
+  quit 1
+}
+
+main
+define_variables
+set_up_tools
+set_up_files
+welcome
+run_spell_check
+report_first_run
+compare_new_output
+fewer_misspellings
+more_misspellings
