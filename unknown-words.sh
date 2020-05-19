@@ -283,16 +283,12 @@ to_publish_expect() {
 }
 
 spelling_warning() {
-  OUTPUT="$OUTPUT$spelling_header"
-  OUTPUT="$OUTPUT
-#### $1:
+  OUTPUT="#### $1:
 "
   spelling_body "$2" "$3"
-  OUTPUT="$OUTPUT$spelling_footer"
   comment
 }
 spelling_info() {
-  OUTPUT="$OUTPUT$spelling_header"
   if [ -z "$2" ]; then
     out="$1"
   else
@@ -301,7 +297,6 @@ spelling_info() {
 $2"
   fi
   spelling_body "$out" "$3"
-  OUTPUT="$OUTPUT$spelling_footer"
   if [ -n "$VERBOSE" ]; then
     comment
   else
