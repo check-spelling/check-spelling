@@ -518,8 +518,8 @@ if [ -z "$new_output" ]; then
   end_group
   quit
 fi
-begin_group 'New misspellings'
-title='New misspellings found, please review'
+begin_group 'Misspellings'
+title='Misspellings found, please review'
 instructions=$(
   make_instructions
 )
