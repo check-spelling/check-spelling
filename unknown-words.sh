@@ -154,6 +154,7 @@ get_project_files_deprecated() {
   fi
 }
 
+mkdir -p .git
 cp $spellchecker/reporter.json .git/
 echo "::add-matcher::.git/reporter.json"
 get_project_files expect $expect_path
