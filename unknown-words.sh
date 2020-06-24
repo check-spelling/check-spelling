@@ -166,6 +166,11 @@ get_project_files_deprecated() {
 
 download() {
   curl -L -s "$1" -o "$2" -f
+  exit_value=$?
+  if [ $exit_value = 0 ]; then
+    echo "Downloaded $1 (to $2)" >&2
+  fi
+  return $exit_value
 }
 
 download_or_quit_with_error() {
