@@ -8,6 +8,7 @@ esac
 excludelist
 fchurn
 github
+githubusercontent
 grep
 gsutil
 jq

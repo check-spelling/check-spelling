@@ -232,8 +232,11 @@ set_up_files() {
     cp "$dictionary_path" "$dict"
   fi
   if [ ! -s "$dict" ]; then
+    if [ -z "$DICTIONARY_VERSION" ]; then
+      DICTIONARY_VERSION=20200211
+    fi
     if [ -z "$DICTIONARY_URL" ]; then
-      DICTIONARY_URL='https://github.com/check-spelling/check-spelling/raw/dictionary/dict.txt'
+      DICTIONARY_URL='https://raw.githubusercontent.com/check-spelling/check-spelling/dictionary-$DICTIONARY_VERSION/dict.txt'
     fi
     eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
   fi
