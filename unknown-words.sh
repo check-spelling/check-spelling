@@ -204,8 +204,9 @@ set_up_tools() {
   if [ -n "$apps" ]; then
     if command_v apt-get; then
       export DEBIAN_FRONTEND=noninteractive
-      apt-get update &&
-      apt-get install --no-install-recommends -y $apps
+      apt-get -qq update &&
+      apt-get -qq install --no-install-recommends -y $apps >/dev/null 2>/dev/null
+      echo Installed: $apps >&2
     elif command_v brew; then
       brew install $apps
     else
