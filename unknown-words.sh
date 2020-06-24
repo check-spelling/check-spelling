@@ -164,6 +164,23 @@ get_project_files_deprecated() {
   fi
 }
 
+download() {
+  curl -Ls "$1" -o "$2"
+}
+
+download_or_quit_with_error() {
+  exit_code=$(mktemp)
+  download "$1" "$2" || (
+    echo $? > $exit_code
+    echo "Could not download $1 (to $2)" >&2
+  )
+  if [ -s $exit_code ]; then
+    exit_value=$(cat $exit_code)
+    rm $exit_code
+    quit $exit_value
+  fi
+}
+
 set_up_tools() {
   apps=""
   add_app() {
