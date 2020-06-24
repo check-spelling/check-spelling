@@ -165,14 +165,24 @@ get_project_files_deprecated() {
 }
 
 set_up_tools() {
-  if ! command -v git || ! command -v parallel; then
+  apps=""
+  add_app() {
+    if ! command -v $1; then
+      apps="$apps $1"
+    fi
+  }
+  add_app curl
+  add_app git
+  add_app parallel
+  if [ -n "$apps" ]; then
     if command -v apt-get; then
+      export DEBIAN_FRONTEND=noninteractive
       apt-get update &&
-      apt-get install --no-install-recommends -y git parallel
+      apt-get install --no-install-recommends -y $apps
     elif command -v brew; then
-      brew install git parallel
+      brew install $apps
     else
-      echo missing git/parallel -- things will fail >&2
+      echo missing $apps -- things will fail >&2
     fi
   fi
 }
