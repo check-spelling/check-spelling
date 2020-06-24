@@ -19,6 +19,10 @@ main() {
   esac
 }
 
+command_v() {
+  command -v "$1" >/dev/null 2>/dev/null
+}
+
 define_variables() {
   bucket=${INPUT_BUCKET:-$bucket}
   project=${INPUT_PROJECT:-$project}
@@ -190,7 +194,7 @@ download_or_quit_with_error() {
 set_up_tools() {
   apps=""
   add_app() {
-    if ! command -v $1; then
+    if ! command_v $1; then
       apps="$apps $1"
     fi
   }
@@ -198,17 +202,17 @@ set_up_tools() {
   add_app git
   add_app parallel
   if [ -n "$apps" ]; then
-    if command -v apt-get; then
+    if command_v apt-get; then
       export DEBIAN_FRONTEND=noninteractive
       apt-get update &&
       apt-get install --no-install-recommends -y $apps
-    elif command -v brew; then
+    elif command_v brew; then
       brew install $apps
     else
       echo missing $apps -- things will fail >&2
     fi
   fi
-  if ! command -v jq || jq --version | perl -ne 'exit 0 unless s/^jq-//;exit 1 if /^(?:[2-9]|1\d|1\.(?:[6-9]|1\d+))/; exit 0'; then
+  if ! command_v jq || jq --version | perl -ne 'exit 0 unless s/^jq-//;exit 1 if /^(?:[2-9]|1\d|1\.(?:[6-9]|1\d+))/; exit 0'; then
     jq_url=https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
     spellchecker_bin="$spellchecker/bin"
     jq_bin="$spellchecker_bin/jq"
@@ -296,7 +300,7 @@ welcome() {
 }
 
 xargs_zero() {
-  if command -v parallel >/dev/null; then
+  if command_v parallel; then
     parallel --no-notice --no-run-if-empty -0 -n1 "$@"
   elif [ $(uname) = "Linux" ]; then
     xargs --no-run-if-empty -0 -n1 "$@"
