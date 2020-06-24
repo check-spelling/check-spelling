@@ -159,6 +159,20 @@ get_project_files_deprecated() {
   fi
 }
 
+set_up_tools() {
+  if ! command -v git || ! command -v parallel; then
+    if command -v apt-get; then
+      apt-get update &&
+      apt-get install --no-install-recommends -y git parallel
+    elif command -v brew; then
+      brew install git parallel
+    else
+      echo missing git/parallel -- things will fail >&2
+    fi
+  fi
+}
+
+set_up_tools
 mkdir -p .git
 cp $spellchecker/reporter.json .git/
 echo "::add-matcher::.git/reporter.json"

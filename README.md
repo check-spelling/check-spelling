@@ -185,6 +185,17 @@ The order of operations is:
 | ------------- | ------------- |
 | VERBOSE | `1` if you want to be reminded of how many words are in your expect list for each run. |
 
+## Running locally
+
+Yes you can!
+
+### Running locally with Act
+
+1. [Install Act](https://github.com/nektos/act#installation)
+1. `act`
+
+:warning: This may break at times as act may be missing support for newer GitHub Actions features.
+
 ## Behavior
 
 * This action will automatically comment on PRs / commits with its opinion.
