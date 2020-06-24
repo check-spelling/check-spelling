@@ -231,6 +231,12 @@ set_up_files() {
   if [ -s "$dictionary_path" ]; then
     cp "$dictionary_path" "$dict"
   fi
+  if [ ! -s "$dict" ]; then
+    if [ -z "$DICTIONARY_URL" ]; then
+      DICTIONARY_URL='https://github.com/check-spelling/check-spelling/raw/dictionary/dict.txt'
+    fi
+    eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
+  fi
   get_project_files allow $allow_path
   if [ -s "$allow_path" ]; then
     cat "$allow_path" >> "$dict"
