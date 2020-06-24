@@ -165,7 +165,7 @@ get_project_files_deprecated() {
 }
 
 download() {
-  curl -Ls "$1" -o "$2"
+  curl -L -s "$1" -o "$2" -f
 }
 
 download_or_quit_with_error() {
