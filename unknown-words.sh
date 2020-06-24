@@ -442,6 +442,9 @@ comment() {
   fi
 }
 
+if [ ! -s "$run_output" ]; then
+  exit 0
+fi
 if [ ! -e "$expect_path" ]; then
   begin_group 'No expect'
   title="No preexisting $expect_file file"
