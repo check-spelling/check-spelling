@@ -200,10 +200,10 @@ set_up_files() {
     cat "$allow_path" >> "$dict"
   fi
   get_project_files reject $reject_path
-  if [ -s "reject_path" ]; then
+  if [ -s "$reject_path" ]; then
     dictionary_temp=$(mktemp)
-    if grep -v "$reject_path" "$dictionary_path" > $dictionary_temp; then
-      cat $dictionary_temp > "$dictionary_path"
+    if grep_v_string '^('$(echo $(cat "$reject_path")|tr " " '|')')$' < "$dict" > $dictionary_temp; then
+      cat $dictionary_temp > "$dict"
     fi
   fi
   get_project_files only $only_path
