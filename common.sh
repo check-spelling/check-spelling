@@ -5,6 +5,7 @@ if [ "$DEBUG" != defined ]; then
   }
   start=$(now)
   temp="${temp:-/tmp/spelling}"
+  mkdir -p $temp
   export temp
   if [ -n "$DEBUG" ]; then
     set -x
