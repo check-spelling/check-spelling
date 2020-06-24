@@ -139,7 +139,7 @@ get_project_files() {
         ;;
       *://*)
         echo "Retrieving $file from $from"
-        curl -L -s "$from" -o "$dest" || touch $dest
+        download "$from" "$dest" || touch $dest
         cleanup_file "$dest" "$file"
         ;;
     esac
