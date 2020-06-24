@@ -4,5 +4,4 @@ stderr
 stdin
 stdio
 stdout
-stedolan
 chmod
