@@ -21,6 +21,7 @@ pne
 qw
 rawfile
 README
+realpath
 regex
 spellchecker
 ssh

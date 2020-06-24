@@ -92,6 +92,7 @@ get_project_files() {
     case "$from" in
       .*)
         append_to="$from"
+        append_to_generated=""
         if [ -f "$from" ]; then
           echo "Retrieving $file from $from"
           cleanup_file "$from" "$file"
@@ -105,6 +106,7 @@ get_project_files() {
           if [ -d "$from" ]; then
             from_expanded=$(ls $from/*$ext |sort)
             append_to=$from/${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
+            append_to_generated=new
             touch $dest
             for item in $from_expanded; do
               if [ -s $item ]; then
@@ -162,6 +164,7 @@ get_project_files_deprecated expect whitelist $expect_path
 expect_files=$from_expanded
 expect_file=$from
 new_expect_file=$append_to
+new_expect_file_new=$append_to_generated
 get_project_files excludes $excludelist_path
 if [ -s "$excludes_path" ]; then
   cp "$excludes_path" "$excludes"
@@ -279,7 +282,15 @@ to_publish_expect() {
     *://*)
       echo "# command to publish $1 is not known. URL: $(project_file_path expect)";;
     *)
-      echo "git add $(dirname $1) || echo '... you want to ensure $1 is added to your repository...'";;
+      if [ "$2" = new ]; then
+        cmd="git add $bucket/$project || echo '... you want to ensure $1 is added to your repository...'"
+        case $(realpath --relative-base="$bucket" "$1") in
+          /*)
+            cmd="cp $1 $(project_file_path expect); $cmd";;
+        esac
+        echo "$cmd"
+      fi
+      ;;
   esac
 }
 
@@ -436,7 +447,7 @@ if [ ! -e "$expect_path" ]; then
     echo 'cat > '"$expect_path"' <<EOF=EOF'
     cat "$run_output"
     echo EOF=EOF
-    to_publish_expect "$expect_path"
+    to_publish_expect "$expect_path" "new"
   )
       spelling_info "$title" "$(bullet_words "$(cat "$run_output")")" "$instructions"
   end_group
@@ -506,7 +517,9 @@ my %items; @items{@words} = @words x (1); @items{@add} = @add x (1);
 open FILE, q{>}, $new_expect_file; for my $word (@words) { print FILE "$word\n" if $word =~ /\w/; };
 close FILE;'$q >> $instructions
   fi
-  to_publish_expect "$new_expect_file" >> $instructions
+  if [ -n "$patch_add" ]; then
+    to_publish_expect "$new_expect_file" $new_expect_file_new >> $instructions
+  fi
   cat $instructions
   rm $instructions
 }
