@@ -432,6 +432,7 @@ if [ ! -e "$expect_path" ]; then
   begin_group 'No expect'
   title="No preexisting $expect_file file"
   instructions=$(
+    expect_path=/tmp/expect.txt
     echo 'cat > '"$expect_path"' <<EOF=EOF'
     cat "$run_output"
     echo EOF=EOF
