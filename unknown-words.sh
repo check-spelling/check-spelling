@@ -502,7 +502,11 @@ report_first_run() {
 }
 
 grep_v_spellchecker() {
-  perl -ne "next if m{$spellchecker}; print"
+  grep_v_string "$spellchecker"
+}
+
+grep_v_string() {
+  perl -ne "next if m{$1}; print"
 }
 
 compare_new_output() {
