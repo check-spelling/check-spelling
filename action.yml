@@ -11,10 +11,11 @@ inputs:
     required: true
   bucket:
     description: 'Container for spelling configuration'
-    required: true
   project:
     description: 'Folder/Branch within bucket containing spelling configuration'
-    required: true
+  config:
+    description: 'Spelling configuration directory'
+    default: ".github/actions/spelling"
 
   debug:
     description: 'Debug'

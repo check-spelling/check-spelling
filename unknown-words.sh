@@ -26,6 +26,10 @@ command_v() {
 define_variables() {
   bucket=${INPUT_BUCKET:-$bucket}
   project=${INPUT_PROJECT:-$project}
+  if [ -z "$bucket" ] && [ -z "$project" ] && [ -n "$INPUT_CONFIG" ]; then
+    bucket=${INPUT_CONFIG%/*}
+    project=${INPUT_CONFIG##*/}
+  fi
 
   dict="$spellchecker/words"
   patterns="$spellchecker/patterns.txt"
