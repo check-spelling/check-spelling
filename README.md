@@ -46,6 +46,8 @@ are listed on the [wiki](https://github.com/check-spelling/check-spelling/wiki/)
 | Variable | Description |
 | ------------- | ------------- |
 | [bucket](#bucket) | file/url for which the tool has read access to a couple of files. |
+| [dictionary_url](#dictionary_url) | url for primary dictionary |
+| [dictionary_version](#dictionary_version) | version of primary dictionary |
 | [project](#project) | a folder within `bucket`. This allows you to share common items across projects. |
 | [timeframe](#timeframe) | number of minutes (default 60) to consider when a **schedule** workflow checks for updated PRs. |
 | GITHUB_TOKEN | Secret used to retrieve your code and comment on PRs/commits. |
@@ -69,6 +71,25 @@ are listed on the [wiki](https://github.com/check-spelling/check-spelling/wiki/)
 
 Used by the **schedule** action. Any open pull requests from another repository
 will be checked, and if the commit is within that timeframe, it will be processed.
+
+##### dictionary_url
+
+If you don't define a dictionary using [dictionary](#dictionary) files,
+the spell checker will retrieve a dictionary. You can provide a different url
+if you have a preferred base. The default includes a variable (`$DICTIONARY_VERSION`)
+for a [version](#dictionary_version).
+
+This feature is new with 0.0.17.
+
+##### dictionary_version
+
+If [dictionary_url](#dictionary_url) includes (`$DICTIONARY_VERSION`),
+you can override the default version.
+
+Over time, the default version will probably change.
+See [feature: versioned
+dictionaries](https://github.com/check-spelling/check-spelling/wiki/Feature:-Versioned-dictionaries)
+for more information.
 
 #### Files
 
