@@ -8,6 +8,7 @@ export spellchecker=${spellchecker:-/app}
 . "$spellchecker/common.sh"
 
 main() {
+  GITHUB_TOKEN=${GITHUB_TOKEN:-$INPUT_GITHUB_TOKEN}
   if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -e "$GITHUB_EVENT_PATH" ]; then
     GITHUB_EVENT_PATH=/dev/null
   fi
