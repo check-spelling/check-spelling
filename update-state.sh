@@ -1,9 +1,7 @@
 #!/bin/bash
+Q='"'
+q="'"
 generate_instructions() {
-  Q='"'
-  q="'"
-  patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print')
-  patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; s/\n/ /; print')
   instructions=$(mktemp)
   echo 'pushd $(git rev-parse --show-toplevel)' >> $instructions
   to_retrieve_expect >> $instructions

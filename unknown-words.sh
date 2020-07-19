@@ -615,6 +615,8 @@ compare_new_output() {
 
 make_instructions() {
   . "$spellchecker/update-state.sh"
+  patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print')
+  patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; s/\n/ /; print')
   instructions=$(generate_instructions)
   if [ -n "$patch_add" ]; then
     to_publish_expect "$new_expect_file" $new_expect_file_new >> $instructions
