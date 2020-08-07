@@ -143,6 +143,7 @@ get_project_files() {
 get_project_files_deprecated() {
   # "preferred" "deprecated" "path"
   if [ ! -s "$3" ]; then
+    save_append_to="$append_to"
     get_project_files "$2" "$3"
     if [ -s "$3" ]; then
       example=$(for file in $from_expanded; do echo $file; done|head -1)
@@ -152,6 +153,8 @@ get_project_files_deprecated() {
         note=""
       fi
       echo "::warning file=$example::deprecation: please rename '$2'$note to '$1'"
+    else
+      append_to="$save_append_to"
     fi
   fi
 }
