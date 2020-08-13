@@ -138,7 +138,7 @@ Words that are present (i.e. not matched by the excludes file) in the repository
 and which are not listed in the expect list will trigger a failure as part of **push** and
 **pull_request** actions (depending on how you've configured this action).
 
-You can use `#` followed by text to add a comment at the end of a line..
+You can use `#` followed by text to add a comment at the end of a line.
 Note that some automatic pruning may not properly handle this.
 
 :arrow_right: Until you add an `expect` file, the output will only be provided in the **GitHub
