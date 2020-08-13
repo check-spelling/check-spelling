@@ -539,23 +539,9 @@ post_commit_comment() {
   fi
 }
 
-report_first_run() {
+exit_if_no_unknown_words() {
   if [ ! -s "$run_output" ]; then
     quit 0
-  fi
-  if [ ! -e "$expect_path" ]; then
-    begin_group 'No expect'
-    title="No preexisting $expect_file file"
-    instructions=$(
-      expect_path=/tmp/expect.txt
-      echo 'cat > '"$expect_path"' <<EOF=EOF'
-      cat "$run_output"
-      echo EOF=EOF
-      to_publish_expect "$expect_path" "new"
-    )
-        spelling_info "$title" "$(bullet_words "$(cat "$run_output")")" "$instructions"
-    end_group
-    quit 2
   fi
 }
 
@@ -633,7 +619,7 @@ set_up_tools
 set_up_files
 welcome
 run_spell_check
-report_first_run
+exit_if_no_unknown_words
 compare_new_output
 fewer_misspellings
 more_misspellings
