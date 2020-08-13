@@ -218,15 +218,20 @@ Yes you can!
 
 ## Behavior
 
-* This action will automatically comment on PRs / commits with its opinion.
+* This action will automatically comment on commits (if configured
+using [push](#push) or PRs (if configured using [schedule](#schedule) /
+[pull_request](#pull_request) with its opinion.
 * It will try to identify a limited number of lines containing the words it
 doesn't recognize.
 
 ## Limitations
 
-* GitHub Actions generally don't run on forked repositories unless the forking user enables them.
-* Pull Requests from forked repositories run with read-only permissions.
-  - To ensure some coverage for such PRs, you can add a **schedule**.
+* GitHub Actions generally don't run on forked repositories unless the
+forking user enables them.
+* Pull Requests from forked repositories run with read-only permissions
+([pull_request](#pull_request)).
+  - To ensure some coverage for such PRs, you can add/use a
+    **[schedule](#schedule)**.
 
 # License
 
