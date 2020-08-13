@@ -18,7 +18,7 @@ exit 0 unless @token_list;
 
 my @lower_list = grep /^[a-z]/, @token_list;
 my @title_list = grep /^[A-Z][a-z]/, @token_list;
-my @upper_list = grep /^[A-Z]+$/, @token_list;
+my @upper_list = grep /^[^a-z]+[a-z]?$/, @token_list;
 
 my @re_list = ();
 if (@upper_list) {
