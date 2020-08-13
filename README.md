@@ -21,7 +21,7 @@ into word-like things for checking against a dictionary.
 
 [![Spell checking](https://github.com/check-spelling/check-spelling/workflows/Spell%20checking/badge.svg?branch=master)](https://github.com/check-spelling/check-spelling/actions?query=workflow:"Spell+checking"+branch:master)
 
-[More information](https://github.com/jsoref/spelling#overview)
+* [Historical information](https://github.com/jsoref/spelling#overview)
 
 ### Sample output
 
