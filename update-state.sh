@@ -27,6 +27,8 @@ while (<>) {
   if [ -n "$patch_add" ]; then
     echo 'perl -e '$q'
 my $new_expect_file="'$new_expect_file'";
+use File::Path qw(make_path);
+make_path "'$(dirname $new_expect_file)'";
 open FILE, q{<}, $new_expect_file; chomp(my @words = <FILE>); close FILE;
 my @add=qw('$q$Q"$patch_add"$Q$q');
 my %items; @items{@words} = @words x (1); @items{@add} = @add x (1);
