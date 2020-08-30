@@ -282,9 +282,7 @@ set_up_files() {
   fi
   if [ ! -s "$dict" ]; then
     DICTIONARY_VERSION=${DICTIONARY_VERSION:-$INPUT_DICTIONARY_VERSION}
-    # This scary eval is needed to retain support for node12 ...
-    # It should be removed once composite is adopted.
-    DICTIONARY_URL=$(eval echo "${DICTIONARY_URL:-$INPUT_DICTIONARY_URL}")
+    DICTIONARY_URL=${DICTIONARY_URL:-$INPUT_DICTIONARY_URL}
     eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
   fi
   get_project_files allow $allow_path

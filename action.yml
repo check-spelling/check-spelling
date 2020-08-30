@@ -18,13 +18,23 @@ inputs:
     default: ".github/actions/spelling"
   dictionary_url:
     description: "Location of dictionary (if you aren't providing one in your repository)"
-    default: 'https://raw.githubusercontent.com/check-spelling/check-spelling/dictionary-$DICTIONARY_VERSION/dict.txt'
+    default: 'https://raw.githubusercontent.com/check-spelling/check-spelling/dictionary-\$DICTIONARY_VERSION/dict.txt'
   dictionary_version:
     description: 'Version of the dictionary (only used if the url includes $DICTIONARY_VERSION)'
     default: 20200211
-
   debug:
     description: 'Debug'
 runs:
-  using: 'node12'
-  main: 'trampoline.js'
+  using: 'composite'
+  steps:
+    - run: >
+        INPUT_GITHUB_TOKEN="${{ inputs.GITHUB_TOKEN }}"
+        INPUT_BUCKET="${{ inputs.bucket }}"
+        INPUT_PROJECT="${{ inputs.project }}"
+        INPUT_CONFIG="${{ inputs.config }}"
+        INPUT_DICTIONARY_VERSION="${{ inputs.dictionary_version }}"
+        INPUT_DICTIONARY_URL="${{ inputs.dictionary_url }}"
+        DEBUG="${{ inputs.debug }}"
+        spellchecker=$GITHUB_ACTION_PATH
+        $GITHUB_ACTION_PATH/unknown-words.sh
+      shell: bash
