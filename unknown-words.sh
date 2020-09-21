@@ -310,11 +310,17 @@ $2"
 }
 spelling_body() {
   err="$2"
-  if [ -z "$err" ]; then
-    OUTPUT="$1"
+  if [ -n "$OUTPUT" ]; then
+    header="$OUTPUT
+
+"
   else
-    OUTPUT="$OUTPUT
-$1
+    header=""
+  fi
+  if [ -z "$err" ]; then
+    OUTPUT="$header$1"
+  else
+    OUTPUT="$header$1
 
 <details><summary>To accept these changes, run the following commands</summary>
 "$(relative_note)"
