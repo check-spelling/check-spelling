@@ -70,6 +70,26 @@ while (<<>>) {
     $letter_map{$char}{$key} = \%word_map;
   }
 }
+# exclude dictionary words
+my $dict = "$dirname/words";
+$dict = '/usr/share/dict/words' unless -e $dict;
+open DICT, '<', $dict;
+while ($word = <DICT>) {
+  chomp $word;
+  my $lower_word = lc $word;
+  my $char = substr $lower_word, 0, 1;
+  next unless defined $letter_map{$char}{$lower_word};
+  delete $letter_map{$char}{$word};
+  next if $lower_word eq $word;
+  my %word_map = %{$letter_map{$char}{$lower_word}};
+  delete $word_map{$word};
+  if (%word_map) {
+    $letter_map{$char}{$lower_word} = \%word_map;
+  } else {
+    delete $letter_map{$char}{$lower_word};
+  }
+}
+close DICT;
 # group related words
 for my $char (sort keys %letter_map) {
   for my $plural_key (sort keys(%{$letter_map{$char}})) {
@@ -94,26 +114,6 @@ for my $char (sort keys %letter_map) {
     delete $letter_map{$char}{$plural_key};
   }
 }
-# exclude dictionary words
-my $dict = "$dirname/words";
-$dict = '/usr/share/dict/words' unless -e $dict;
-open DICT, '<', $dict;
-while ($word = <DICT>) {
-  chomp $word;
-  my $lower_word = lc $word;
-  my $char = substr $lower_word, 0, 1;
-  next unless defined $letter_map{$char}{$lower_word};
-  delete $letter_map{$char}{$word};
-  next if $lower_word eq $word;
-  my %word_map = %{$letter_map{$char}{$lower_word}};
-  delete $word_map{$word};
-  if (%word_map) {
-    $letter_map{$char}{$lower_word} = \%word_map;
-  } else {
-    delete $letter_map{$char}{$lower_word};
-  }
-}
-close DICT;
 # display the remainder
 for my $char (sort keys %letter_map) {
   for $key (sort keys(%{$letter_map{$char}})) {
