@@ -346,7 +346,7 @@ spelling_body() {
   else
     OUTPUT="$header$1
 
-<details><summary>To accept these changes, run the following commands</summary>
+<details><summary>To accept these changes, run the following commands from this repository on this branch</summary>
 "$(relative_note)"
 
 "'```'"
