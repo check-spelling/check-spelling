@@ -114,19 +114,8 @@ They are merged using an `OR` (`|`).
 
 Files matching these patterns will be skipped.
 
-Possible examples include:
-
-```
-(?:^|/)vendor/
-(?:^|/)yarn\.lock$
-LICENSE
-\.pdf$
-\.png$
-\.xslx?$
-^CONTRIBUTING\.md$
-^\.github/action/spell-check/
-^\.github/workflows/
-```
+See the wiki for [excludes examples](
+https://github.com/check-spelling/check-spelling/wiki/Configuration-Examples:-excludes)
 
 Lines that start with `#` will be ignored.
 
@@ -164,13 +153,8 @@ They are merged using an `OR` (`|`).
 
 Files not matching these patterns will be skipped.
 
-Possible examples include:
-
-```
-\.pl$
-\.js$
-\.py$
-```
+See the wiki for [only examples](
+https://github.com/check-spelling/check-spelling/wiki/Configuration-Examples:-only)
 
 Lines that start with `#` will be ignored.
 
@@ -183,27 +167,8 @@ They are merged using an `OR` (`|`).
 
 Tokens within files that match these expressions will be skipped.
 
-Possible examples include:
-
-```
-# this is a comment
-https?://(?:(?:www\.|)youtube\.com|youtu.be)/[-a-zA-Z0-9?&=]*
-data:[a-zA-Z=;,/0-9+]+
-# c99 hex digits (not the full format, just one I've seen)
-0x[0-9a-fA-F](?:\.[0-9a-fA-F]*|)[pP]
-# hex digits including css/html color classes:
-(?:0[Xx]|U\+|#)[a-f0-9A-FGgRr]{2,}[Uu]?[Ll]{0,2}\b
-# uuid:
-\{[0-9A-FA-F]{8}-(?:[0-9A-FA-F]{4}-){3}[0-9A-FA-F]{12}\}
-# the negative lookahead here is to allow catching 'templatesz' as a misspelling
-# but to otherwise recognize a Windows path with \templates\foo.template or similar:
-\\templates(?![a-z])
-# ignore long runs of a single character:
-\b([A-Za-z])\1{3,}\b
-# Note that the next example is no longer necessary if you are using
-# to match a string starting with a `#`, use a character-class:
-[#]backwards
-```
+See the wiki for [pattern examples](
+https://github.com/check-spelling/check-spelling/wiki/Configuration-Examples:-patterns)
 
 ##### reject
 
