@@ -21,6 +21,10 @@ into word-like things for checking against a dictionary.
 
 [![Spell checking](https://github.com/check-spelling/check-spelling/workflows/Spell%20checking/badge.svg?branch=master)](https://github.com/check-spelling/check-spelling/actions?query=workflow:"Spell+checking"+branch:master)
 
+* [Configuration](https://github.com/check-spelling/check-spelling/wiki/Configuration)
+  * [Workflow variables](https://github.com/check-spelling/check-spelling/wiki/Configuration#workflow-variables)
+  * [Workflows](https://github.com/check-spelling/check-spelling/wiki/Configuration%3A-Workflows)
+  * [Files](https://github.com/check-spelling/check-spelling/wiki/Configuration#Files)
 * [Possible features](https://github.com/check-spelling/check-spelling/wiki/Possible-features)
 are listed on the [wiki](https://github.com/check-spelling/check-spelling/wiki/)
 * [Historical information](https://github.com/jsoref/spelling#overview)
@@ -35,7 +39,7 @@ are listed on the [wiki](https://github.com/check-spelling/check-spelling/wiki/)
 
 ![github action annotation](images/check-spelling-annotation.png)
 
-#### The GitHub Action Run log
+#### GitHub Action Run log
 
 ![github action log](images/check-spelling-log.png)
 
@@ -131,8 +135,11 @@ Expected words that are not otherwise present in the corpus will be suggested fo
 but will not trigger a failure.
 
 Words that are present (i.e. not matched by the excludes file) in the repository
-and which are not listed in the expect list will trigger a failure as part of **push** and
-**pull_request** actions (depending on how you've configured this action).
+and which are not listed in the expect list will trigger a failure as part of
+**[push](#push)**
+and
+**[pull_request](#pull_request)**
+actions (depending on how you've configured this action).
 
 You can use `#` followed by text to add a comment at the end of a line.
 Note that some automatic pruning may not properly handle this.
@@ -183,7 +190,7 @@ The order of operations is:
 | VERBOSE | `1` if you want to be reminded of how many words are in your expect list for each run. |
 | [bucket](#bucket) | file/url for which the tool has read access to a couple of files. |
 | [project](#project) | a folder within `bucket`. This allows you to share common items across projects. |
-| [timeframe](#timeframe) | number of minutes (default 60) to consider when a **schedule** workflow checks for updated PRs. |
+| [timeframe](#timeframe) | number of minutes (default 60) to consider when a **[schedule](#schedule)** workflow checks for updated PRs. |
 
 ##### bucket
 
@@ -202,8 +209,74 @@ The order of operations is:
 
 ##### timeframe
 
-Used by the **schedule** action. Any open pull requests from another repository
+Used by the **[schedule](#schedule)** action. Any open pull requests from another repository
 will be checked, and if the commit is within that timeframe, it will be processed.
+
+## GitHub Action Events
+
+Supported GitHub actions:
+
+* [push](#push)
+* [pull_request](#pull_request) :warning:
+* [schedule](#schedule)
+
+### push
+
+This is the easiest event to explain. When the owner of a repository pushes a
+commit (or tag, unless you exclude that -- which you may want to do), the
+spell checker can run and comment on the commit.
+
+Comments on commits will appear when those commits are offered as part of a
+pull request to another repository.
+
+:warning: Forks can disable actions, and thus it's possible for this workflow
+not to have been run by your contributors.
+
+Example workflow snippet:
+
+```workflow
+on:
+  push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "**"
+jobs:
+  build:
+    name: Spell checking
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.0.0
+      with:
+        fetch-depth: 5
+    - uses: check-spelling/check-spelling@master
+```
+
+### pull\_request
+
+:warning: While you can use `pull_request`, its use is discouraged.
+Instead, the recommended event is
+[schedule](#schedule).
+
+### schedule
+
+This is basically a cron job run by GitHub. It will look through open
+PRs and comment if they've been updated since the last run.
+
+See [timeframe](#timeframe) for the configuration window.
+
+Example workflow snippet:
+
+```workflow
+on:
+  push:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron: '15 * * * *'
+```
+
+Cons: There will not be a :x: for the PR, so you have to look
+for a comment.
 
 ## Running locally
 
@@ -219,8 +292,12 @@ Yes you can!
 ## Behavior
 
 * This action will automatically comment on commits (if configured
-using [push](#push) or PRs (if configured using [schedule](#schedule) /
-[pull_request](#pull_request) with its opinion.
+using [push](#push))
+or PRs
+(if configured using
+[schedule](#schedule) /
+[pull_request](#pull_request))
+with its opinion.
 * It will try to identify a limited number of lines containing the words it
 doesn't recognize.
 
