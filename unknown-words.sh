@@ -520,7 +520,7 @@ post_commit_comment() {
     echo "Preparing a comment"
     if [ -n "$GITHUB_EVENT_PATH" ]; then
       case "$GITHUB_EVENT_NAME" in
-        pull_request)
+        pull_request|pull_request_target)
           COMMENTS_URL=$(cat $GITHUB_EVENT_PATH | jq -r .pull_request.comments_url);;
         push)
           COMMENTS_URL=$(cat $GITHUB_EVENT_PATH | jq -r .repository.commits_url | perl -pne 's#\{/sha}#/'$GITHUB_SHA'/comments#');;

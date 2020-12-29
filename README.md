@@ -136,7 +136,8 @@ but will not trigger a failure.
 
 Words that are present (i.e. not matched by the excludes file) in the repository
 and which are not listed in the expect list will trigger a failure as part of
-**[push](#push)**
+**[push](#push)**,
+**[pull_request_target](#pull_request_target)**,
 and
 **[pull_request](#pull_request)**
 actions (depending on how you've configured this action).
@@ -217,6 +218,7 @@ will be checked, and if the commit is within that timeframe, it will be processe
 Supported GitHub actions:
 
 * [push](#push)
+* [pull_request_target](#pull_request_target)
 * [pull_request](#pull_request) :warning:
 * [schedule](#schedule)
 
@@ -252,13 +254,45 @@ jobs:
     - uses: check-spelling/check-spelling@master
 ```
 
+### pull\_request\_target
+
+```workflow
+on:
+  push:
+  pull_request_target:
+jobs:
+  build:
+    name: Spell checking
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.0.0
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        fetch-depth: 5
+    - uses: check-spelling/check-spelling@master
+```
+
+If there are unrecognized tokens,
+this should trigger [annotations](#Comment_as_seen_in_a_commit)
+for around 10 unrecognized tokens and a [comment](#Comment_as_seen_in_a_PR).
+
+Items beyond that can be viewed in the [action log](#GitHub_Action_Run_log).
+
+The comment includes a command that can be used to update the repository
+to accept the tokens (if they are not misspelled).
+
+This feature is new with 0.0.17.
+
 ### pull\_request
 
 :warning: While you can use `pull_request`, its use is discouraged.
 Instead, the recommended event is
-[schedule](#schedule).
+[pull_request_target](#pull_request_target).
 
 ### schedule
+
+:information_source: With 0.0.17,
+you can migrate to [pull_request_target](#pull_request_target) instead.
 
 This is basically a cron job run by GitHub. It will look through open
 PRs and comment if they've been updated since the last run.
@@ -295,20 +329,12 @@ Yes you can!
 using [push](#push))
 or PRs
 (if configured using
+[pull_request_target](#pull_request) /
 [schedule](#schedule) /
 [pull_request](#pull_request))
 with its opinion.
 * It will try to identify a limited number of lines containing the words it
 doesn't recognize.
-
-## Limitations
-
-* GitHub Actions generally don't run on forked repositories unless the
-forking user enables them.
-* Pull Requests from forked repositories run with read-only permissions
-([pull_request](#pull_request)).
-  - To ensure some coverage for such PRs, you can add/use a
-    **[schedule](#schedule)**.
 
 # License
 
