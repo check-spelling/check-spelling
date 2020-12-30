@@ -78,7 +78,7 @@ check_pattern_file() {
 
 check_for_newline_at_eof() {
   maybe_missing_eol="$1"
-  if [ $(tail -1 "$maybe_missing_eol" | wc -l) -eq 0 ]; then
+  if [ -s "$maybe_missing_eol" ] && [ $(tail -1 "$maybe_missing_eol" | wc -l) -eq 0 ]; then
     line=$(( $(cat "$maybe_missing_eol" | wc -l) + 1 ))
     start=$(tail -1 "$maybe_missing_eol" | wc -c)
     stop=$(( $start + 1 ))
