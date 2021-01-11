@@ -626,16 +626,19 @@ make_instructions() {
 }
 
 fewer_misspellings() {
-  if [ -z "$new_output" ]; then
-    begin_group 'Fewer misspellings'
-    title='There are now fewer misspellings than before'
-    instructions=$(
-    make_instructions
-    )
-    spelling_info "$title" "$(bullet_words_and_warn "$patch_add")" "$instructions"
-    end_group
-    quit
+  if [ -n "$new_output" ]; then
+    return
   fi
+
+  begin_group 'Fewer misspellings'
+  title='There are now fewer misspellings than before'
+  SKIP_CURL=1
+  instructions=$(
+    make_instructions
+  )
+  spelling_info "$title" "$(bullet_words_and_warn "$patch_add")" "$instructions"
+  end_group
+  quit
 }
 more_misspellings() {
   begin_group 'Misspellings'
