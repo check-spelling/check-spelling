@@ -1,6 +1,9 @@
 #!/bin/bash
 Q='"'
 q="'"
+strip_lead() {
+  perl -pne 's/^\s+//'
+}
 generate_instructions() {
   instructions=$(mktemp)
   echo 'pushd $(git rev-parse --show-toplevel)' >> $instructions
@@ -10,17 +13,18 @@ generate_instructions() {
       expect_files=$expect_file
     fi
     echo 'perl -e '$q'
-my @expect_files=qw('$q$Q"$expect_files"$Q$q');
-@ARGV=@expect_files;
-my @stale=qw('$q$Q"$patch_remove"$Q$q');
-my $re=join "|", @stale;
-my $suffix=".".time();
-my $previous="";
-sub maybe_unlink { unlink($_[0]) if $_[0]; }
-while (<>) {
-  if ($ARGV ne $old_argv) { maybe_unlink($previous); $previous="$ARGV$suffix"; rename($ARGV, $previous); open(ARGV_OUT, ">$ARGV"); select(ARGV_OUT); $old_argv = $ARGV; }
-  next if /^(?:$re)(?:(?:\r|\n)*$| .*)/; print;
-}; maybe_unlink($previous);'$q >> $instructions
+      my @expect_files=qw('$q$Q"$expect_files"$Q$q');
+      @ARGV=@expect_files;
+      my @stale=qw('$q$Q"$patch_remove"$Q$q');
+      my $re=join "|", @stale;
+      my $suffix=".".time();
+      my $previous="";
+      sub maybe_unlink { unlink($_[0]) if $_[0]; }
+      while (<>) {
+        if ($ARGV ne $old_argv) { maybe_unlink($previous); $previous="$ARGV$suffix"; rename($ARGV, $previous); open(ARGV_OUT, ">$ARGV"); select(ARGV_OUT); $old_argv = $ARGV; }
+        next if /^(?:$re)(?:(?:\r|\n)*$| .*)/; print;
+      }; maybe_unlink($previous);'$q |
+    strip_lead >> $instructions
   fi
   if [ -n "$patch_add" ]; then
     echo 'perl -e '$q'
