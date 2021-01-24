@@ -1,7 +1,7 @@
 api
 config
 github
-graphql
+GRAPHQL
 http
 jq
 json
