@@ -246,6 +246,10 @@ set_up_tools() {
       echo missing $apps -- things will fail >&2
     fi
   fi
+  set_up_jq
+}
+
+set_up_jq() {
   if ! command_v jq || jq --version | perl -ne 'exit 0 unless s/^jq-//;exit 1 if /^(?:[2-9]|1\d|1\.(?:[6-9]|1\d+))/; exit 0'; then
     jq_url=https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
     spellchecker_bin="$spellchecker/bin"
