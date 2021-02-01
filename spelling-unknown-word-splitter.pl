@@ -35,7 +35,7 @@ if (open(PATTERNS, '<', "$dirname/patterns.txt")) {
   for (split /\R/, $file) {
     next if /^#/;
     chomp;
-    next unless /./;
+    next unless s/^(.+)/(?:$1)/;
     push @patterns, $_;
   }
   $patterns_re = join "|", @patterns if scalar @patterns;

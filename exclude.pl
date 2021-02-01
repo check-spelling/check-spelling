@@ -20,7 +20,7 @@ sub file_to_re {
     my $file=<FILE>;
     for (split /\R/, $file) {
       next if /^#/;
-      s/^\s*(.*)\s*$/$1/;
+      s/^\s*(.*)\s*$/(?:$1)/;
       push @items, $_;
     }
   }
