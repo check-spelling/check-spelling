@@ -27,7 +27,7 @@ if (@upper_list) {
 }
 if (@title_list) {
   my $title_tokens = join '|', @title_list;
-  push @re_list, "(?:\\b|(?<=[a-z]))($title_tokens)(?:\\b|(?=[A-Z]))";
+  push @re_list, "(?:\\b|(?<=[a-z])|(?<=[A-Z]{2}))($title_tokens)(?:\\b|(?=[A-Z]))";
 }
 if (@lower_list) {
   my $lower_tokens = join '|', @lower_list;
