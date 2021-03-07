@@ -130,6 +130,7 @@ cleanup_file() {
 get_project_files() {
   file=$1
   dest=$2
+  type=$1
   if [ ! -e "$dest" ] && [ -n "$bucket" ] && [ -n "$project" ]; then
     from=$(project_file_path $file)
     case "$from" in
@@ -138,7 +139,7 @@ get_project_files() {
         append_to_generated=""
         if [ -f "$from" ]; then
           echo "Retrieving $file from $from"
-          cleanup_file "$from" "$file"
+          cleanup_file "$from" "$type"
           cp "$from" $dest
           from_expanded="$from"
         else
@@ -154,7 +155,7 @@ get_project_files() {
             echo "Retrieving $file from $from_expanded"
             for item in $from_expanded; do
               if [ -s $item ]; then
-                cleanup_file "$item" "$file"
+                cleanup_file "$item" "$type"
                 cat "$item" >> $dest
               fi
             done
@@ -167,18 +168,18 @@ get_project_files() {
           cd $temp
           repo=$(echo "$bucket" | perl -pne 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')
           [ -d metadata ] || git clone --depth 1 $repo --single-branch --branch $project metadata
-          cleanup_file "metadata/$file.txt" "$file"
+          cleanup_file "metadata/$file.txt" "$type"
           cp metadata/$file.txt $dest 2> /dev/null || touch $dest
         );;
       gs://*)
         echo "Retrieving $file from $from"
         gsutil cp -Z $from $dest >/dev/null 2>/dev/null || touch $dest
-        cleanup_file "$dest" "$file"
+        cleanup_file "$dest" "$type"
         ;;
       *://*)
         echo "Retrieving $file from $from"
         download "$from" "$dest" || touch $dest
-        cleanup_file "$dest" "$file"
+        cleanup_file "$dest" "$type"
         ;;
     esac
   fi
