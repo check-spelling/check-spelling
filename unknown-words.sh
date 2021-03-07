@@ -339,14 +339,14 @@ cleanup_file() {
   type="$2"
   case "$type" in
     patterns|excludes|only)
-      check_pattern_file "$1"
+      check_pattern_file "$maybe_bad"
     ;;
     dictionary|expect|allow)
       check_dictionary "$maybe_bad"
     ;;
     # reject isn't checked, it allows for regular expressions
   esac
-  check_for_newline_at_eof "$1"
+  check_for_newline_at_eof "$maybe_bad"
 }
 
 get_project_files() {
