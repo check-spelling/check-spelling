@@ -122,6 +122,7 @@ get_project_files() {
             append_to=$from/${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
             append_to_generated=new
             touch $dest
+            echo "Retrieving $file from $from_expanded"
             for item in $from_expanded; do
               if [ -s $item ]; then
                 cleanup_file "$item" "$file"
@@ -129,7 +130,6 @@ get_project_files() {
               fi
             done
             from="$from/$(basename "$from")".$ext
-            echo "Retrieving $file from $from_expanded"
           fi
         fi;;
       ssh://git@*|git@*)
