@@ -1,6 +1,6 @@
 #!/bin/sh
 #! -*-perl-*-
-eval 'exec perl -x $0 ${1+"$@"}'
+eval 'exec perl -x -T -w $0 ${1+"$@"}'
   if 0;
 # ~/bin/w
 # Search for potentially misspelled words

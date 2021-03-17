@@ -1,8 +1,13 @@
-#!/usr/bin/env perl
+#!/bin/sh
+#! -*-perl-*-
+eval 'exec perl -x -T -w $0 ${1+"$@"}'
+  if 0;
 
 my $head=$ENV{HEAD};
 my $file=$ARGV[0];
-open LOG, qq<git log --oneline -s --no-abbrev-commit -1 "$head" -- "$file"|>;
+delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
+$ENV{'PATH'}='/usr/local/bin:/usr/bin:/bin';
+open LOG, '-|', 'git', 'log', '--oneline', '-s', '--no-abbrev-commit', '-1', $head, '--', $file;
 my $sha;
 while (<LOG>) {
   s/\s.*$//;
@@ -12,8 +17,8 @@ chomp $sha;
 $head = $sha;
 close LOG;
 my $state=0;
-my ($sha, $orig, $cur, $length);
-open BLAME, qq<git blame -b -f -s -p "$head" -- "$file"|>;
+my ($orig, $cur, $length);
+open BLAME, '-|', 'git', 'blame', '-b', '-f', '-s', '-p', $head, '--', $file;
 while (<BLAME>) {
   if ($state == 0) {
     /([0-9a-f]{40,}) (\d+) (\d+)(?: (\d+)|)/;

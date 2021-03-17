@@ -1,4 +1,7 @@
-#!/usr/bin/env perl
+#!/bin/sh
+#! -*-perl-*-
+eval 'exec perl -x -T -w $0 ${1+"$@"}'
+  if 0;
 
 die 'Please set $tokens_file' unless defined $ENV{tokens_file};
 my $tokens_file=$ENV{tokens_file};
@@ -13,7 +16,7 @@ my $tokens;
   $tokens = <TOKENS>;
 }
 
-my @token_list = split (/\s+/g, $tokens);
+my @token_list = split (/\s+/, $tokens);
 exit 0 unless @token_list;
 
 my @lower_list = grep /^[a-z]/, @token_list;

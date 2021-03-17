@@ -1,4 +1,7 @@
-#!/usr/bin/perl
+#!/bin/sh
+#! -*-perl-*-
+eval 'exec perl -x -T -w $0 ${1+"$@"}'
+  if 0;
 # This script takes null delimited files as input
 # it drops paths that match the listed exclusions
 # output is null delimited to match input
