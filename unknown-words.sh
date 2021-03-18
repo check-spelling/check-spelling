@@ -87,6 +87,31 @@ check_for_newline_at_eof() {
   fi
 }
 
+check_dictionary() {
+  file="$1"
+  expected_chars="[a-zA-Z']"
+  unexpected_chars="[^a-zA-Z']"
+  (perl -pi -e '
+  chomp;
+  my $messy = 0;
+  my $orig = $_;
+  if (s/\n|\r|\x0b|\f|\x85|\x2028|\x2029/a/g) {
+    $messy = 1;
+  }
+  if ('"/^${expected_chars}*(${unexpected_chars}+)/"') {
+    print STDERR "$ARGV: line $., columns $-[1]-$+[1], Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
+    $_ = "";
+  } else {
+    if ($messy) {
+      $_ = $orig;
+      s/\R//;
+      print STDERR "$ARGV: line $., columns $-[0]-$+[0], Warning - entry has unexpected whitespace (whitespace-in-dictionary)\n";
+    }
+    $_ .= "\n";
+  }
+' "$file") 2>&1
+}
+
 cleanup_file() {
   maybe_bad="$1"
   type="$2"
@@ -94,6 +119,10 @@ cleanup_file() {
     patterns|excludes|only)
       check_pattern_file "$1"
     ;;
+    dictionary|expect|allow)
+      check_dictionary "$maybe_bad"
+    ;;
+    # reject isn't checked, it allows for regular expressions
   esac
   check_for_newline_at_eof "$1"
 }
