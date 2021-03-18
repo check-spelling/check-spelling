@@ -1,4 +1,3 @@
-cron
 github
 gsutil
 http
@@ -8,10 +7,7 @@ spellchecking
 ssh
 svg
 timeframe
-ubuntu
 url
-versioned
 wiki
 workflow
 www
-YAML
