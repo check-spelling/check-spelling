@@ -11,22 +11,29 @@ inputs:
     required: true
   bucket:
     description: 'Container for spelling configuration'
+    required: false
   project:
     description: 'Folder/Branch within bucket containing spelling configuration'
+    required: false
   config:
     description: 'Spelling configuration directory'
     default: ".github/actions/spelling"
+    required: false
   dictionary_url:
     description: "Location of dictionary (if you aren't providing one in your repository)"
     default: 'https://raw.githubusercontent.com/check-spelling/check-spelling/dictionary-\$DICTIONARY_VERSION/dict.txt'
+    required: false
   dictionary_version:
     description: 'Version of the dictionary (only used if the url includes $DICTIONARY_VERSION)'
-    default: 20200211
+    default: "20200211"
+    required: false
   debug:
     description: 'Debug'
+    required: false
   experimental_apply_changes_via_bot:
     description: '(Experimental) Allow users to quote-reply to the bot comment to update the PR'
-    default: 0
+    default: "0"
+    required: false
 runs:
   using: 'composite'
   steps:
