@@ -458,10 +458,10 @@ set_up_tools() {
   apps=""
   add_app() {
     if ! command_v $1; then
-      apps="$apps $1"
+      apps="$apps $@"
     fi
   }
-  add_app curl
+  add_app curl ca-certificates
   add_app git
   add_app parallel
   if [ -n "$apps" ]; then
