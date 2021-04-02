@@ -37,7 +37,7 @@ generate_instructions() {
       open FILE, q{<}, $new_expect_file; chomp(my @words = <FILE>); close FILE;
       my @add=qw('$q$Q"$patch_add"$Q$q');
       my %items; @items{@words} = @words x (1); @items{@add} = @add x (1);
-      @words = sort {lc($a) cmp lc($b)} keys %items;
+      @words = sort {lc($a)."-".$a cmp lc($b)."-".$b} keys %items;
       open FILE, q{>}, $new_expect_file; for my $word (@words) { print FILE "$word\n" if $word =~ /\w/; };
       close FILE;
       system("git", "add", $new_expect_file);
