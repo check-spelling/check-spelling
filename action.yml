@@ -38,6 +38,10 @@ inputs:
     description: 'Number of CPUs available for running checks'
     required: false
     default: '2'
+  post_comment:
+    description: 'Post comment with report'
+    required: false
+    default: '1'
 
 runs:
   using: 'composite'
@@ -51,6 +55,7 @@ runs:
         INPUT_DICTIONARY_URL="${{ inputs.dictionary_url }}"
         INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT="${{ inputs.experimental_apply_changes_via_bot }}"
         INPUT_EXPERIMENTAL_PARALLEL_JOBS="${{ inputs.experimental_parallel_jobs }}"
+        INPUT_POST_COMMENT="${{ inputs.post_comment }}"
         DEBUG="${{ inputs.debug }}"
         spellchecker=$GITHUB_ACTION_PATH
         $GITHUB_ACTION_PATH/unknown-words.sh

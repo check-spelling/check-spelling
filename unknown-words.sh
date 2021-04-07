@@ -805,7 +805,6 @@ body_to_payload() {
   if [ -n "$DEBUG" ]; then
     cat $PAYLOAD >&2
   fi
-  echo "$PAYLOAD"
 }
 
 collaborator() {
@@ -870,36 +869,54 @@ set_comments_url() {
 
 post_commit_comment() {
   if [ -n "$OUTPUT" ]; then
-    echo "Preparing a comment for $GITHUB_EVENT_NAME"
-    set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
-    if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
-      BODY=$(mktemp)
-      echo "$OUTPUT" > $BODY
-      body_to_payload $BODY
-      echo $COMMENTS_URL
-      response=$(mktemp)
-      comment "$COMMENTS_URL" "$PAYLOAD" > $response
-      cat $response
-      COMMENT_URL=$(jq -r .url < $response)
-      perl -p -i.orig -e 's<COMMENT_URL><'"$COMMENT_URL"'>' $BODY
-      if diff -q "$BODY.orig" "$BODY" > /dev/null; then
-        no_patch=1
+    if [ -n "$INPUT_POST_COMMENT" ]; then
+      echo "Preparing a comment for $GITHUB_EVENT_NAME"
+      set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
+      if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
+        BODY=$(mktemp)
+        echo "$OUTPUT" > $BODY
+        body_to_payload $BODY
+        echo $COMMENTS_URL
+        response=$(mktemp)
+
+        res=0
+        comment "$COMMENTS_URL" "$PAYLOAD" > $response || res=$?
+        if [ $res -gt 0 ]; then
+          if [ -z "$DEBUG" ]; then
+            echo "failed posting to $COMMENTS_URL"
+            echo "$PAYLOAD"
+          fi
+          return $res
+        fi
+
+        if [ -n "$DEBUG" ]; then
+          cat $response
+        fi
+        COMMENT_URL=$(jq -r .url < $response)
+        perl -p -i.orig -e 's<COMMENT_URL><'"$COMMENT_URL"'>' $BODY
+        if diff -q "$BODY.orig" "$BODY" > /dev/null; then
+          no_patch=1
+        fi
+        rm "$BODY.orig"
+        if offer_quote_reply; then
+          (
+            echo
+            echo "Alternatively, the bot can do this for you if you reply quoting the following line:"
+            echo "@check-spelling-bot apply [changes]($COMMENT_URL)."
+          )>> $BODY
+          no_patch=
+        fi
+        if [ -z "$no_patch" ]; then
+          body_to_payload $BODY
+          comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response
+          if [ -n "$DEBUG" ]; then
+            cat $response
+          fi
+        fi
+        rm -f $BODY
+      else
+        echo "$OUTPUT"
       fi
-      rm "$BODY.orig"
-      if offer_quote_reply; then
-        (
-          echo
-          echo "Alternatively, the bot can do this for you if you reply quoting the following line:"
-          echo "@check-spelling-bot apply [changes]($COMMENT_URL)."
-        )>> $BODY
-        no_patch=
-      fi
-      if [ -z "$no_patch" ]; then
-        PAYLOAD=$(body_to_payload $BODY)
-        comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response
-        cat $response
-      fi
-      rm -f $BODY
     else
       echo "$OUTPUT"
     fi
