@@ -42,11 +42,35 @@ inputs:
     description: 'Post comment with report'
     required: false
     default: '1'
+  capture_output_unknown_words:
+    description: 'Capture unknown words (should be added to expect.txt) as an output'
+    required: false
+    default: ''
+  capture_output_stale_words:
+    description: 'Capture stale words (should be removed from expect.txt) as an output'
+    required: false
+    default: ''
+  capture_output_skipped_files:
+    description: 'Capture skipped files (could be added to excludes.txt) as an output'
+    required: false
+    default: ''
+
+outputs:
+  unknown_words:
+    description: "Unrecognized words (should be added to expect.txt)"
+    value: ${{ steps.spelling.outputs.unknown_words }}
+  stale_words:
+    description: "Stale words (should be removed from expect.txt) as an output"
+    value: ${{ steps.spelling.outputs.stale_words }}
+  skipped_files:
+    description: "Skipped files (could be added to excludes.txt)"
+    value: ${{ steps.spelling.outputs.skipped_files }}
 
 runs:
   using: 'composite'
   steps:
-    - run: >
+    - id: spelling
+      run: >
         INPUT_GITHUB_TOKEN="${{ inputs.GITHUB_TOKEN }}"
         INPUT_BUCKET="${{ inputs.bucket }}"
         INPUT_PROJECT="${{ inputs.project }}"
@@ -56,6 +80,9 @@ runs:
         INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT="${{ inputs.experimental_apply_changes_via_bot }}"
         INPUT_EXPERIMENTAL_PARALLEL_JOBS="${{ inputs.experimental_parallel_jobs }}"
         INPUT_POST_COMMENT="${{ inputs.post_comment }}"
+        INPUT_CAPTURE_UNKNOWN_WORDS="${{ inputs.capture_output_unknown_words }}"
+        INPUT_CAPTURE_STALE_WORDS="${{ inputs.capture_output_stale_words }}"
+        INPUT_CAPTURE_SKIPPED_FILES="${{ inputs.capture_output_skipped_files }}"
         DEBUG="${{ inputs.debug }}"
         spellchecker=$GITHUB_ACTION_PATH
         $GITHUB_ACTION_PATH/unknown-words.sh

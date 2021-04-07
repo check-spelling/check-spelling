@@ -675,6 +675,11 @@ remove_items() {
 <details><summary>Previously acknowledged words that are now absent
 </summary>$patch_remove</details>
 "
+    if [ -n "$INPUT_CAPTURE_STALE_WORDS" ]; then
+      remove_words=$(mktemp)
+      echo "$patch_remove" > $remove_words
+      echo "::set-output name=stale_words::$remove_words"
+    fi
   else
     rm "$fewer_misspellings_canary"
   fi
@@ -736,6 +741,9 @@ $header"
 
 "
     if [ -s "$should_exclude_file" ]; then
+      if [ -n "$INPUT_CAPTURE_SKIPPED_FILES" ]; then
+        echo "::set-output name=skipped_files::$should_exclude_file"
+      fi
       OUTPUT="$OUTPUT
 <details><summary>Some files were were automatically ignored</summary>
 
@@ -783,6 +791,11 @@ $err
 }
 bullet_words_and_warn() {
   echo "$1" > "$tokens_file"
+  if [ -n "$INPUT_CAPTURE_UNKNOWN_WORDS" ]; then
+    file_with_unknown_words=$(mktemp)
+    cp "$tokens_file" $file_with_unknown_words
+    echo "::set-output name=unknown_words::$file_with_unknown_words"
+  fi
   perl -pne 's/^(.)/* $1/' "$tokens_file"
   if ! skip_curl; then
     remove_items
