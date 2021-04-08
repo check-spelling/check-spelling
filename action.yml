@@ -54,6 +54,14 @@ inputs:
     description: 'Capture skipped files (could be added to excludes.txt) as an output'
     required: false
     default: ''
+  shortest_word:
+    description: 'Shortest word'
+    required: false
+    default: '3'
+  longest_word:
+    description: 'Longest word'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
@@ -83,6 +91,8 @@ runs:
         INPUT_CAPTURE_UNKNOWN_WORDS="${{ inputs.capture_output_unknown_words }}"
         INPUT_CAPTURE_STALE_WORDS="${{ inputs.capture_output_stale_words }}"
         INPUT_CAPTURE_SKIPPED_FILES="${{ inputs.capture_output_skipped_files }}"
+        INPUT_LONGEST_WORD="${{ inputs.longest_word }}"
+        INPUT_SHORTEST_WORD="${{ inputs.shortest_word }}"
         DEBUG="${{ inputs.debug }}"
         spellchecker=$GITHUB_ACTION_PATH
         $GITHUB_ACTION_PATH/unknown-words.sh

@@ -38,6 +38,30 @@ if (open(PATTERNS, '<', "$dirname/patterns.txt")) {
   $patterns_re = join "|", @patterns if scalar @patterns;
 }
 
+my $longest_word = get_val_from_env('INPUT_LONGEST_WORD', '');
+my $shortest_word = get_val_from_env('INPUT_SHORTEST_WORD', '');
+
+my ($shortest, $longest) = (undef, undef);
+sub valid_word {
+  # shortest_word is an absolute
+  $shortest = $shortest_word if $shortest_word;
+  if ($longest_word) {
+    # longest_word is an absolute
+    $longest = $longest_word;
+  } elsif (defined $longest) {
+    # we allow for some sloppiness (a couple of stuck keys per word)
+    # it's possible that this should scale with word length
+    $longest += 2;
+  }
+  return /.../ if (defined $shortest && defined $longest) && ($shortest > $longest);
+  $shortest = 3 unless defined $shortest;
+  $longest = '' unless defined $longest;
+  $word_match = ".{$shortest,$longest}";
+  return qr/\b$word_match\b/;
+}
+
+my $word_match = valid_word();
+($shortest, $longest) = (255, 0);
 # load dictionary
 my $dict = "$dirname/words";
 $dict = '/usr/share/dict/words' unless -e $dict;
@@ -45,9 +69,22 @@ open(DICT, '<', $dict);
 my %dictionary=();
 while ($word = <DICT>) {
   chomp $word;
+  next unless $word =~ $word_match;
+  my $l = length $word;
+  $longest = $l if $l > $longest;
+  $shortest = $l if $l < $shortest;
   $dictionary{$word}=1;
 }
 close DICT;
+
+sub get_val_from_env {
+  my ($var, $fallback) = @_;
+  return $fallback unless defined $ENV{$var};
+  $ENV{$var} =~ /^(\d+)$/;
+  return $1 || $fallback;
+}
+
+$word_match = valid_word();
 
 # read all input
 my ($last_file, $temp_dir, $words, $unrecognized) = ('', '', 0, 0);
@@ -103,7 +140,7 @@ while (<<>>) {
     my $raw_token = $token;
     $token =~ s/^[^Ii]?'+(.*)/$1/;
     $token =~ s/(.*?)'+$/$1/;
-    next unless $token =~ /.../;
+    next unless $token =~ $word_match;
     if (defined $dictionary{$token}) {
       ++$words;
       $unique{$token}=1;
