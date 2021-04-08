@@ -265,7 +265,8 @@ define_variables() {
   expect_path="$temp/expect.words.txt"
   excludelist_path="$temp/excludes.txt"
   patterns_path="$temp/patterns.txt"
-  advice_path="$temp/advice.txt"
+  advice_path="$temp/advice.md"
+  advice_path_txt="$temp/advice.txt"
   word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
@@ -278,7 +279,8 @@ sort_unique() {
 }
 
 project_file_path() {
-  echo $bucket/$project/$1.txt
+  ext=$(echo "$2" | sed -e 's/^.*\.//')
+  echo $bucket/$project/$1.${ext:-txt}
 }
 
 check_pattern_file() {
@@ -354,7 +356,7 @@ get_project_files() {
   dest=$2
   type=$1
   if [ ! -e "$dest" ] && [ -n "$bucket" ] && [ -n "$project" ]; then
-    from=$(project_file_path $file)
+    from=$(project_file_path $file $dest)
     case "$from" in
       .*)
         append_to="$from"
@@ -527,6 +529,12 @@ set_up_files() {
     cp "$patterns_path" "$patterns"
   fi
   get_project_files advice $advice_path
+  if [ ! -s "$advice_path" ]; then
+    get_project_files advice $advice_path_txt
+    if [ -s "$advice_path" ]; then
+      cp "$advice_path_txt" "$advice_path"
+    fi
+  fi
 
   if [ -n "$debug" ]; then
     echo "Clean up from previous run"
