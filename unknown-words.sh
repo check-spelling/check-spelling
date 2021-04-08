@@ -571,6 +571,9 @@ welcome() {
     fi
     end_group
   fi
+  if [ -n "$INPUT_PATH" ]; then
+    cd "$INPUT_PATH"
+  fi
 }
 
 xargs_zero() {

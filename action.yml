@@ -19,6 +19,10 @@ inputs:
     description: 'Spelling configuration directory'
     default: ".github/actions/spelling"
     required: false
+  experimental_path:
+    description: 'Directory root to check for spelling (note that bucket/project/config are independent of this)'
+    default: '.'
+    required: false
   dictionary_url:
     description: "Location of dictionary (if you aren't providing one in your repository)"
     default: 'https://raw.githubusercontent.com/check-spelling/check-spelling/dictionary-\$DICTIONARY_VERSION/dict.txt'
@@ -83,6 +87,7 @@ runs:
         INPUT_BUCKET="${{ inputs.bucket }}"
         INPUT_PROJECT="${{ inputs.project }}"
         INPUT_CONFIG="${{ inputs.config }}"
+        INPUT_PATH="${{ inputs.experimental_path }}"
         INPUT_DICTIONARY_VERSION="${{ inputs.dictionary_version }}"
         INPUT_DICTIONARY_URL="${{ inputs.dictionary_url }}"
         INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT="${{ inputs.experimental_apply_changes_via_bot }}"
