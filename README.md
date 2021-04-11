@@ -19,7 +19,7 @@ into word-like things for checking against a dictionary.
 
 ## Spell Checker GitHub Actions
 
-[![Spell checking](https://github.com/check-spelling/check-spelling/workflows/Spell%20checking/badge.svg?branch=master)](https://github.com/check-spelling/check-spelling/actions?query=workflow:"Spell+checking"+branch:master)
+[![Spell checking](https://github.com/check-spelling/check-spelling/workflows/Spell%20checking/badge.svg?branch=main)](https://github.com/check-spelling/check-spelling/actions?query=workflow:"Spell+checking"+branch:main)
 
 * [Basic Configuration](#basic-configuration)
 * **Documentation** and [Possible features](https://github.com/check-spelling/check-spelling/wiki/Possible-features)
@@ -47,7 +47,7 @@ are listed on the [Wiki](https://github.com/check-spelling/check-spelling/wiki/)
 ### Basic Configuration
 
 Just copy the [spell-check-this](https://github.com/check-spelling/spell-check-this)
-[.github](https://github.com/check-spelling/spell-check-this/tree/master/.github)
+[.github](https://github.com/check-spelling/spell-check-this/tree/main/.github)
 directory into your project.
 
 ## Running locally
