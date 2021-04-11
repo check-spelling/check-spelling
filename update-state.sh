@@ -4,6 +4,12 @@ q="'"
 strip_lead() {
   perl -ne 's/^\s+(\S)/$1/; print'
 }
+strip_blanks() {
+  perl -ne 'next unless /./; print'
+}
+strip_lead_and_blanks() {
+  strip_lead | strip_blanks
+}
 path_to_pattern() {
   perl -pne 's/^/^/;s/\./\\./g;s/$/\$/'
 }

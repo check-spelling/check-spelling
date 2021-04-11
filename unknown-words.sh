@@ -93,6 +93,40 @@ confused_comment() {
   react_comment_and_die "$1" "$2" "confused"
 }
 
+github_user_and_email() {
+  user_json=$(mktemp_json)
+  curl -s \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    "$GITHUB_API_URL/users/$1" > $user_json
+
+  github_name=$(jq -r '.name // empty' < $user_json)
+  if [ -z "$github_name" ]; then
+    github_name=$1
+  fi
+  github_email=$(jq -r '.email // empty' < $user_json)
+  rm $user_json
+  if [ -z "$github_email" ]; then
+    github_email="$1@users.noreply.github.com"
+  fi
+  COMMIT_AUTHOR="--author=$github_name <$github_email>"
+}
+
+git_commit() {
+  reason="$1"
+  git add -u
+  git config user.email "check-spelling-bot@users.noreply.github.com"
+  git config user.name "check-spelling-bot"
+  git commit \
+    "$COMMIT_AUTHOR" \
+    --date="$created_at" \
+    -m "$(echo "[check-spelling] Applying automated metadata updates
+
+                $reason
+
+                Signed-off-by: check-spelling-bot <check-spelling-bot@users.noreply.github.com>
+                " | strip_lead)"
+}
+
 handle_comment() {
   if ! offer_quote_reply; then
     exit 0
@@ -220,19 +254,10 @@ handle_comment() {
   git status --u=no --porcelain | grep -q . ||
     confused_comment "$trigger_comment_url" "didn't change repository"
   react_prefix="$react_prefix_base"
-  git add -u
-  git config user.email "check-spelling-bot@users.noreply.github.com"
-  git config user.name "check-spelling-bot"
-  git commit \
-    --author="$sender_login@users.noreply.github.com" \
-    --date="$created_at"\
-    -m "[check-spelling] Applying automated metadata updates
-
-Update per $comment_url
-Accepted in $trigger_comment_url
-
-Signed-off-by: check-spelling-bot <check-spelling-bot@users.noreply.github.com>
-" ||
+  github_user_and_email $sender_login
+  git_commit "$(echo "Update per $comment_url
+                      Accepted in $trigger_comment_url
+                    "|strip_lead)" ||
     confused_comment "$trigger_comment_url" "Failed to generate commit"
   git push request "HEAD:$pull_request_ref" ||
     confused_comment "$trigger_comment_url" "Failed to push to $pull_request_repo"
@@ -1093,7 +1118,27 @@ fewer_misspellings() {
   instructions=$(
     make_instructions
   )
-  spelling_info "$title" "$(bullet_words_and_warn "$patch_add")" "$instructions"
+  if [ -n "$INPUT_EXPERIMENTAL_COMMIT_NOTE" ]; then
+    . "$spellchecker/update-state.sh"
+    skip_push_and_pop=1
+
+    instructions_head=$(mktemp)
+    (
+      patch_add=1
+      patch_remove=1
+      patch_variables $comment_body > $instructions_head
+    )
+    . $instructions_head
+    rm $instructions_head
+    instructions=$(generate_instructions)
+
+    . $instructions &&
+    git_commit "$INPUT_EXPERIMENTAL_COMMIT_NOTE" &&
+    git push origin ${GITHUB_HEAD_REF:-$GITHUB_REF}
+    spelling_info "$title" "" "Applied"
+  else
+    spelling_info "$title" "" "$instructions"
+  fi
   end_group
   quit
 }

@@ -66,6 +66,10 @@ inputs:
     description: 'Longest word'
     required: false
     default: ''
+  experimental_commit_note:
+    description: 'If set, commit updates to expect automatically with this note'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
@@ -92,6 +96,7 @@ runs:
         INPUT_DICTIONARY_URL="${{ inputs.dictionary_url }}"
         INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT="${{ inputs.experimental_apply_changes_via_bot }}"
         INPUT_EXPERIMENTAL_PARALLEL_JOBS="${{ inputs.experimental_parallel_jobs }}"
+        INPUT_EXPERIMENTAL_COMMIT_NOTE="${{ inputs.experimental_commit_note }}"
         INPUT_POST_COMMENT="${{ inputs.post_comment }}"
         INPUT_CAPTURE_UNKNOWN_WORDS="${{ inputs.capture_output_unknown_words }}"
         INPUT_CAPTURE_STALE_WORDS="${{ inputs.capture_output_stale_words }}"
