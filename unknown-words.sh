@@ -71,7 +71,7 @@ react_comment_and_die() {
   echo "::error ::$message"
   react "$trigger_comment_url" "$react" > /dev/null
   if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
-    PAYLOAD=$(mktemp)
+    PAYLOAD=$(mktemp_json)
     echo '{}' | jq --arg body "@check-spelling-bot: $react_prefix $message" '.body = $body' > $PAYLOAD
 
     res=0
@@ -127,6 +127,12 @@ git_commit() {
                 " | strip_lead)"
 }
 
+mktemp_json() {
+  file=$(mktemp)
+  mv "$file" "$file.json"
+  echo "$file.json"
+}
+
 handle_comment() {
   if ! offer_quote_reply; then
     exit 0
@@ -137,15 +143,15 @@ handle_comment() {
     exit 0
   fi
 
-  comment=$(mktemp)
+  comment=$(mktemp_json)
   jq -r .comment < "$GITHUB_EVENT_PATH" > $comment
   trigger_comment_url=$(jq -r .url < $comment)
   sender_login=$(jq -r .sender.login < "$GITHUB_EVENT_PATH")
   issue_user_login=$(jq -r .issue.user.login < "$GITHUB_EVENT_PATH")
-  issue=$(mktemp)
+  issue=$(mktemp_json)
   jq -r .issue < "$GITHUB_EVENT_PATH" > $issue
   pull_request_url=$(jq -r .pull_request.url < $issue)
-  pull_request_info=$(mktemp)
+  pull_request_info=$(mktemp_json)
   pull_request "$pull_request_url" | jq .head > $pull_request_info
   pull_request_sha=$(jq -r .sha < $pull_request_info)
   set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$pull_request_sha"
@@ -918,7 +924,7 @@ post_commit_comment() {
         echo "$OUTPUT" > $BODY
         body_to_payload $BODY
         echo $COMMENTS_URL
-        response=$(mktemp)
+        response=$(mktemp_json)
 
         res=0
         comment "$COMMENTS_URL" "$PAYLOAD" > $response || res=$?
