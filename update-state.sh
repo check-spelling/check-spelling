@@ -4,6 +4,9 @@ q="'"
 strip_lead() {
   perl -ne 's/^\s+(\S)/$1/; print'
 }
+path_to_pattern() {
+  perl -pne 's/^/^/;s/\./\\./g;s/$/\$/'
+}
 generate_instructions() {
   instructions=$(mktemp)
   if [ -z "$skip_wrapping" ]; then
@@ -44,6 +47,15 @@ generate_instructions() {
     '$q |
     strip_lead >> $instructions
   fi
+  if [ -n "$should_exclude_patterns" ]; then
+    echo "(cat $q$excludes_file$q - <<EOF
+    $should_exclude_patterns
+    EOF
+    ) |grep .|
+    sort -f |
+    uniq > $q$excludes_file.temp$q &&
+    mv $q$excludes_file.temp$q $q$excludes_file$q" | strip_lead >> $instructions
+  fi
   if [ -z "$skip_wrapping" ]; then
     echo ')' >> $instructions
   fi
@@ -66,5 +78,15 @@ patch_variables() {
         s{\s+}{ }g;
         print'$q' < '$1')
       ' | strip_lead
+  fi
+  if [ -n "$should_exclude_patterns" ]; then
+    echo '
+      should_exclude_patterns=$(perl -e '$q'$/=undef;
+        $_=<>;
+        exit unless s{(?:You should consider excluding directory paths|You should consider adding them to).*}{}s;
+        s{.*These sample patterns would exclude them:}{}s;
+        s{.*\`\`\`([^`]*)\`\`\`.*}{$1}m;
+        print'$q' < '$1' | grep . || true)
+    ' | strip_lead
   fi
 }

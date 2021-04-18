@@ -193,6 +193,7 @@ handle_comment() {
   (
     patch_add=1
     patch_remove=1
+    should_exclude_patterns=1
     patch_variables $comment_body > $instructions_head
   )
   git restore $bucket/$project
@@ -740,7 +741,7 @@ $header"
 
 These sample patterns would exclude them:
 "'```'"
-$(sort "$should_exclude_file" |perl -pne 's/^/^/;s/\./\\./;s/$/\$/')
+$should_exclude_patterns
 "'```'
 if [ $(wc -l "$should_exclude_file" |perl -pne 's/(\d+)\s+.*/$1/') -gt 10 ]; then
       OUTPUT="$OUTPUT
@@ -988,6 +989,8 @@ compare_new_output() {
       grep_v_spellchecker |\
       perl -n -w -e 'next unless /^\+/; next if /^\+{3} /; s/^.//; print;')
   end_group
+
+  should_exclude_patterns=$(sort "$should_exclude_file" | path_to_pattern)
 }
 
 generate_curl_instructions() {
@@ -1001,6 +1004,9 @@ generate_curl_instructions() {
       fi
       if [ -n "$patch_add" ]; then
         patch_add='$patch_add'
+      fi
+      if [ -n "$should_exclude_patterns" ]; then
+        should_exclude_patterns='$should_exclude_patterns'
       fi
       generated=$(generate_instructions)
       cat $generated
