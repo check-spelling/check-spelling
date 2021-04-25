@@ -11,13 +11,13 @@ github
 githubusercontent
 grep
 gsutil
-jq
 json
 jsoref
 junit
 metadata
 mktemp
 perl
+pid
 PIPESTATUS
 pne
 rawfile

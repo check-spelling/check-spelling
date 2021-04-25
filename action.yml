@@ -34,6 +34,11 @@ inputs:
     description: '(Experimental) Allow users to quote-reply to the bot comment to update the PR'
     default: "0"
     required: false
+  experimental_parallel_jobs:
+    description: 'Number of CPUs available for running checks'
+    required: false
+    default: '2'
+
 runs:
   using: 'composite'
   steps:
@@ -45,6 +50,7 @@ runs:
         INPUT_DICTIONARY_VERSION="${{ inputs.dictionary_version }}"
         INPUT_DICTIONARY_URL="${{ inputs.dictionary_url }}"
         INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT="${{ inputs.experimental_apply_changes_via_bot }}"
+        INPUT_EXPERIMENTAL_PARALLEL_JOBS="${{ inputs.experimental_parallel_jobs }}"
         DEBUG="${{ inputs.debug }}"
         spellchecker=$GITHUB_ACTION_PATH
         $GITHUB_ACTION_PATH/unknown-words.sh

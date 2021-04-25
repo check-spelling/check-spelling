@@ -10,12 +10,9 @@ eval 'exec perl -x -T -w $0 ${1+"$@"}'
 
 use File::Basename;
 use Cwd 'abs_path';
+use File::Temp qw/ tempfile tempdir /;
 
 my $dirname = dirname(abs_path(__FILE__));
-# originally this was a dict of all words
-# but sorting it overflowed
-%letter_map = ();
-# now we have a dict per letter
 
 # skip files that don't exist (including dangling symlinks)
 if (scalar @ARGV) {
@@ -41,9 +38,53 @@ if (open(PATTERNS, '<', "$dirname/patterns.txt")) {
   $patterns_re = join "|", @patterns if scalar @patterns;
 }
 
+# load dictionary
+my $dict = "$dirname/words";
+$dict = '/usr/share/dict/words' unless -e $dict;
+open(DICT, '<', $dict);
+my %dictionary=();
+while ($word = <DICT>) {
+  chomp $word;
+  $dictionary{$word}=1;
+}
+close DICT;
+
 # read all input
+my ($last_file, $temp_dir, $words, $unrecognized) = ('', '', 0, 0);
+my %unique;
+my %unique_unrecognized;
+my @reports;
+
+sub report_stats() {
+  if ($unrecognized) {
+    open(STATS, '>', "$temp_dir/stats");
+      print STATS "{words: $words, unrecognized: $unrecognized, unknown: ".(keys %unique_unrecognized).", unique: ".(keys %unique)."}";
+    close STATS;
+    open(UNKNOWN, '>', "$temp_dir/unknown");
+      print UNKNOWN join "\n", sort keys %unique_unrecognized;
+    close UNKNOWN;
+    close WARNINGS;
+  }
+}
+
 while (<<>>) {
+  if ($last_file ne $ARGV) {
+    $. = 1;
+    $last_file = $ARGV;
+    report_stats();
+
+    $temp_dir = tempdir();
+    push @reports, "$temp_dir\n";
+    open(NAME, '>', "$temp_dir/name");
+      print NAME $last_file;
+    close NAME;
+    ($words, $unrecognized) = (0, 0);
+    %unique = ();
+    %unique_unrecognized = ();
+    open(WARNINGS, '>', "$temp_dir/warnings");
+  }
   next unless /./;
+  my $raw_line = $_;
   # hook for custom line based text exclusions:
   s/$patterns_re/ /g;
   # This is to make it easier to deal w/ rules:
@@ -55,76 +96,39 @@ while (<<>>) {
   s/[^a-zA-Z']+/ /g;
   while (s/([A-Z]{2,})([A-Z][a-z]{2,})/ $1 $2 /g) {}
   while (s/([a-z']+)([A-Z])/$1 $2/g) {}
+  my %unrecognized_line_items = ();
   for my $token (split /\s+/, $_) {
+    $token =~ s/^(?:'|$rsqm)+//g;
+    $token =~ s/(?:'|$rsqm)+s?$//g;
+    my $raw_token = $token;
     $token =~ s/^[^Ii]?'+(.*)/$1/;
     $token =~ s/(.*?)'+$/$1/;
-    next unless $token =~ /./;
+    next unless $token =~ /.../;
+    if (defined $dictionary{$token}) {
+      ++$words;
+      $unique{$token}=1;
+      next;
+    }
     my $key = lc $token;
     $key =~ s/''+/'/g;
     $key =~ s/'[sd]$//;
-    my $char = substr $key, 0, 1;
-    $letter_map{$char} = () unless defined $letter_map{$char};
-    my %word_map = ();
-    %word_map = %{$letter_map{$char}{$key}} if defined $letter_map{$char}{$key};
-    $word_map{$token} = 1;
-    $letter_map{$char}{$key} = \%word_map;
-  }
-}
-# exclude dictionary words
-my $dict = "$dirname/words";
-$dict = '/usr/share/dict/words' unless -e $dict;
-open DICT, '<', $dict;
-while ($word = <DICT>) {
-  chomp $word;
-  my $lower_word = lc $word;
-  my $char = substr $lower_word, 0, 1;
-  next unless defined $letter_map{$char}{$lower_word};
-  delete $letter_map{$char}{$word};
-  next if $lower_word eq $word;
-  my %word_map = %{$letter_map{$char}{$lower_word}};
-  delete $word_map{$word};
-  if (%word_map) {
-    $letter_map{$char}{$lower_word} = \%word_map;
-  } else {
-    delete $letter_map{$char}{$lower_word};
-  }
-}
-close DICT;
-# group related words
-for my $char (sort keys %letter_map) {
-  for my $plural_key (sort keys(%{$letter_map{$char}})) {
-    my $key = $plural_key;
-    if ($key =~ /.s$/) {
-      if ($key =~ /ies$/) {
-        $key =~ s/ies$/y/;
-      } else {
-        $key =~ s/s$//;
-      }
-    } elsif ($key =~ /.[^aeiou]ed$/) {
-      $key =~ s/ed$//;
-    } else {
+    if (defined $dictionary{$key}) {
+      ++$words;
+      $unique{$key}=1;
       next;
     }
-    next unless defined $letter_map{$char}{$key};
-    my %word_map = %{$letter_map{$char}{$key}};
-    for $word (keys(%{$letter_map{$char}{$plural_key}})) {
-      $word_map{$word} = 1;
+    ++$unrecognized;
+    $unique_unrecognized{$raw_token}=1;
+    $unrecognized_line_items{$raw_token}=1;
+  }
+  for my $token (keys %unrecognized_line_items) {
+    $token =~ s/'/(?:'|$rsqm)+/g;
+    while ($raw_line =~ /\b($token)\b/g) {
+      my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
+      next unless $match =~ /./;
+      print WARNINGS "line $. cols $begin-$end: '$match'\n";
     }
-    $letter_map{$char}{$key} = \%word_map;
-    delete $letter_map{$char}{$plural_key};
   }
 }
-# display the remainder
-for my $char (sort keys %letter_map) {
-  for $key (sort keys(%{$letter_map{$char}})) {
-    my %word_map = %{$letter_map{$char}{$key}};
-    my @words = keys(%word_map);
-    if (scalar(@words) > 1) {
-      print $key." (".(join ", ", sort { length($a) <=> length($b) || $a cmp $b } @words).")";
-    } else {
-      print $words[0];
-    }
-    print "\n";
-  }
-}
-
+report_stats();
+print join '', @reports;

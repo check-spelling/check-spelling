@@ -11,6 +11,8 @@ rsqm
 rtn
 substr
 symlinks
+tempdir
+tempfile
 unicode
 usr
 woord

@@ -4,11 +4,9 @@ FRONTEND
 github
 homepage
 http
-jq
 json
 jsoref
 noreply
-qq
 README
 Soref
 WORKDIR

@@ -252,6 +252,10 @@ define_variables() {
     bucket=${INPUT_CONFIG%/*}
     project=${INPUT_CONFIG##*/}
   fi
+  job_count=${INPUT_EXPERIMENTAL_PARALLEL_JOBS:-2}
+  if ! [ "$job_count" -eq "$job_count" ] 2>/dev/null || [ "$job_count" -lt 2 ]; then
+    job_count=1
+  fi
 
   dict="$spellchecker/words"
   patterns="$spellchecker/patterns.txt"
@@ -268,9 +272,9 @@ define_variables() {
   advice_path="$temp/advice.md"
   advice_path_txt="$temp/advice.txt"
   word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
+  word_collator="$spellchecker/spelling-collator.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
-  run_warnings="$temp/matcher.txt"
   tokens_file="$temp/tokens.txt"
 }
 
@@ -294,8 +298,7 @@ check_pattern_file() {
       chomp $@;
       my $err = $@;
       $err =~ s{^.*? in regex; marked by <-- HERE in m/(.*) <-- HERE.*$}{$1};
-      my $start = length $err;
-      print STDERR "$ARGV: line $., columns $start-$start, Warning - bad regex (bad-regex)\n$@\n";
+      print STDERR "$ARGV: line $., columns $-[0]-$-[0], Warning - bad regex (bad-regex)\n$@\n";
       print "^\$\n";
     }
   }' $1
@@ -495,12 +498,16 @@ set_up_files() {
   get_project_files_deprecated expect whitelist $expect_path
   expect_files=$from_expanded
   expect_file=$from
+  touch $expect_path
   new_expect_file=$append_to
   new_expect_file_new=$append_to_generated
   get_project_files excludes $excludelist_path
+  excludes_files=$from_expanded
+  excludes_file=$from
   if [ -s "$excludes_path" ]; then
     cp "$excludes_path" "$excludes"
   fi
+  should_exclude_file=$(mktemp)
   get_project_files dictionary $dictionary_path
   if [ -s "$dictionary_path" ]; then
     cp "$dictionary_path" "$dict"
@@ -576,19 +583,36 @@ xargs_zero() {
 }
 
 run_spell_check() {
-  begin_group 'Spell check'
-  (
+  begin_group 'Spell check files'
+  file_list=$(mktemp)
     git 'ls-files' -z 2> /dev/null |\
-    "$spellchecker/exclude.pl") |\
-  xargs_zero "$word_splitter" |\
-  "$word_splitter" |\
+    "$spellchecker/exclude.pl" > $file_list
+  perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print "Checking $count files\n";' $file_list
+  end_group
+
+  begin_group 'Spell check'
+  warning_output=$(mktemp)
+  more_warnings=$(mktemp)
+  (
+    # Technically $should_exclude_file is an append race under parallel
+    # since the file isn't critical -- it's advisory, I'm going to wait
+    # on reports before fixing it.
+    # The fix is to have a directory and have each process append to a
+    # file named for its pid inside that directory, and then have the
+    # caller can collate...
+    cat $file_list) |\
+  parallel -0 -n8 "-j$job_count" "$word_splitter" |\
+  expect="$expect_path" warning_output="$warning_output" more_warnings="$more_warnings" should_exclude_file="$should_exclude_file" "$word_collator" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
+  cat "$warning_output" "$more_warnings"
+  rm "$warning_output" "$more_warnings"
   end_group
   if [ "$word_splitter_status" != '0 0' ]; then
     echo "$word_splitter failed ($word_splitter_status)"
     exit 2
   fi
+  rm $file_list
 }
 
 printDetails() {
@@ -709,6 +733,33 @@ $header"
     remote_ref=${remote_ref#refs/heads/}
     OUTPUT="$header$1
 
+"
+    if [ -s "$should_exclude_file" ]; then
+      OUTPUT="$OUTPUT
+<details><summary>Some files were were automatically ignored</summary>
+
+These sample patterns would exclude them:
+"'```'"
+$(sort "$should_exclude_file" |perl -pne 's/^/^/;s/\./\\./;s/$/\$/')
+"'```'
+if [ $(wc -l "$should_exclude_file" |perl -pne 's/(\d+)\s+.*/$1/') -gt 10 ]; then
+      OUTPUT="$OUTPUT
+"'You should consider excluding directory paths (e.g. `(?:^|/)vendor/`), filenames (e.g. `(?:^|/)yarn\.lock$`), or file extensions (e.g. `\.gz$`)
+'
+fi
+      OUTPUT="$OUTPUT
+"'You should consider adding them to:
+```'"
+$(echo "$excludes_files" | xargs -n1 echo)
+"'```
+
+File matching is via Perl regular expressions.
+
+To check these files, more of their words need to be in the dictionary than not. You can use `patterns.txt` to exclude portions, add items to the dictionary (e.g. by adding them to `allow.txt`), or fix typos.
+</details>
+'
+    fi
+    OUTPUT="$OUTPUT
 <details><summary>To accept these unrecognized words as correct$cleanup_text,
 run the following commands</summary>
 
@@ -719,7 +770,8 @@ on the \`$remote_ref\` branch:
 "'```'"
 $err
 "'```
-</details>'
+</details>
+'
     if [ -s "$advice_path" ]; then
       OUTPUT="$OUTPUT
 
@@ -733,50 +785,6 @@ bullet_words_and_warn() {
   perl -pne 's/^(.)/* $1/' "$tokens_file"
   if ! skip_curl; then
     remove_items
-  fi
-  rm -f "$run_warnings"
-  export tokens_file
-  head=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.sha' -M)
-  if [ -z "$head" ] || [ "$head" = "null" ]; then
-    head=${GITHUB_SHA:-HEAD}
-  fi
-  base=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.base.sha // .before // "HEAD^"' -M)
-  if [ -z "$base" ]; then
-    base=$head^
-  fi
-  if ! git show $base 2>/dev/null >/dev/null; then
-    base=$head^
-  fi
-  if [ -z "$ONLY_REPORT_HEAD" ] && !git show $base 2>/dev/null >/dev/null; then
-    ONLY_REPORT_HEAD=1
-  fi
-  if [ -z "$ONLY_REPORT_HEAD" ]; then
-    rm -f "$run_files"
-    (
-    export with_blame=1
-    export HEAD=$head;
-    git diff-tree \
-      --no-commit-id \
-      --name-only \
-      --diff-filter=d \
-      -r $base..$head \
-      -z 2> /dev/null |
-    "$spellchecker/exclude.pl" |
-    xargs_zero "$spellchecker/porcelain.pl" > "$run_files"
-    $spellchecker/reporter.pl < "$run_files" > "$run_warnings.raw"
-    )
-    rm -f "$run_files"
-  else
-    git ls-files -z 2> /dev/null |
-    "$spellchecker/exclude.pl" | xargs_zero $spellchecker/reporter.pl > "$run_warnings.raw"
-  fi
-  if [ -s "$run_warnings.raw" ]; then
-    (
-      end_group
-      begin_group 'Unrecognized'
-      cat "$run_warnings.raw"
-    ) > "$run_warnings"
-    rm -f "$run_warnings.raw"
   fi
   rm -f "$tokens_file"
 }
@@ -793,7 +801,9 @@ body_to_payload() {
   BODY="$1"
   PAYLOAD=$(mktemp)
   echo '{}' | jq --rawfile body "$BODY" '.body = $body' > $PAYLOAD
-  cat $PAYLOAD >&2
+  if [ -n "$DEBUG" ]; then
+    cat $PAYLOAD >&2
+  fi
   echo "$PAYLOAD"
 }
 
@@ -858,10 +868,6 @@ set_comments_url() {
 }
 
 post_commit_comment() {
-  if [ -e "$run_warnings" ]; then
-    cat "$run_warnings"
-    rm -f "$run_warnings"
-  fi
   if [ -n "$OUTPUT" ]; then
     echo "Preparing a comment for $GITHUB_EVENT_NAME"
     set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"

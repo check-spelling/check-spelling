@@ -1,5 +1,0 @@
-elsif
-oneline
-perl
-qq
-usr

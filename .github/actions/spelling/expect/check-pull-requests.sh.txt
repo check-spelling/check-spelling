@@ -3,14 +3,12 @@ config
 github
 GRAPHQL
 http
-jq
 json
 oid
 perl
 pne
 rsync
 spellchecker
-SZ
 timeframe
 uname
 url
