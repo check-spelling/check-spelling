@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ "$DEBUG" != defined ]; then
+if [ "$INITIALIZED" != defined ]; then
   now() {
     date +'%s%N'
   }
@@ -22,6 +22,6 @@ if [ "$DEBUG" != defined ]; then
     end_group() {
       :
     }
-    DEBUG=defined
+    INITIALIZED=defined
   fi
 fi
