@@ -24,6 +24,9 @@ inputs:
     default: 20200211
   debug:
     description: 'Debug'
+  experimental_apply_changes_via_bot:
+    description: '(Experimental) Allow users to quote-reply to the bot comment to update the PR'
+    default: 0
 runs:
   using: 'composite'
   steps:
@@ -34,6 +37,7 @@ runs:
         INPUT_CONFIG="${{ inputs.config }}"
         INPUT_DICTIONARY_VERSION="${{ inputs.dictionary_version }}"
         INPUT_DICTIONARY_URL="${{ inputs.dictionary_url }}"
+        INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT="${{ inputs.experimental_apply_changes_via_bot }}"
         DEBUG="${{ inputs.debug }}"
         spellchecker=$GITHUB_ACTION_PATH
         $GITHUB_ACTION_PATH/unknown-words.sh

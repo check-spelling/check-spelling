@@ -6,6 +6,8 @@ on:
     tags-ignore:
       - "**"
   pull_request_target:
+  issue_comment:
+    types: [created]
 
 jobs:
   build:
@@ -26,3 +28,5 @@ jobs:
         fetch-depth: 2
     - name: check-spelling
       uses: ./
+      with:
+        experimental_apply_changes_via_bot: 1

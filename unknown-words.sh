@@ -16,11 +16,233 @@ main() {
     schedule)
       exec "$spellchecker/check-pull-requests.sh"
       ;;
+    issue_comment)
+      if [ -n "$DEBUG" ]; then
+        set -x
+      fi
+      handle_comment
+      ;;
+    pull_request_review_comment)
+      (
+        echo 'check-spelling does not currently support comments on code.'
+        echo 'If you are trying to ask @check-spelling-bot to update a PR,'
+        echo 'please quote the comment link as a top level comment instead'
+        echo 'of in a comment on a block of code.'
+        echo
+        echo 'Future versions may support this feature.'
+        echo 'For the time being, early adopters should remove the'
+        echo '`pull_request_review_comment` event from their workflow.'
+        echo 'workflow.'
+       ) >&2
+      exit 0
+      ;;
   esac
+}
+
+offer_quote_reply() {
+  case "$INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT" in
+    1|true|TRUE)
+      case "$GITHUB_EVENT_NAME" in
+        issue_comment|pull_request|pull_request_target)
+          true;;
+        *)
+          false;;
+        esac
+      ;;
+    *)
+      false
+      ;;
+  esac
+}
+
+repo_is_private() {
+  private=$(jq -r .repository.private < "$GITHUB_EVENT_PATH")
+  [ "$private" = "true" ]
 }
 
 command_v() {
   command -v "$1" >/dev/null 2>/dev/null
+}
+
+react_comment_and_die() {
+  trigger_comment_url="$1"
+  message="$2"
+  react="$3"
+  echo "::error ::$message"
+  react "$trigger_comment_url" "$react" > /dev/null
+  if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
+    PAYLOAD=$(mktemp)
+    echo '{}' | jq --arg body "@check-spelling-bot: $react_prefix $message" '.body = $body' > $PAYLOAD
+
+    res=0
+    comment "$COMMENTS_URL" "$PAYLOAD" > /dev/null || res=$?
+    if [ $res -gt 0 ]; then
+      if [ -z "$DEBUG" ]; then
+        echo "failed posting to $COMMENTS_URL"
+        echo "$PAYLOAD"
+      fi
+      return $res
+    fi
+
+    rm $PAYLOAD
+  fi
+  exit 1
+}
+
+confused_comment() {
+  react_comment_and_die "$1" "$2" "confused"
+}
+
+handle_comment() {
+  if ! offer_quote_reply; then
+    exit 0
+  fi
+
+  action=$(jq -r .action < "$GITHUB_EVENT_PATH")
+  if [ "$action" != "created" ]; then
+    exit 0
+  fi
+
+  comment=$(mktemp)
+  jq -r .comment < "$GITHUB_EVENT_PATH" > $comment
+  trigger_comment_url=$(jq -r .url < $comment)
+  sender_login=$(jq -r .sender.login < "$GITHUB_EVENT_PATH")
+  issue_user_login=$(jq -r .issue.user.login < "$GITHUB_EVENT_PATH")
+  issue=$(mktemp)
+  jq -r .issue < "$GITHUB_EVENT_PATH" > $issue
+  pull_request_url=$(jq -r .pull_request.url < $issue)
+  pull_request_info=$(mktemp)
+  pull_request "$pull_request_url" | jq .head > $pull_request_info
+  pull_request_sha=$(jq -r .sha < $pull_request_info)
+  set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$pull_request_sha"
+  react_prefix_base="Could not perform [request]($trigger_comment_url)."
+  react_prefix="$react_prefix_base"
+  if [ "$sender_login" != "$issue_user_login" ]; then
+    collaborators_url=$(jq -r .repository.collaborators_url < "$GITHUB_EVENT_PATH")
+    collaborators_url=$(echo "$collaborators_url" | perl -pne "s<\{/collaborator\}></$sender_login/permission>")
+    collaborator_permission=$(collaborator "$collaborators_url" | jq -r .permission)
+    case $collaborator_permission in
+      admin)
+        ;;
+      write)
+        ;;
+      *)
+        confused_comment "$trigger_comment_url" "Commenter (@$sender_login) isn't author (@$issue_user_login) / collaborator"
+        ;;
+    esac
+  fi
+  number=$(jq -r .number < $issue)
+  created_at=$(jq -r .created_at < $comment)
+  issue_url=$(jq -r .url < $issue)
+  pull_request_ref=$(jq -r .ref < $pull_request_info)
+  pull_request_repo=$(jq -r .repo.clone_url < $pull_request_info)
+  git remote add request $pull_request_repo
+  git fetch request "$pull_request_sha"
+  git config advice.detachedHead false
+  git reset --hard
+  git checkout "$pull_request_sha"
+
+  body=$(mktemp)
+  jq -r .body < $comment > $body
+
+  trigger=$(perl -ne 'print if /\@check-spelling-bot(?:\s+|:\s*)apply/' < $body)
+  rm $body
+  if [ -z "$trigger" ]; then
+    exit 0
+  fi
+
+  number_filter() {
+    perl -pne 's/\{.*\}//'
+  }
+  comments_base=$(jq -r .repository.comments_url < "$GITHUB_EVENT_PATH" | number_filter)
+  issue_comments_base=$(jq -r .repository.issue_comment_url < "$GITHUB_EVENT_PATH" | number_filter)
+  export comments_url="$comments_base|$issue_comments_base"
+  comment_url=$(echo "$trigger" | perl -ne 'next unless m{((?:$ENV{comments_url})/\d+)}; print "$1\n";')
+  [ -n "$comment_url" ] ||
+    confused_comment "$trigger_comment_url" "Did not find $comments_url in comment"
+
+  res=0
+  comment "$comment_url" > $comment || res=$?
+  if [ $res -gt 0 ]; then
+    if [ -z "$DEBUG" ]; then
+      echo "failed to retrieve $comment_url"
+    fi
+    return $res
+  fi
+
+  comment_body=$(mktemp)
+  jq -r .body < $comment > $comment_body
+  bot_comment_author=$(jq -r .user.login < $comment)
+  bot_comment_node_id=$(jq -r .node_id < $comment)
+  bot_comment_url=$(jq -r '.issue_url // .comment.url' < $comment)
+  rm $comment
+  github_actions_bot="github-actions[bot]"
+  [ "$bot_comment_author" = "$github_actions_bot" ] ||
+    confused_comment "$trigger_comment_url" "Expected @$github_actions_bot to be author of $comment_url (found @$bot_comment_author)"
+  [ "$issue_url" = "$bot_comment_url" ] ||
+    confused_comment "$trigger_comment_url" "Referenced comment was for a different object: $bot_comment_url"
+  capture_items() {
+    perl -ne 'next unless s{^\s*my \@'$1'=qw\('$q$Q'(.*)'$Q$q'\);$}{$1}; print'
+  }
+  capture_item() {
+    perl -ne 'next unless s{^\s*my \$'$1'="(.*)";$}{$1}; print'
+  }
+  skip_wrapping=1
+
+  instructions_head=$(mktemp)
+  (
+    patch_add=1
+    patch_remove=1
+    patch_variables $comment_body > $instructions_head
+  )
+  git restore $bucket/$project
+
+  res=0
+  . $instructions_head || res=$?
+  if [ $res -gt 0 ]; then
+    echo "instructions_head failed ($res)"
+    cat $instructions_head
+    return $res
+  fi
+  rm $comment_body $instructions_head
+  instructions=$(generate_instructions)
+
+  react_prefix="$react_prefix [Instructions]($comment_url)"
+  . $instructions || res=$?
+  if [ $res -gt 0 ]; then
+    echo "instructions failed ($res)"
+    cat $instructions
+    res=0
+    confused_comment "$trigger_comment_url" "failed to apply"
+  fi
+  rm $instructions
+  git status --u=no --porcelain | grep -q . ||
+    confused_comment "$trigger_comment_url" "didn't change repository"
+  react_prefix="$react_prefix_base"
+  git add -u
+  git config user.email "check-spelling-bot@users.noreply.github.com"
+  git config user.name "check-spelling-bot"
+  git commit \
+    --author="$sender_login@users.noreply.github.com" \
+    --date="$created_at"\
+    -m "[check-spelling] Applying automated metadata updates
+
+Update per $comment_url
+Accepted in $trigger_comment_url
+
+Signed-off-by: check-spelling-bot <check-spelling-bot@users.noreply.github.com>
+" ||
+    confused_comment "$trigger_comment_url" "Failed to generate commit"
+  git push request "HEAD:$pull_request_ref" ||
+    confused_comment "$trigger_comment_url" "Failed to push to $pull_request_repo"
+
+  react "$trigger_comment_url" 'eyes' > /dev/null
+  react "$comment_url" 'rocket' > /dev/null
+  trigger_node=$(jq -r .comment.node_id < "$GITHUB_EVENT_PATH")
+  collapse_comment $trigger_node $bot_comment_node_id
+
+  echo "# end"
+  exit 0
 }
 
 define_variables() {
@@ -412,6 +634,18 @@ to_publish_expect() {
   esac
 }
 
+remove_items() {
+  patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print')
+  if [ -n "$patch_remove" ]; then
+    echo "
+<details><summary>Previously acknowledged words that are now absent
+</summary>$patch_remove</details>
+"
+  else
+    rm "$fewer_misspellings_canary"
+  fi
+}
+
 spelling_warning() {
   OUTPUT="#### $1:
 "
@@ -428,6 +662,9 @@ $2"
   fi
   spelling_body "$out" "$3"
   if [ -n "$VERBOSE" ]; then
+    OUTPUT="## @check-spelling-bot Report
+
+$OUTPUT"
     post_commit_comment
   else
     echo "$OUTPUT"
@@ -442,12 +679,32 @@ spelling_body() {
   else
     header=""
   fi
+  header="# @check-spelling-bot Report
+
+$header"
   if [ -z "$err" ]; then
     OUTPUT="$header$1"
   else
+    if [ -e "$fewer_misspellings_canary" ]; then
+      cleanup_text=" (and remove the previously acknowledged and now absent words)"
+    fi
+    if [ -n "$GITHUB_HEAD_REF" ]; then
+      remote_url_ssh=$(jq -r .pull_request.head.repo.ssh_url < $GITHUB_EVENT_PATH)
+      remote_url_https=$(jq -r .pull_request.head.repo.clone_url < $GITHUB_EVENT_PATH)
+      remote_ref=$GITHUB_HEAD_REF
+    else
+      remote_url_ssh=$(jq -r .repository.ssh_url < $GITHUB_EVENT_PATH)
+      remote_url_https=$(jq -r .repository.clone_url < $GITHUB_EVENT_PATH)
+      remote_ref=$GITHUB_REF
+    fi
+    remote_ref=${remote_ref#refs/heads/}
     OUTPUT="$header$1
 
-<details><summary>To accept these changes, run the following commands from this repository on this branch</summary>
+<details><summary>To accept these unrecognized words as correct$cleanup_text,
+run the following commands</summary>
+
+... in a clone of the [$remote_url_ssh]($remote_url_https) repository
+on the \`$remote_ref\` branch:
 "$(relative_note)"
 
 "'```'"
@@ -465,6 +722,9 @@ $err
 bullet_words_and_warn() {
   echo "$1" > "$tokens_file"
   perl -pne 's/^(.)/* $1/' "$tokens_file"
+  if ! skip_curl; then
+    remove_items
+  fi
   rm -f "$run_warnings"
   export tokens_file
   head=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.sha' -M)
@@ -504,7 +764,7 @@ bullet_words_and_warn() {
   if [ -s "$run_warnings.raw" ]; then
     (
       end_group
-      begin_group 'Misspellings'
+      begin_group 'Unrecognized'
       cat "$run_warnings.raw"
     ) > "$run_warnings"
     rm -f "$run_warnings.raw"
@@ -528,6 +788,33 @@ body_to_payload() {
   echo "$PAYLOAD"
 }
 
+collaborator() {
+  collaborator_url="$1"
+  curl -L -s \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    "$collaborator_url" 2> /dev/null
+}
+
+pull_request() {
+  pull_request_url="$1"
+  curl -L -s -S \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    --header "Content-Type: application/json" \
+    "$pull_request_url"
+}
+
+react() {
+  url="$1"
+  reaction="$2"
+  curl -L -s -S \
+    -X POST \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.squirrel-girl-preview+json" \
+    "$url"/reactions \
+    -d '{"content":"'"$reaction"'"}'
+}
+
 comment() {
   comments_url="$1"
   payload="$2"
@@ -547,6 +834,20 @@ comment() {
     "$comments_url"
 }
 
+set_comments_url() {
+  event="$1"
+  file="$2"
+  sha="$3"
+  case "$event" in
+    issue_comment)
+      COMMENTS_URL=$(cat $file | jq -r .issue.comments_url);;
+    pull_request|pull_request_target|pull_request_review_comment)
+      COMMENTS_URL=$(cat $file | jq -r .pull_request.comments_url);;
+    push|commit_comment)
+      COMMENTS_URL=$(cat $file | jq -r .repository.commits_url | perl -pne 's#\{/sha}#/'$sha'/comments#');;
+  esac
+}
+
 post_commit_comment() {
   if [ -e "$run_warnings" ]; then
     cat "$run_warnings"
@@ -554,12 +855,7 @@ post_commit_comment() {
   fi
   if [ -n "$OUTPUT" ]; then
     echo "Preparing a comment for $GITHUB_EVENT_NAME"
-    case "$GITHUB_EVENT_NAME" in
-      pull_request|pull_request_target)
-        COMMENTS_URL=$(cat $GITHUB_EVENT_PATH | jq -r .pull_request.comments_url);;
-      push)
-        COMMENTS_URL=$(cat $GITHUB_EVENT_PATH | jq -r .repository.commits_url | perl -pne 's#\{/sha}#/'$GITHUB_SHA'/comments#');;
-    esac
+    set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
     if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
       BODY=$(mktemp)
       echo "$OUTPUT" > $BODY
@@ -568,24 +864,74 @@ post_commit_comment() {
       response=$(mktemp)
       comment "$COMMENTS_URL" "$PAYLOAD" > $response
       cat $response
-      case "$GITHUB_EVENT_NAME" in
-        pull_request|pull_request_target)
-          COMMENTS_URL=$(jq -r .url < $response)
-          (
-            echo
-            echo "Alternatively, the bot can do this for you if you quote the following line:"
-            echo "@check-spelling-bot apply [changes]($COMMENT_URL)."
-          )>> $BODY
-          PAYLOAD=$(body_to_payload $BODY)
-          rm -f $BODY
-          comment "$COMMENTS_URL" "$PAYLOAD" "PATCH" > $response
-          cat $response
-          ;;
-      esac
+      COMMENT_URL=$(jq -r .url < $response)
+      perl -p -i.orig -e 's<COMMENT_URL><'"$COMMENT_URL"'>' $BODY
+      if diff -q "$BODY.orig" "$BODY" > /dev/null; then
+        no_patch=1
+      fi
+      rm "$BODY.orig"
+      if offer_quote_reply; then
+        (
+          echo
+          echo "Alternatively, the bot can do this for you if you reply quoting the following line:"
+          echo "@check-spelling-bot apply [changes]($COMMENT_URL)."
+        )>> $BODY
+        no_patch=
+      fi
+      if [ -z "$no_patch" ]; then
+        PAYLOAD=$(body_to_payload $BODY)
+        comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response
+        cat $response
+      fi
+      rm -f $BODY
     else
       echo "$OUTPUT"
     fi
   fi
+}
+
+strip_lines() {
+  tr "\n" " "
+}
+
+minimize_comment_call() {
+  comment_node="$1"
+  echo "
+      minimizeComment(
+      input:
+      {
+        subjectId: ${Q}$comment_node${Q},
+        classifier: RESOLVED
+      }
+    ){
+      minimizedComment {
+        isMinimized
+      }
+    }
+" | strip_lead | strip_lines
+}
+
+collapse_comment_mutation() {
+  comment_node="$1"
+  query_head="mutation {"
+  query_tail="}"
+  query_body=""
+  i=0
+  while [ -n "$1" ]; do
+    query_body="$query_body q$i: "$(minimize_comment_call "$1")
+    i="$((i+1))"
+    shift
+  done
+  query="$query_head$query_body$query_tail"
+  echo '{}' | jq --arg query "$query" '.query = $query'
+}
+
+collapse_comment() {
+  curl -s \
+  -H "Authorization: token $GITHUB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data-binary "$(collapse_comment_mutation "$@")" \
+  $GITHUB_GRAPHQL_URL
 }
 
 exit_if_no_unknown_words() {
@@ -629,13 +975,54 @@ compare_new_output() {
   end_group
 }
 
+generate_curl_instructions() {
+  instructions=$(mktemp)
+  (
+    echo 'update_files() {'
+    (
+      skip_wrapping=1
+      if [ -n "$patch_remove" ]; then
+        patch_remove='$patch_remove'
+      fi
+      if [ -n "$patch_add" ]; then
+        patch_add='$patch_add'
+      fi
+      generated=$(generate_instructions)
+      cat $generated
+      rm $generated
+    )
+    echo '}'
+  ) >> $instructions
+  echo '
+    comment_json=$(mktemp)
+    curl -L -s -S \
+      --header "Content-Type: application/json" \
+      "COMMENT_URL" > "$comment_json"
+    comment_body=$(mktemp)
+    jq -r .body < "$comment_json" > $comment_body
+    rm $comment_json
+    '"$(patch_variables $Q'$comment_body'$Q)"'
+    update_files
+    rm $comment_body
+    git add -u
+    ' | sed -e 's/^    //' >> $instructions
+  echo $instructions
+}
+
+skip_curl() {
+  [ -n "$SKIP_CURL" ] || repo_is_private
+}
+
 make_instructions() {
-  . "$spellchecker/update-state.sh"
   patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print')
   patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; s/\n/ /; print')
-  instructions=$(generate_instructions)
-  if [ -n "$patch_add" ]; then
-    to_publish_expect "$new_expect_file" $new_expect_file_new >> $instructions
+  if skip_curl; then
+    instructions=$(generate_instructions)
+    if [ -n "$patch_add" ]; then
+      to_publish_expect "$new_expect_file" $new_expect_file_new >> $instructions
+    fi
+  else
+    instructions=$(generate_curl_instructions)
   fi
   cat $instructions
   rm $instructions
@@ -657,8 +1044,8 @@ fewer_misspellings() {
   quit
 }
 more_misspellings() {
-  begin_group 'Misspellings'
-  title='Misspellings found, please review'
+  begin_group 'Unrecognized'
+  title='Unrecognized words, please review'
   instructions=$(
     make_instructions
   )
@@ -667,13 +1054,15 @@ more_misspellings() {
   quit 1
 }
 
-main
 define_variables
 set_up_tools
 set_up_files
+. "$spellchecker/update-state.sh"
+main
 welcome
 run_spell_check
 exit_if_no_unknown_words
 compare_new_output
+fewer_misspellings_canary=$(mktemp)
 fewer_misspellings
 more_misspellings

@@ -1,4 +1,2 @@
-popd
-pushd
 toplevel
 qw
