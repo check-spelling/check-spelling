@@ -57,7 +57,7 @@ offer_quote_reply() {
 
 repo_is_private() {
   private=$(jq -r .repository.private < "$GITHUB_EVENT_PATH")
-  [ "$private" = "true" ]
+  [ "$private" != "false" ]
 }
 
 command_v() {
