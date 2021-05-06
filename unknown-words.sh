@@ -145,6 +145,15 @@ handle_comment() {
 
   comment=$(mktemp_json)
   jq -r .comment < "$GITHUB_EVENT_PATH" > $comment
+  body=$(mktemp)
+  jq -r .body $comment > $body
+
+  trigger=$(perl -ne 'print if /\@check-spelling-bot(?:\s+|:\s*)apply/' < $body)
+  rm $body
+  if [ -z "$trigger" ]; then
+    exit 0
+  fi
+
   trigger_comment_url=$(jq -r .url < $comment)
   sender_login=$(jq -r .sender.login < "$GITHUB_EVENT_PATH")
   issue_user_login=$(jq -r .issue.user.login < "$GITHUB_EVENT_PATH")
@@ -181,15 +190,6 @@ handle_comment() {
   git config advice.detachedHead false
   git reset --hard
   git checkout "$pull_request_sha"
-
-  body=$(mktemp)
-  jq -r .body < $comment > $body
-
-  trigger=$(perl -ne 'print if /\@check-spelling-bot(?:\s+|:\s*)apply/' < $body)
-  rm $body
-  if [ -z "$trigger" ]; then
-    exit 0
-  fi
 
   number_filter() {
     perl -pne 's/\{.*\}//'
