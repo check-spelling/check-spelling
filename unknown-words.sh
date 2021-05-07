@@ -103,7 +103,7 @@ react_comment_and_die() {
     if [ $res -gt 0 ]; then
       if [ -z "$DEBUG" ]; then
         echo "failed posting to $COMMENTS_URL"
-        echo "$PAYLOAD"
+        cat "$PAYLOAD"
       fi
       return $res
     fi
@@ -966,7 +966,7 @@ post_commit_comment() {
         if [ $res -gt 0 ]; then
           if [ -z "$DEBUG" ]; then
             echo "failed posting to $COMMENTS_URL"
-            echo "$PAYLOAD"
+            cat "$PAYLOAD"
           fi
           no_patch=1
         fi
