@@ -84,6 +84,9 @@ outputs:
   skipped_files:
     description: "Skipped files (could be added to excludes.txt)"
     value: ${{ steps.spelling.outputs.skipped_files }}
+  warnings:
+    description: "Warnings"
+    value: ${{ steps.spelling.outputs.warnings }}
 
 runs:
   using: 'composite'
