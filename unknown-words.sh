@@ -304,7 +304,7 @@ handle_comment() {
 }
 
 define_variables() {
-  if [ -f "$outputs" ]; then
+  if [ -f "$output_variables" ]; then
     return
   fi
   bucket=${INPUT_BUCKET:-$bucket}
@@ -338,7 +338,7 @@ define_variables() {
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
   tokens_file="$temp/tokens.txt"
-  outputs=$(mktemp)
+  output_variables=$(mktemp)
 }
 
 sort_unique() {
@@ -671,15 +671,17 @@ run_spell_check() {
   end_group
 
   begin_group 'Spell check'
-  warning_output=$(mktemp)
+  warning_output=$temp/warnings.txt
   more_warnings=$(mktemp)
   cat $file_list |\
   xargs -0 -n8 "-P$job_count" "$word_splitter" |\
   expect="$expect_path" warning_output="$warning_output" more_warnings="$more_warnings" should_exclude_file="$should_exclude_file" "$word_collator" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
-  cat "$warning_output" "$more_warnings"
-  rm "$warning_output" "$more_warnings"
+  cat "$more_warnings" >> "$warning_output"
+  rm "$more_warnings"
+  cat "$warning_output"
+  echo "::set-output name=warnings::$warning_output" >> $output_variables
   end_group
   if [ "$word_splitter_status" != '0 0' ]; then
     echo "$word_splitter failed ($word_splitter_status)"
@@ -749,7 +751,7 @@ remove_items() {
 "
     remove_words=$(mktemp)
     echo "$patch_remove" > $remove_words
-    echo "::set-output name=stale_words::$remove_words" >> $outputs
+    echo "::set-output name=stale_words::$remove_words" >> $output_variables
   else
     rm "$fewer_misspellings_canary"
   fi
@@ -816,7 +818,7 @@ $header"
 
 "
     if [ -s "$should_exclude_file" ]; then
-      echo "::set-output name=skipped_files::$should_exclude_file" >> $outputs
+      echo "::set-output name=skipped_files::$should_exclude_file" >> $output_variables
       OUTPUT="$OUTPUT
 <details><summary>Some files were automatically ignored</summary>
 
@@ -866,7 +868,7 @@ bullet_words_and_warn() {
   echo "$1" > "$tokens_file"
   file_with_unknown_words=$(mktemp)
   cp "$tokens_file" $file_with_unknown_words
-  echo "::set-output name=unknown_words::$file_with_unknown_words" >> $outputs
+  echo "::set-output name=unknown_words::$file_with_unknown_words" >> $output_variables
   perl -pne 's/^(.)/* $1/' "$tokens_file"
   remove_items
   rm -f "$tokens_file"
@@ -874,7 +876,7 @@ bullet_words_and_warn() {
 
 quit() {
   echo "::remove-matcher owner=check-spelling::"
-  cat $outputs
+  cat $output_variables
   if [ -n "$junit" ]; then
     exit
   fi
@@ -1211,4 +1213,4 @@ fewer_misspellings_canary=$(mktemp)
 set_patch_remove_add
 fewer_misspellings
 more_misspellings
-cat $outputs
+cat $output_variables
