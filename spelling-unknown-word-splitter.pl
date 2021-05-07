@@ -160,8 +160,17 @@ while (<<>>) {
   }
   for my $token (keys %unrecognized_line_items) {
     $token =~ s/'/(?:'|$rsqm)+/g;
-    while ($raw_line =~ /\b($token)\b/g) {
-      my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
+    my $before;
+    if ($token =~ /^[A-Z][a-z]/) {
+      $before = '(?<=.)';
+    } elsif ($token =~ /^[A-Z]/) {
+      $before = '(?<=[^A-Z])';
+    } else {
+      $before = '(?<=[^a-z])';
+    }
+    my $after = ($token =~ /[A-Z]$/) ? '(?=[^A-Za-z])|(?=[A-Z][a-z])' : '(?=[^a-z])';
+    while ($raw_line =~ /(?:\b|$before)($token)(?:\b|$after)/g) {
+      my ($begin, $end, $match) = ($-[0] + 1, $+[0], $1);
       next unless $match =~ /./;
       print WARNINGS "line $. cols $begin-$end: '$match'\n";
     }
