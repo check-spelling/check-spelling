@@ -61,6 +61,13 @@ inputs:
     deprecationMessage: 'Obsolete: outputs are always captured'
     required: false
     default: ''
+  event_aliases:
+    description: >-
+      Try to treat a GitHub event "a" as GitHub event "b" (JSON map).
+      If this flag was available before this tool recognized `pull_request_target`,
+      `{"pull_request_target":"pull_request"}` would have mapped it to `pull_request`.
+    required: false
+    default: ''
   shortest_word:
     description: 'Shortest word'
     required: false
@@ -92,21 +99,23 @@ runs:
   using: 'composite'
   steps:
     - id: spelling
-      run: >
-        INPUT_GITHUB_TOKEN="${{ inputs.GITHUB_TOKEN }}"
-        INPUT_BUCKET="${{ inputs.bucket }}"
-        INPUT_PROJECT="${{ inputs.project }}"
-        INPUT_CONFIG="${{ inputs.config }}"
-        INPUT_PATH="${{ inputs.experimental_path }}"
-        INPUT_DICTIONARY_VERSION="${{ inputs.dictionary_version }}"
-        INPUT_DICTIONARY_URL="${{ inputs.dictionary_url }}"
-        INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT="${{ inputs.experimental_apply_changes_via_bot }}"
-        INPUT_EXPERIMENTAL_PARALLEL_JOBS="${{ inputs.experimental_parallel_jobs }}"
-        INPUT_EXPERIMENTAL_COMMIT_NOTE="${{ inputs.experimental_commit_note }}"
-        INPUT_POST_COMMENT="${{ inputs.post_comment }}"
-        INPUT_LONGEST_WORD="${{ inputs.longest_word }}"
-        INPUT_SHORTEST_WORD="${{ inputs.shortest_word }}"
-        DEBUG="${{ inputs.debug }}"
-        spellchecker=$GITHUB_ACTION_PATH
+      env:
+        INPUT_GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        INPUT_EVENT_ALIASES: "${{ inputs.event_aliases }}"
+        INPUT_BUCKET: ${{ inputs.bucket }}
+        INPUT_PROJECT: ${{ inputs.project }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_PATH: ${{ inputs.experimental_path }}
+        INPUT_DICTIONARY_VERSION: ${{ inputs.dictionary_version }}
+        INPUT_DICTIONARY_URL: ${{ inputs.dictionary_url }}
+        INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT: ${{ inputs.experimental_apply_changes_via_bot }}
+        INPUT_EXPERIMENTAL_PARALLEL_JOBS: ${{ inputs.experimental_parallel_jobs }}
+        INPUT_EXPERIMENTAL_COMMIT_NOTE: ${{ inputs.experimental_commit_note }}
+        INPUT_POST_COMMENT: ${{ inputs.post_comment }}
+        INPUT_LONGEST_WORD: ${{ inputs.longest_word }}
+        INPUT_SHORTEST_WORD: ${{ inputs.shortest_word }}
+        DEBUG: ${{ inputs.debug }}
+        spellchecker: ${{ github.action_path }}
+      run:
         $GITHUB_ACTION_PATH/unknown-words.sh
       shell: bash
