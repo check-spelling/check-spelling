@@ -1193,6 +1193,7 @@ more_misspellings() {
   )
   spelling_warning "$title" "$(bullet_words_and_warn "$patch_add")" "$instructions"
   end_group
+  echo "$title"
   quit 1
 }
 
