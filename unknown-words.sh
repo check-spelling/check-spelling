@@ -8,6 +8,7 @@ export spellchecker=${spellchecker:-/app}
 . "$spellchecker/common.sh"
 
 main() {
+  GITHUB_EVENT_NAME=$(echo "$INPUT_EVENT_ALIASES" | jq -r ".$GITHUB_EVENT_NAME // \"$GITHUB_EVENT_NAME\"")
   case "$GITHUB_EVENT_NAME" in
     schedule)
       exec "$spellchecker/check-pull-requests.sh"
