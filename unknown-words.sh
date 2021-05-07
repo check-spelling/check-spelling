@@ -8,8 +8,24 @@ export spellchecker=${spellchecker:-/app}
 . "$spellchecker/common.sh"
 
 main() {
-  GITHUB_EVENT_NAME=$(echo "$INPUT_EVENT_ALIASES" | jq -r ".$GITHUB_EVENT_NAME // \"$GITHUB_EVENT_NAME\"")
+  if [ -n "$INPUT_EVENT_ALIASES" ]; then
+    GITHUB_EVENT_NAME=$(echo "$INPUT_EVENT_ALIASES" | jq -r ".$GITHUB_EVENT_NAME // \"$GITHUB_EVENT_NAME\"")
+  fi
   case "$GITHUB_EVENT_NAME" in
+    '')
+      (
+        echo 'check-spelling does not know what to do because GITHUB_EVENT_NAME is empty.'
+        echo
+        echo 'This could be because of a configuration error with event_aliases.'
+        echo 'It could be because you are using act or a similar GitHub Runner shim,'
+        echo 'and its configuration is incorrect.'
+      ) >&2
+      exit 1
+      ;;
+    push)
+      ;;
+    pull_request|pull_request_target)
+      ;;
     schedule)
       exec "$spellchecker/check-pull-requests.sh"
       ;;
@@ -30,8 +46,22 @@ main() {
         echo 'For the time being, early adopters should remove the'
         echo '`pull_request_review_comment` event from their workflow.'
         echo 'workflow.'
-       ) >&2
+      ) >&2
       quit 0
+      ;;
+    *)
+      ( echo "
+          check-spelling does not currently support the GitHub $b$GITHUB_EVENT_NAME$b event.
+
+          If you think it can, consider using:
+
+            with:
+              event_aliases: {$Q$GITHUB_EVENT_NAME$Q:${Q}supported_event_name${Q}}
+
+          Future versions may support this feature." \
+        | perl -pne 's/^ {10}//'
+      ) >&2
+      exit 1
       ;;
   esac
 }
