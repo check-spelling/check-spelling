@@ -25,7 +25,7 @@ inputs:
     required: false
   dictionary_url:
     description: "Location of dictionary (if you aren't providing one in your repository)"
-    default: 'https://raw.githubusercontent.com/check-spelling/check-spelling/dictionary-\$DICTIONARY_VERSION/dict.txt'
+    default: 'https://raw.githubusercontent.com/check-spelling/check-spelling/dictionary-$DICTIONARY_VERSION/dict.txt'
     required: false
   dictionary_version:
     description: 'Version of the dictionary (only used if the url includes $DICTIONARY_VERSION)'
