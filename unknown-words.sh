@@ -831,9 +831,7 @@ bullet_words_and_warn() {
     echo "::set-output name=unknown_words::$file_with_unknown_words"
   fi
   perl -pne 's/^(.)/* $1/' "$tokens_file"
-  if ! skip_curl; then
-    remove_items
-  fi
+  remove_items
   rm -f "$tokens_file"
 }
 
