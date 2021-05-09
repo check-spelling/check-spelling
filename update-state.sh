@@ -1,6 +1,8 @@
 #!/bin/bash
 Q='"'
 q="'"
+B='```'
+b='`'
 strip_lead() {
   perl -ne 's/^\s+(\S)/$1/; print'
 }
