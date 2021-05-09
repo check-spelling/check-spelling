@@ -819,19 +819,19 @@ $header"
 <details><summary>Some files were automatically ignored</summary>
 
 These sample patterns would exclude them:
-"'```'"
+$B
 $should_exclude_patterns
-"'```'
+$B"
 if [ $(wc -l "$should_exclude_file" |perl -pne 's/(\d+)\s+.*/$1/') -gt 10 ]; then
       OUTPUT="$OUTPUT
 "'You should consider excluding directory paths (e.g. `(?:^|/)vendor/`), filenames (e.g. `(?:^|/)yarn\.lock$`), or file extensions (e.g. `\.gz$`)
 '
 fi
       OUTPUT="$OUTPUT
-"'You should consider adding them to:
-```'"
+You should consider adding them to:
+$B
 $(echo "$excludes_files" | xargs -n1 echo)
-"'```
+$B"'
 
 File matching is via Perl regular expressions.
 
@@ -844,14 +844,14 @@ To check these files, more of their words need to be in the dictionary than not.
 run the following commands</summary>
 
 ... in a clone of the [$remote_url_ssh]($remote_url_https) repository
-on the \`$remote_ref\` branch:
+on the $b$remote_ref$b branch:
 "$(relative_note)"
 
-"'```'"
+$B
 $err
-"'```
+$B
 </details>
-'
+"
     if [ -s "$advice_path" ]; then
       OUTPUT="$OUTPUT
 
