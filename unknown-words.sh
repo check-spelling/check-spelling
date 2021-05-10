@@ -764,6 +764,11 @@ spelling_body() {
 $header"
   if [ -z "$err" ]; then
     OUTPUT="$header$1"
+    if [ -e "$fewer_misspellings_canary" ]; then
+      OUTPUT="$OUTPUT
+
+(You can remove the previously acknowledged and now absent words.)"
+    fi
   else
     if [ -e "$fewer_misspellings_canary" ]; then
       cleanup_text=" (and remove the previously acknowledged and now absent words)"
