@@ -22,8 +22,9 @@ into word-like things for checking against a dictionary.
 [![Spell checking](https://github.com/check-spelling/check-spelling/workflows/Spell%20checking/badge.svg?branch=main&event=push)](https://github.com/check-spelling/check-spelling/actions?query=workflow:"Spell+checking"+branch:main+event:push)
 
 * [Basic Configuration](#basic-configuration)
-* **Documentation** and [Possible features](https://github.com/check-spelling/check-spelling/wiki/Possible-features)
+* [**Documentation**](https://github.com/check-spelling/check-spelling/wiki/) and [Possible features](https://github.com/check-spelling/check-spelling/wiki/Possible-features)
 are listed on the [Wiki](https://github.com/check-spelling/check-spelling/wiki/)
+  * [Warning descriptions](https://github.com/check-spelling/check-spelling/wiki/Warnings)
 * [Configuration](https://github.com/check-spelling/check-spelling/wiki/Configuration)
   * [Workflow variables](https://github.com/check-spelling/check-spelling/wiki/Configuration#workflow-variables)
   * [Workflows](https://github.com/check-spelling/check-spelling/wiki/Configuration:-Workflows)
