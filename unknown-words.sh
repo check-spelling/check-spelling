@@ -800,7 +800,7 @@ $header"
         echo "::set-output name=skipped_files::$should_exclude_file"
       fi
       OUTPUT="$OUTPUT
-<details><summary>Some files were were automatically ignored</summary>
+<details><summary>Some files were automatically ignored</summary>
 
 These sample patterns would exclude them:
 "'```'"
