@@ -968,7 +968,7 @@ post_commit_comment() {
             echo "failed posting to $COMMENTS_URL"
             echo "$PAYLOAD"
           fi
-          return $res
+          no_patch=1
         fi
 
         if [ -n "$DEBUG" ]; then
