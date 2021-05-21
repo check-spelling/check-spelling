@@ -44,7 +44,32 @@ offer_quote_reply() {
     1|true|TRUE)
       case "$GITHUB_EVENT_NAME" in
         issue_comment|pull_request|pull_request_target)
-          true;;
+          if [ ! -d $bucket/$project ]; then
+            # if there is no directory in the merged state, then adding files into it
+            # will not result in a merge conflict
+            true
+          else
+            # if there is a directory in the merged state, then we don't want to
+            # suggest changes to the directory if it doesn't exist in the branch,
+            # because that would almost certainly result in merge conflicts.
+            # If people want to talk to the bot, they should rebase first.
+            issue=$(mktemp_json)
+            pull_request_url=$(jq -r '.pull_request.url // .issue.pull_request.url // empty' "$GITHUB_EVENT_PATH")
+            if [ -z "$pull_request_url" ]; then
+              false
+            else
+              pull_request_info=$(mktemp_json)
+              pull_request "$pull_request_url" | jq -r .head > $pull_request_info
+              pull_request_sha=$(jq -r .sha $pull_request_info)
+              git fetch origin "$pull_request_sha" >&2
+              define_variables
+              if git ls-tree "$pull_request_sha" -- "$bucket/$project" 2> /dev/null | grep -q tree; then
+                return 0
+              fi
+              return 1
+            fi
+          fi
+          ;;
         *)
           false;;
         esac
@@ -134,14 +159,16 @@ mktemp_json() {
 }
 
 handle_comment() {
+  action=$(jq -r '.action // empty' "$GITHUB_EVENT_PATH")
+  if [ "$action" != "created" ]; then
+    quit 0
+  fi
+
   if ! offer_quote_reply; then
     quit 0
   fi
 
-  action=$(jq -r .action < "$GITHUB_EVENT_PATH")
-  if [ "$action" != "created" ]; then
-    quit 0
-  fi
+  . "$spellchecker/update-state.sh"
 
   comment=$(mktemp_json)
   jq -r .comment < "$GITHUB_EVENT_PATH" > $comment
@@ -236,7 +263,7 @@ handle_comment() {
     should_exclude_patterns=1
     patch_variables $comment_body > $instructions_head
   )
-  git restore $bucket/$project
+  git restore -- $bucket/$project 2> /dev/null || true
 
   res=0
   . $instructions_head || res=$?
