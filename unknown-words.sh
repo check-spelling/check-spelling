@@ -1017,15 +1017,6 @@ $B
     fi
   fi
 }
-bullet_words_and_warn() {
-  echo "$1" > "$tokens_file"
-  file_with_unknown_words=$(mktemp)
-  cp "$tokens_file" $file_with_unknown_words
-  echo "::set-output name=unknown_words::$file_with_unknown_words" >> $output_variables
-  perl -pne 's/^(.)/* $1/' "$tokens_file"
-  remove_items
-  rm -f "$tokens_file"
-}
 
 quit() {
   echo "::remove-matcher owner=check-spelling::"
@@ -1358,12 +1349,24 @@ more_misspellings() {
     fi
     end_group
   fi
-  begin_group 'Unrecognized'
-  title='Unrecognized words, please review'
+
   instructions=$(
     make_instructions
   )
-  spelling_warning "$title" "$(bullet_words_and_warn "$patch_add")" "$instructions"
+  echo "$patch_add" | tr " " "\n" | grep . > "$tokens_file"
+  unknown_count=$(cat "$tokens_file" | wc -l | strip_lead)
+  title='Please review'
+  begin_group "Unrecognized ($unknown_count)"
+  echo "::set-output name=unknown_words::$tokens_file" >> $output_variables
+  spelling_warning "$title" "
+<details><summary>Unrecognized words ($unknown_count)</summary>
+
+$B
+$(cat "$tokens_file")
+$B
+</details>
+$(remove_items)
+" "$instructions"
   end_group
   echo "$title"
   quit 1
