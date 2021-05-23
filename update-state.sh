@@ -77,14 +77,7 @@ patch_variables() {
   fi
   if [ -n "$patch_add" ]; then
     echo '
-      patch_add=$(perl -e '$q'$/=undef;
-        $_=<>;
-        s{<details>.*}{}s;
-        s{^#.*}{};
-        s{\n##.*}{};
-        s{(?:^|\n)\s*\*}{}g;
-        s{\s+}{ }g;
-        print'$q' < '$1')
+      patch_add=$(perl -e '$q'$/=undef; $_=<>; print "$1" if m{Unrecognized words[^<]*</summary>\n*'$B'\n*([^<]*)'$B'\n*</details>$}m;'$q' < '$1')
       ' | strip_lead
   fi
   if [ -n "$should_exclude_patterns" ]; then
