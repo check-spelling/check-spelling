@@ -942,7 +942,6 @@ post_commit_comment() {
         BODY=$(mktemp)
         echo "$OUTPUT" > $BODY
         body_to_payload $BODY
-        echo $COMMENTS_URL
         response=$(mktemp_json)
 
         res=0
