@@ -558,10 +558,12 @@ get_project_files_deprecated() {
 }
 
 download() {
-  curl -L -s "$1" -o "$2" -f
-  exit_value=$?
+  exit_value=0
+  curl -L -s "$1" -o "$2" -f || exit_value=$?
   if [ $exit_value = 0 ]; then
     echo "Downloaded $1 (to $2)" >&2
+  else
+    echo "Failed to download $1 (to $2)" >&2
   fi
   return $exit_value
 }
@@ -1143,7 +1145,12 @@ post_commit_comment() {
         fi
         if [ -z "$no_patch" ]; then
           body_to_payload $BODY
-          comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response
+          comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response || res=$?
+          if [ $res -gt 0 ]; then
+            if [ -z "$DEBUG" ]; then
+              echo "Failed to patch $COMMENT_URL"
+            fi
+          fi
           if [ -n "$DEBUG" ]; then
             cat $response
           fi
