@@ -36,16 +36,17 @@ main() {
       handle_comment
       ;;
     pull_request_review_comment)
-      (
-        echo 'check-spelling does not currently support comments on code.'
-        echo 'If you are trying to ask @check-spelling-bot to update a PR,'
-        echo 'please quote the comment link as a top level comment instead'
-        echo 'of in a comment on a block of code.'
-        echo
-        echo 'Future versions may support this feature.'
-        echo 'For the time being, early adopters should remove the'
-        echo '`pull_request_review_comment` event from their workflow.'
-        echo 'workflow.'
+      ( echo 'check-spelling does not currently support comments on code.
+
+          If you are trying to ask @check-spelling-bot to update a PR,
+          please quote the comment link as a top level comment instead
+          of in a comment on a block of code.
+
+          Future versions may support this feature.
+          For the time being, early adopters should remove the
+          `pull_request_review_comment` event from their workflow.
+          workflow.' \
+        | strip_lead
       ) >&2
       quit 0
       ;;
