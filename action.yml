@@ -119,6 +119,10 @@ inputs:
     description: 'If set, commit updates to expect automatically with this note'
     required: false
     default: ''
+  suppress_push_for_open_pull_request:
+    description: "If set, do not do work in response to `push` if there is an open `pull` request to the repository for the branch (this assumes there's a `pull_request_target` event configured)."
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
@@ -159,6 +163,7 @@ runs:
         INPUT_POST_COMMENT: ${{ inputs.post_comment }}
         INPUT_LONGEST_WORD: ${{ inputs.longest_word }}
         INPUT_SHORTEST_WORD: ${{ inputs.shortest_word }}
+        INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST: ${{ inputs.suppress_push_for_open_pull_request }}
         DEBUG: ${{ inputs.debug }}
         spellchecker: ${{ github.action_path }}
       run:
