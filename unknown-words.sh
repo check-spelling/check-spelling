@@ -81,7 +81,7 @@ offer_quote_reply() {
 }
 
 repo_is_private() {
-  private=$(jq -r .repository.private < "$GITHUB_EVENT_PATH")
+  private=$(jq -r 'if .repository.private != null then .repository.private else "" end' "$GITHUB_EVENT_PATH")
   [ "$private" != "false" ]
 }
 
@@ -124,11 +124,11 @@ github_user_and_email() {
     -H "Authorization: token $GITHUB_TOKEN" \
     "$GITHUB_API_URL/users/$1" > $user_json
 
-  github_name=$(jq -r '.name // empty' < $user_json)
+  github_name=$(jq -r '.name // empty' $user_json)
   if [ -z "$github_name" ]; then
     github_name=$1
   fi
-  github_email=$(jq -r '.email // empty' < $user_json)
+  github_email=$(jq -r '.email // empty' $user_json)
   rm $user_json
   if [ -z "$github_email" ]; then
     github_email="$1@users.noreply.github.com"
@@ -171,7 +171,7 @@ handle_comment() {
   . "$spellchecker/update-state.sh"
 
   comment=$(mktemp_json)
-  jq -r .comment < "$GITHUB_EVENT_PATH" > $comment
+  jq -r '.comment // empty' "$GITHUB_EVENT_PATH" > $comment
   body=$(mktemp)
   jq -r .body $comment > $body
 
@@ -181,20 +181,20 @@ handle_comment() {
     quit 0
   fi
 
-  trigger_comment_url=$(jq -r .url < $comment)
-  sender_login=$(jq -r .sender.login < "$GITHUB_EVENT_PATH")
-  issue_user_login=$(jq -r .issue.user.login < "$GITHUB_EVENT_PATH")
+  trigger_comment_url=$(jq -r .url $comment)
+  sender_login=$(jq -r '.sender.login // empty' "$GITHUB_EVENT_PATH")
+  issue_user_login=$(jq -r '.issue.user.login // empty' "$GITHUB_EVENT_PATH")
   issue=$(mktemp_json)
-  jq -r .issue < "$GITHUB_EVENT_PATH" > $issue
-  pull_request_url=$(jq -r .pull_request.url < $issue)
+  jq -r '.issue // empty' "$GITHUB_EVENT_PATH" > $issue
+  pull_request_url=$(jq -r .pull_request.url $issue)
   pull_request_info=$(mktemp_json)
   pull_request "$pull_request_url" | jq .head > $pull_request_info
-  pull_request_sha=$(jq -r .sha < $pull_request_info)
+  pull_request_sha=$(jq -r '.sha // empty' $pull_request_info)
   set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$pull_request_sha"
   react_prefix_base="Could not perform [request]($trigger_comment_url)."
   react_prefix="$react_prefix_base"
   if [ "$sender_login" != "$issue_user_login" ]; then
-    collaborators_url=$(jq -r .repository.collaborators_url < "$GITHUB_EVENT_PATH")
+    collaborators_url=$(jq -r '.repository.collaborators_url // empty' "$GITHUB_EVENT_PATH")
     collaborators_url=$(echo "$collaborators_url" | perl -pne "s<\{/collaborator\}></$sender_login/permission>")
     collaborator_permission=$(collaborator "$collaborators_url" | jq -r .permission)
     case $collaborator_permission in
@@ -207,11 +207,11 @@ handle_comment() {
         ;;
     esac
   fi
-  number=$(jq -r .number < $issue)
-  created_at=$(jq -r .created_at < $comment)
-  issue_url=$(jq -r .url < $issue)
-  pull_request_ref=$(jq -r .ref < $pull_request_info)
-  pull_request_repo=$(jq -r .repo.clone_url < $pull_request_info)
+  number=$(jq -r '.number // empty' $issue)
+  created_at=$(jq -r '.created_at // empty' $comment)
+  issue_url=$(jq -r .url $issue)
+  pull_request_ref=$(jq -r '.ref // empty' $pull_request_info)
+  pull_request_repo=$(jq -r '.repo.clone_url // empty' $pull_request_info)
   git remote add request $pull_request_repo
   git fetch request "$pull_request_sha"
   git config advice.detachedHead false
@@ -221,8 +221,8 @@ handle_comment() {
   number_filter() {
     perl -pne 's/\{.*\}//'
   }
-  comments_base=$(jq -r .repository.comments_url < "$GITHUB_EVENT_PATH" | number_filter)
-  issue_comments_base=$(jq -r .repository.issue_comment_url < "$GITHUB_EVENT_PATH" | number_filter)
+  comments_base=$(jq -r '.repository.comments_url // empty' "$GITHUB_EVENT_PATH" | number_filter)
+  issue_comments_base=$(jq -r '.repository.issue_comment_url // empty' "$GITHUB_EVENT_PATH" | number_filter)
   export comments_url="$comments_base|$issue_comments_base"
   comment_url=$(echo "$trigger" | perl -ne 'next unless m{((?:$ENV{comments_url})/\d+)}; print "$1\n";')
   [ -n "$comment_url" ] ||
@@ -238,10 +238,10 @@ handle_comment() {
   fi
 
   comment_body=$(mktemp)
-  jq -r .body < $comment > $comment_body
-  bot_comment_author=$(jq -r .user.login < $comment)
-  bot_comment_node_id=$(jq -r .node_id < $comment)
-  bot_comment_url=$(jq -r '.issue_url // .comment.url' < $comment)
+  jq -r '.body // empty' $comment > $comment_body
+  bot_comment_author=$(jq -r '.user.login // empty' $comment)
+  bot_comment_node_id=$(jq -r '.node_id // empty' $comment)
+  bot_comment_url=$(jq -r '.issue_url // .comment.url' $comment)
   rm $comment
   github_actions_bot="github-actions[bot]"
   [ "$bot_comment_author" = "$github_actions_bot" ] ||
@@ -297,7 +297,7 @@ handle_comment() {
 
   react "$trigger_comment_url" 'eyes' > /dev/null
   react "$comment_url" 'rocket' > /dev/null
-  trigger_node=$(jq -r .comment.node_id < "$GITHUB_EVENT_PATH")
+  trigger_node=$(jq -r '.comment.node_id // empty' "$GITHUB_EVENT_PATH")
   collapse_comment $trigger_node $bot_comment_node_id
 
   echo "# end"
@@ -801,12 +801,12 @@ $header"
       cleanup_text=" (and remove the previously acknowledged and now absent words)"
     fi
     if [ -n "$GITHUB_HEAD_REF" ]; then
-      remote_url_ssh=$(jq -r .pull_request.head.repo.ssh_url < $GITHUB_EVENT_PATH)
-      remote_url_https=$(jq -r .pull_request.head.repo.clone_url < $GITHUB_EVENT_PATH)
+      remote_url_ssh=$(jq -r '.pull_request.head.repo.ssh_url // empty' $GITHUB_EVENT_PATH)
+      remote_url_https=$(jq -r '.pull_request.head.repo.clone_url // empty' $GITHUB_EVENT_PATH)
       remote_ref=$GITHUB_HEAD_REF
     else
-      remote_url_ssh=$(jq -r .repository.ssh_url < $GITHUB_EVENT_PATH)
-      remote_url_https=$(jq -r .repository.clone_url < $GITHUB_EVENT_PATH)
+      remote_url_ssh=$(jq -r '.repository.ssh_url // empty' $GITHUB_EVENT_PATH)
+      remote_url_https=$(jq -r '.repository.clone_url // empty' $GITHUB_EVENT_PATH)
       remote_ref=$GITHUB_REF
     fi
     remote_ref=${remote_ref#refs/heads/}
@@ -1107,7 +1107,7 @@ generate_curl_instructions() {
       --header "Content-Type: application/json" \
       "COMMENT_URL" > "$comment_json"
     comment_body=$(mktemp)
-    jq -r .body < "$comment_json" > $comment_body
+    jq -r ".body // empty" "$comment_json" > $comment_body
     rm $comment_json
     '"$(patch_variables $Q'$comment_body'$Q)"'
     update_files
