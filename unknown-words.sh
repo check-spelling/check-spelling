@@ -878,7 +878,7 @@ remove_items() {
 }
 
 spelling_warning() {
-  OUTPUT="#### $1:
+  OUTPUT="### :red_circle: $1
 "
   spelling_body "$2" "$3"
   post_commit_comment
