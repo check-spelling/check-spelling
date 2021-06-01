@@ -240,7 +240,7 @@ handle_comment() {
   body=$(mktemp)
   jq -r '.body // empty' $comment > $body
 
-  trigger=$(perl -ne 'print if /\@check-spelling-bot(?:\s+|:\s*)apply/' < $body)
+  trigger=$(perl -ne 'print if /\@check-spelling-bot(?:\s+|:\s*)apply.*\Q$ENV{INPUT_REPORT_TITLE_SUFFIX}\E/' < $body)
   rm $body
   if [ -z "$trigger" ]; then
     quit 0
@@ -928,7 +928,7 @@ $2"
   fi
   spelling_body "$out" "$3"
   if [ -n "$VERBOSE" ]; then
-    OUTPUT="## @check-spelling-bot Report
+    OUTPUT="#$report_header
 
 $OUTPUT"
     post_commit_comment
@@ -945,7 +945,7 @@ spelling_body() {
   else
     header=""
   fi
-  header="# @check-spelling-bot Report
+  header="$report_header
 
 $header"
   if [ -z "$err" ]; then
@@ -1174,9 +1174,12 @@ post_commit_comment() {
         fi
         if offer_quote_reply; then
           (
+            if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+              apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
+            fi
             echo
             echo "Alternatively, the bot can do this for you if you reply quoting the following line:"
-            echo "@check-spelling-bot apply [changes]($COMMENT_URL)."
+            echo "@check-spelling-bot apply [changes]($COMMENT_URL)$apply_changes_suffix."
           )>> $BODY
           no_patch=
         fi
@@ -1426,6 +1429,10 @@ welcome
 run_spell_check
 exit_if_no_unknown_words
 compare_new_output
+report_header="# @check-spelling-bot Report"
+if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+  report_header="$report_header $INPUT_REPORT_TITLE_SUFFIX"
+fi
 fewer_misspellings_canary=$(mktemp)
 set_patch_remove_add
 fewer_misspellings
