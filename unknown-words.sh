@@ -1091,7 +1091,7 @@ pull_request() {
   pull_request_url="$1"
   curl -L -s -S \
     -H "Authorization: token $GITHUB_TOKEN" \
-    --header "Content-Type: application/json" \
+    -H "Content-Type: application/json" \
     "$pull_request_url"
 }
 
@@ -1119,7 +1119,7 @@ comment() {
   curl -L -s -S \
     $method \
     -H "Authorization: token $GITHUB_TOKEN" \
-    --header "Content-Type: application/json" \
+    -H "Content-Type: application/json" \
     -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
     $payload \
     "$comments_url"
@@ -1244,7 +1244,7 @@ collapse_comment_mutation() {
 collapse_comment() {
   curl -s \
   -H "Authorization: token $GITHUB_TOKEN" \
-  --header "Content-Type: application/json" \
+  -H "Content-Type: application/json" \
   --data-binary "$(collapse_comment_mutation "$@")" \
   $GITHUB_GRAPHQL_URL
 }
@@ -1300,7 +1300,7 @@ generate_curl_instructions() {
   echo '
     comment_json=$(mktemp)
     curl -L -s -S \
-      --header "Content-Type: application/json" \
+      -H "Content-Type: application/json" \
       "COMMENT_URL" > "$comment_json"
     comment_body=$(mktemp)
     jq -r ".body // empty" "$comment_json" > $comment_body
