@@ -53,10 +53,10 @@ sub valid_word {
     # it's possible that this should scale with word length
     $longest += 2;
   }
-  return /.../ if (defined $shortest && defined $longest) && ($shortest > $longest);
+  return /\w{3}/ if (defined $shortest && defined $longest) && ($shortest > $longest);
   $shortest = 3 unless defined $shortest;
   $longest = '' unless defined $longest;
-  $word_match = ".{$shortest,$longest}";
+  $word_match = "\\w{$shortest,$longest}";
   return qr/\b$word_match\b/;
 }
 
