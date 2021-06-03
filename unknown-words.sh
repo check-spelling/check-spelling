@@ -7,7 +7,7 @@ set -e
 export spellchecker=${spellchecker:-/app}
 . "$spellchecker/common.sh"
 
-main() {
+dispatcher() {
   if [ -n "$INPUT_EVENT_ALIASES" ]; then
     GITHUB_EVENT_NAME=$(echo "$INPUT_EVENT_ALIASES" | jq -r ".$GITHUB_EVENT_NAME // \"$GITHUB_EVENT_NAME\"")
   fi
@@ -73,6 +73,7 @@ main() {
       handle_comment
       ;;
     pull_request_review_comment)
+      . "$spellchecker/update-state.sh"
       ( echo 'check-spelling does not currently support comments on code.
 
           If you are trying to ask @check-spelling-bot to update a PR,
@@ -233,6 +234,9 @@ handle_comment() {
     quit 0
   fi
 
+  define_variables
+  set_up_tools
+  set_up_files
   . "$spellchecker/update-state.sh"
 
   comment=$(mktemp_json)
@@ -370,18 +374,6 @@ handle_comment() {
 }
 
 define_variables() {
-  if [ -n "$DEBUG" ]; then
-    echo 'env:'
-    env|sort
-  fi
-  GITHUB_TOKEN=${GITHUB_TOKEN:-$INPUT_GITHUB_TOKEN}
-  if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -s "$GITHUB_EVENT_PATH" ]; then
-    GITHUB_EVENT_PATH=/dev/null
-  fi
-  if [ -n "$DEBUG" ]; then
-    echo 'GITHUB_EVENT_PATH:'
-    cat $GITHUB_EVENT_PATH
-  fi
   bucket=${INPUT_BUCKET:-$bucket}
   project=${INPUT_PROJECT:-$project}
   if [ -z "$bucket" ] && [ -z "$project" ] && [ -n "$INPUT_CONFIG" ]; then
@@ -689,10 +681,25 @@ get_extra_dictionaries() {
   echo "$extra_dictionaries_dir"
 }
 
-set_up_files() {
+set_up_reporter() {
   mkdir -p .git
   cp $spellchecker/reporter.json .git/
   echo "::add-matcher::.git/reporter.json"
+  if [ -n "$DEBUG" ]; then
+    echo 'env:'
+    env|sort
+  fi
+  GITHUB_TOKEN=${GITHUB_TOKEN:-$INPUT_GITHUB_TOKEN}
+  if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -s "$GITHUB_EVENT_PATH" ]; then
+    GITHUB_EVENT_PATH=/dev/null
+  fi
+  if [ -n "$DEBUG" ]; then
+    echo 'GITHUB_EVENT_PATH:'
+    cat $GITHUB_EVENT_PATH
+  fi
+}
+
+set_up_files() {
   get_project_files expect $expect_path
   get_project_files_deprecated expect whitelist $expect_path
   expect_files=$from_expanded
@@ -1450,11 +1457,12 @@ $(remove_items)
   quit 1
 }
 
+set_up_reporter
+dispatcher
 define_variables
 set_up_tools
 set_up_files
 . "$spellchecker/update-state.sh"
-main
 welcome
 run_spell_check
 exit_if_no_unknown_words
