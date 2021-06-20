@@ -823,7 +823,27 @@ welcome() {
 run_spell_check() {
   begin_group 'Spell check files'
   file_list=$(mktemp)
-    git 'ls-files' -z 2> /dev/null |\
+  (
+    if [ -n "$INPUT_ONLY_CHECK_CHANGED_FILES" ]; then
+      COMPARE=$(cat "$GITHUB_EVENT_PATH" | jq -r '.compare // empty' 2>/dev/null)
+      if [ -n "$COMPARE" ]; then
+        BEFORE=$(echo "$COMPARE" | perl -ne 'if (m{/compare/(.*)\.\.\.}) { print $1; } elsif (m{/commit/([0-9a-f]+)$}) { print "$1^"; };')
+        BEFORE=$(curl -s \
+          -H "Authorization: token $GITHUB_TOKEN" \
+          "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$BEFORE" | jq -r '.sha // empty')
+      elif [ -n "$GITHUB_BASE_REF" ]; then
+        BEFORE=$GITHUB_BASE_REF
+      fi
+    fi
+    if [ -n "$BEFORE" ]; then
+      echo "Only checking files changed from $BEFORE" >&2
+      git fetch origin $BEFORE >/dev/null 2>/dev/null
+      git diff -z --name-only FETCH_HEAD..HEAD
+    else
+      INPUT_ONLY_CHECK_CHANGED_FILES=
+      git 'ls-files' -z 2> /dev/null
+    fi
+  ) |\
     "$spellchecker/exclude.pl" > $file_list
   perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print "Checking $count files\n";' $file_list
   end_group
@@ -901,17 +921,21 @@ to_publish_expect() {
 }
 
 remove_items() {
-  patch_remove=$(perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output")
-  if [ -n "$patch_remove" ]; then
-    echo "
-<details><summary>Previously acknowledged words that are now absent
-</summary>$patch_remove</details>
-"
-    remove_words=$(mktemp)
-    echo "$patch_remove" > $remove_words
-    echo "::set-output name=stale_words::$remove_words" >> $output_variables
+  if [ -n "$INPUT_ONLY_CHECK_CHANGED_FILES" ]; then
+    echo "<!-- Because only_check_changed_files is active, checking for obsolete items cannot be performed-->"
   else
-    rm "$fewer_misspellings_canary"
+    patch_remove=$(perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output")
+    if [ -n "$patch_remove" ]; then
+      echo "
+        <details><summary>Previously acknowledged words that are now absent
+        </summary>$patch_remove</details>
+      " | strip_lead_and_blanks
+      remove_words=$temp/remove_words.txt
+      echo "$patch_remove" > $remove_words
+      echo "::set-output name=stale_words::$remove_words" >> $output_variables
+    else
+      rm "$fewer_misspellings_canary"
+    fi
   fi
 }
 

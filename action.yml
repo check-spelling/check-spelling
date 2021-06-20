@@ -127,6 +127,10 @@ inputs:
     description: 'Suffix for report title (useful if you are using a matrix strategy or are using experimental_path)'
     required: false
     default: ''
+  only_check_changed_files:
+    description: 'If set, only check files changed since the last push'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
@@ -169,6 +173,7 @@ runs:
         INPUT_SHORTEST_WORD: ${{ inputs.shortest_word }}
         INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST: ${{ inputs.suppress_push_for_open_pull_request }}
         INPUT_REPORT_TITLE_SUFFIX: "${{ inputs.report_title_suffix }}"
+        INPUT_ONLY_CHECK_CHANGED_FILES: ${{ inputs.only_check_changed_files }}
         DEBUG: ${{ inputs.debug }}
         spellchecker: ${{ github.action_path }}
       run:
