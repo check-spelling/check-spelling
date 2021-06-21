@@ -435,7 +435,7 @@ get_project_files() {
           fi
           if [ -d "$from" ]; then
             from_expanded=$(ls $from/*$ext |sort)
-            append_to=$from/${GITHUB_SHA:-$(date +%Y%M%d%H%m%S)}.$ext
+            append_to=$from/$(git rev-parse --revs-only HEAD || date +%Y%M%d%H%m%S).$ext
             append_to_generated=new
             touch $dest
             echo "Retrieving $file from $from_expanded"
