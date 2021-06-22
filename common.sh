@@ -1,5 +1,12 @@
 #!/bin/bash
 if [ "$INITIALIZED" != defined ]; then
+  GITHUB_TOKEN=${GITHUB_TOKEN:-$INPUT_GITHUB_TOKEN}
+  if [ -n "$GITHUB_TOKEN" ]; then
+    export AUTHORIZATION_HEADER="Authorization: token $GITHUB_TOKEN"
+  else
+    export AUTHORIZATION_HEADER='X-No-Authorization: Sorry About That'
+  fi
+
   if [ "$RUNNER_OS" = "Windows" ]; then
     echo "::error ::Windows isn't currently supported"
     exit 5
