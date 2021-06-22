@@ -17,6 +17,7 @@ junit
 mailto
 metadata
 mktemp
+nektos
 perl
 pid
 PIPESTATUS
@@ -32,3 +33,4 @@ url
 vnd
 whitelist
 xargs
+yml
