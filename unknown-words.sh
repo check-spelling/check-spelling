@@ -28,7 +28,7 @@ main() {
         pull_request_headers=$(mktemp)
         pull_heads_query="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?head=${GITHUB_REPOSITORY%/*}:$GITHUB_REF"
         curl -s \
-          -H "Authorization: token $GITHUB_TOKEN" \
+          -H "$AUTHORIZATION_HEADER" \
           -D "$pull_request_headers" \
           "$pull_heads_query" > $pull_request_json
         if [ -n "$(jq .documentation_url $pull_request_json 2>/dev/null)" ]; then
@@ -123,11 +123,11 @@ offer_quote_reply() {
             if [ -z "$pull_request_url" ]; then
               false
             else
+              define_variables
               pull_request_info=$(mktemp_json)
               pull_request "$pull_request_url" | jq -r .head > $pull_request_info
               pull_request_sha=$(jq -r .sha $pull_request_info)
               git fetch origin "$pull_request_sha" >&2
-              define_variables
               if git ls-tree "$pull_request_sha" -- "$bucket/$project" 2> /dev/null | grep -q tree; then
                 return 0
               fi
@@ -186,7 +186,7 @@ confused_comment() {
 github_user_and_email() {
   user_json=$(mktemp_json)
   curl -s \
-    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "$AUTHORIZATION_HEADER" \
     "$GITHUB_API_URL/users/$1" > $user_json
 
   github_name=$(jq -r '.name // empty' $user_json)
@@ -675,7 +675,7 @@ get_extra_dictionaries() {
   if [ -n "$extra_dictionaries" ]; then
     extra_dictionaries="$(
       echo "$extra_dictionaries" |
-      perl -pne "$dictionary_alias_pattern; s<(^https://(?:raw\.githubusercontent\.com)/)><-H 'Authorization: token $GITHUB_TOKEN' \$1>; s{^}{-O }"
+      perl -pne "$dictionary_alias_pattern; s<(^https://(?:raw\.githubusercontent\.com)/)><-H '$AUTHORIZATION_HEADER' \$1>; s{^}{-O }"
     )"
   fi
   extra_dictionaries_dir=$(mktemp -d)
@@ -829,7 +829,7 @@ run_spell_check() {
       if [ -n "$COMPARE" ]; then
         BEFORE=$(echo "$COMPARE" | perl -ne 'if (m{/compare/(.*)\.\.\.}) { print $1; } elsif (m{/commit/([0-9a-f]+)$}) { print "$1^"; };')
         BEFORE=$(curl -s \
-          -H "Authorization: token $GITHUB_TOKEN" \
+          -H "$AUTHORIZATION_HEADER" \
           "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$BEFORE" | jq -r '.sha // empty')
       elif [ -n "$GITHUB_BASE_REF" ]; then
         BEFORE=$GITHUB_BASE_REF
@@ -1106,7 +1106,7 @@ body_to_payload() {
 collaborator() {
   collaborator_url="$1"
   curl -L -s \
-    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "$AUTHORIZATION_HEADER" \
     -H "Accept: application/vnd.github.v3+json" \
     "$collaborator_url" 2> /dev/null
 }
@@ -1114,7 +1114,7 @@ collaborator() {
 pull_request() {
   pull_request_url="$1"
   curl -L -s -S \
-    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "$AUTHORIZATION_HEADER" \
     -H "Content-Type: application/json" \
     "$pull_request_url"
 }
@@ -1124,7 +1124,7 @@ react() {
   reaction="$2"
   curl -L -s -S \
     -X POST \
-    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "$AUTHORIZATION_HEADER" \
     -H "Accept: application/vnd.github.squirrel-girl-preview+json" \
     "$url"/reactions \
     -d '{"content":"'"$reaction"'"}'
@@ -1142,7 +1142,7 @@ comment() {
   fi
   curl -L -s -S \
     $method \
-    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "$AUTHORIZATION_HEADER" \
     -H "Content-Type: application/json" \
     -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
     $payload \
@@ -1270,7 +1270,7 @@ collapse_comment_mutation() {
 
 collapse_comment() {
   curl -s \
-  -H "Authorization: token $GITHUB_TOKEN" \
+  -H "$AUTHORIZATION_HEADER" \
   -H "Content-Type: application/json" \
   --data-binary "$(collapse_comment_mutation "$@")" \
   $GITHUB_GRAPHQL_URL
