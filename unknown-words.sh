@@ -608,6 +608,30 @@ set_up_files() {
   if [ ! -s "$dict" ]; then
     DICTIONARY_VERSION=${DICTIONARY_VERSION:-$INPUT_DICTIONARY_VERSION}
     DICTIONARY_URL=${DICTIONARY_URL:-$INPUT_DICTIONARY_URL}
+    if [ -z "$DICTIONARY_URL" ] && [ -n "$ACT" ]; then
+      (
+        echo "This workflow appears to be running under nektos/act"
+        echo "Unfortunately, this run has hit: https://github.com/nektos/act/issues/655"
+        echo
+        echo "In order to run locally, please use:"
+        echo
+        echo "      with:"
+        echo "        dictionary_url: fill_this_in"
+        if [ -z "$INPUT_CONFIG" ]; then
+          echo "        config: fill_this_in"
+        fi
+        if [ -z "$INPUT_DICTIONARY_ALIASES" ]; then
+          echo "        dictionary_source_prefixes: fill_this_in"
+        fi
+        if [ -z "$INPUT_DICTIONARY_VERSION" ]; then
+          echo "        dictionary_version: fill_this_in"
+        fi
+        echo
+        echo "You can use the defaults from https://github.com/check-spelling/check-spelling/blob/HEAD/action.yml"
+        echo "Note: you may need to omit backslashes for the dictionary_url."
+      ) >&2
+      exit 1
+    fi
     eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
   fi
   get_project_files allow $allow_path
