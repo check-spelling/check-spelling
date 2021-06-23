@@ -1250,7 +1250,7 @@ set_comments_url() {
 
 post_commit_comment() {
   if [ -n "$OUTPUT" ]; then
-    if [ -n "$INPUT_POST_COMMENT" ]; then
+    if to_boolean "$INPUT_POST_COMMENT"; then
       echo "Preparing a comment for $GITHUB_EVENT_NAME"
       set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
       if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
