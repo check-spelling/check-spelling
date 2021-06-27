@@ -9,9 +9,7 @@ if [ "$INITIALIZED" != defined ]; then
     date +'%s%N'
   }
   start=$(now)
-  temp="${temp:-/tmp/spelling}"
-  mkdir -p $temp
-  export temp
+  export temp=$(mktemp -d)
   if [ -n "$DEBUG" ]; then
     set -x
     begin_group() {
