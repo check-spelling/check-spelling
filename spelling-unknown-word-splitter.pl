@@ -19,9 +19,9 @@ my $dirname = dirname(abs_path(__FILE__));
 
 # skip files that don't exist (including dangling symlinks)
 if (scalar @ARGV) {
-  @ARGV = grep {-r || $_ eq '-'} @ARGV;
+  @ARGV = grep {! -l && -f && -r} @ARGV;
   unless (scalar @ARGV) {
-    print STDERR "None of the provided files are readable\n";
+    print STDERR "::warning ::Was not provided any regular readable files\n";
     exit 0;
   }
 }
