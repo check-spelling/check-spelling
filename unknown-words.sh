@@ -959,12 +959,18 @@ post_commit_comment() {
         if [ -n "$DEBUG" ]; then
           cat $response
         fi
-        COMMENT_URL=$(jq -r .url < $response)
-        perl -p -i.orig -e 's<COMMENT_URL><'"$COMMENT_URL"'>' $BODY
-        if diff -q "$BODY.orig" "$BODY" > /dev/null; then
+        COMMENT_URL=$(jq -r '.url // empty' < $response)
+        if [ -z "$COMMENT_URL" ]; then
+          echo "Could not find comment url in:"
+          cat "$response"
           no_patch=1
+        else
+          perl -p -i.orig -e 's<COMMENT_URL><'"$COMMENT_URL"'>' $BODY
+          if diff -q "$BODY.orig" "$BODY" > /dev/null; then
+            no_patch=1
+          fi
+          rm "$BODY.orig"
         fi
-        rm "$BODY.orig"
         if offer_quote_reply; then
           (
             echo
