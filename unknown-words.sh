@@ -34,7 +34,7 @@ main() {
         echo '`pull_request_review_comment` event from their workflow.'
         echo 'workflow.'
        ) >&2
-      exit 0
+      quit 0
       ;;
   esac
 }
@@ -86,7 +86,7 @@ react_comment_and_die() {
 
     rm $PAYLOAD
   fi
-  exit 1
+  quit 1
 }
 
 confused_comment() {
@@ -135,12 +135,12 @@ mktemp_json() {
 
 handle_comment() {
   if ! offer_quote_reply; then
-    exit 0
+    quit 0
   fi
 
   action=$(jq -r .action < "$GITHUB_EVENT_PATH")
   if [ "$action" != "created" ]; then
-    exit 0
+    quit 0
   fi
 
   comment=$(mktemp_json)
@@ -151,7 +151,7 @@ handle_comment() {
   trigger=$(perl -ne 'print if /\@check-spelling-bot(?:\s+|:\s*)apply/' < $body)
   rm $body
   if [ -z "$trigger" ]; then
-    exit 0
+    quit 0
   fi
 
   trigger_comment_url=$(jq -r .url < $comment)
@@ -274,7 +274,7 @@ handle_comment() {
   collapse_comment $trigger_node $bot_comment_node_id
 
   echo "# end"
-  exit 0
+  quit 0
 }
 
 define_variables() {
@@ -670,7 +670,7 @@ run_spell_check() {
   end_group
   if [ "$word_splitter_status" != '0 0' ]; then
     echo "$word_splitter failed ($word_splitter_status)"
-    exit 2
+    quit 2
   fi
   rm $file_list
 }
