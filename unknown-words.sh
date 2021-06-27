@@ -309,6 +309,7 @@ define_variables() {
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
   tokens_file="$temp/tokens.txt"
+  outputs=$(mktemp)
 }
 
 sort_unique() {
@@ -565,7 +566,7 @@ set_up_files() {
   if [ -s "$excludes_path" ]; then
     cp "$excludes_path" "$excludes"
   fi
-  should_exclude_file=$(mktemp)
+  should_exclude_file=$temp/should_exclude.txt
   get_project_files dictionary $dictionary_path
   if [ -s "$dictionary_path" ]; then
     cp "$dictionary_path" "$dict"
@@ -735,11 +736,9 @@ remove_items() {
 <details><summary>Previously acknowledged words that are now absent
 </summary>$patch_remove</details>
 "
-    if [ -n "$INPUT_CAPTURE_STALE_WORDS" ]; then
-      remove_words=$(mktemp)
-      echo "$patch_remove" > $remove_words
-      echo "::set-output name=stale_words::$remove_words"
-    fi
+    remove_words=$(mktemp)
+    echo "$patch_remove" > $remove_words
+    echo "::set-output name=stale_words::$remove_words" >> $outputs
   else
     rm "$fewer_misspellings_canary"
   fi
@@ -801,9 +800,7 @@ $header"
 
 "
     if [ -s "$should_exclude_file" ]; then
-      if [ -n "$INPUT_CAPTURE_SKIPPED_FILES" ]; then
-        echo "::set-output name=skipped_files::$should_exclude_file"
-      fi
+      echo "::set-output name=skipped_files::$should_exclude_file" >> $outputs
       OUTPUT="$OUTPUT
 <details><summary>Some files were automatically ignored</summary>
 
@@ -851,11 +848,9 @@ $err
 }
 bullet_words_and_warn() {
   echo "$1" > "$tokens_file"
-  if [ -n "$INPUT_CAPTURE_UNKNOWN_WORDS" ]; then
-    file_with_unknown_words=$(mktemp)
-    cp "$tokens_file" $file_with_unknown_words
-    echo "::set-output name=unknown_words::$file_with_unknown_words"
-  fi
+  file_with_unknown_words=$(mktemp)
+  cp "$tokens_file" $file_with_unknown_words
+  echo "::set-output name=unknown_words::$file_with_unknown_words" >> $outputs
   perl -pne 's/^(.)/* $1/' "$tokens_file"
   remove_items
   rm -f "$tokens_file"
@@ -863,6 +858,7 @@ bullet_words_and_warn() {
 
 quit() {
   echo "::remove-matcher owner=check-spelling::"
+  cat $outputs
   if [ -n "$junit" ]; then
     exit
   fi
@@ -1193,3 +1189,4 @@ fewer_misspellings_canary=$(mktemp)
 set_patch_remove_add
 fewer_misspellings
 more_misspellings
+cat $outputs

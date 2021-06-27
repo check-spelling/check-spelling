@@ -47,15 +47,18 @@ inputs:
     required: false
     default: '1'
   capture_output_unknown_words:
-    description: 'Capture unknown words (should be added to expect.txt) as an output'
+    description: ''
     required: false
+    deprecationMessage: 'Obsolete: outputs are always captured'
     default: ''
   capture_output_stale_words:
-    description: 'Capture stale words (should be removed from expect.txt) as an output'
+    description: ''
+    deprecationMessage: 'Obsolete: outputs are always captured'
     required: false
     default: ''
   capture_output_skipped_files:
-    description: 'Capture skipped files (could be added to excludes.txt) as an output'
+    description: ''
+    deprecationMessage: 'Obsolete: outputs are always captured'
     required: false
     default: ''
   shortest_word:
@@ -98,9 +101,6 @@ runs:
         INPUT_EXPERIMENTAL_PARALLEL_JOBS="${{ inputs.experimental_parallel_jobs }}"
         INPUT_EXPERIMENTAL_COMMIT_NOTE="${{ inputs.experimental_commit_note }}"
         INPUT_POST_COMMENT="${{ inputs.post_comment }}"
-        INPUT_CAPTURE_UNKNOWN_WORDS="${{ inputs.capture_output_unknown_words }}"
-        INPUT_CAPTURE_STALE_WORDS="${{ inputs.capture_output_stale_words }}"
-        INPUT_CAPTURE_SKIPPED_FILES="${{ inputs.capture_output_skipped_files }}"
         INPUT_LONGEST_WORD="${{ inputs.longest_word }}"
         INPUT_SHORTEST_WORD="${{ inputs.shortest_word }}"
         DEBUG="${{ inputs.debug }}"
