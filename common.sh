@@ -1,5 +1,10 @@
 #!/bin/bash
 if [ "$DEBUG" != defined ]; then
+  if [ "$RUNNER_OS" = "Windows" ]; then
+    echo "::error ::Windows isn't currently supported"
+    exit 5
+  fi
+
   now() {
     date +'%s%N'
   }
