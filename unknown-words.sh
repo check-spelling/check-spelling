@@ -1392,10 +1392,6 @@ make_instructions() {
 }
 
 fewer_misspellings() {
-  if [ -n "$patch_add" ]; then
-    return
-  fi
-
   begin_group 'Fewer misspellings'
   title='There are now fewer misspellings than before'
   SKIP_CURL=1
@@ -1482,6 +1478,8 @@ if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
 fi
 fewer_misspellings_canary=$(mktemp)
 set_patch_remove_add
-fewer_misspellings
+if [ -z "$patch_add" ]; then
+  fewer_misspellings
+fi
 more_misspellings
 cat $output_variables
