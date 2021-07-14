@@ -424,6 +424,11 @@ define_variables() {
   else
     AUTHORIZATION_HEADER='X-No-Authorization: Sorry About That'
   fi
+
+  report_header="# @check-spelling-bot Report"
+  if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+    report_header="$report_header $INPUT_REPORT_TITLE_SUFFIX"
+  fi
 }
 
 sort_unique() {
@@ -1475,10 +1480,6 @@ welcome
 run_spell_check
 exit_if_no_unknown_words
 compare_new_output
-report_header="# @check-spelling-bot Report"
-if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
-  report_header="$report_header $INPUT_REPORT_TITLE_SUFFIX"
-fi
 fewer_misspellings_canary=$(mktemp)
 set_patch_remove_add
 if [ -z "$patch_add" ]; then
