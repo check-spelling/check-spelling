@@ -1121,9 +1121,12 @@ skip_curl() {
   [ -n "$SKIP_CURL" ] || repo_is_private
 }
 
-make_instructions() {
+set_patch_remove_add() {
   patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print')
   patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; s/\n/ /; print')
+}
+
+make_instructions() {
   if skip_curl; then
     instructions=$(generate_instructions)
     if [ -n "$patch_add" ]; then
@@ -1192,5 +1195,6 @@ run_spell_check
 exit_if_no_unknown_words
 compare_new_output
 fewer_misspellings_canary=$(mktemp)
+set_patch_remove_add
 fewer_misspellings
 more_misspellings
