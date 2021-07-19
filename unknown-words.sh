@@ -351,6 +351,7 @@ check_dictionary() {
   file="$1"
   expected_chars="[a-zA-Z']"
   unexpected_chars="[^a-zA-Z']"
+  comment_char="#"
   (perl -pi -e '
   chomp;
   my $messy = 0;
@@ -359,7 +360,10 @@ check_dictionary() {
     $messy = 1;
   }
   if ('"/^${expected_chars}*(${unexpected_chars}+)/"') {
-    print STDERR "$ARGV: line $., columns $-[1]-$+[1], Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
+    $column_range="$-[1]-$+[1]";
+    unless ('"/^${comment_char}/"') {
+      print STDERR "$ARGV: line $., columns $column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
+    }
     $_ = "";
   } else {
     if ($messy) {
