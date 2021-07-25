@@ -630,6 +630,9 @@ get_project_files() {
               fi
             done
             from="$from/$(basename "$from")".$ext
+          else
+            from_expanded="$from.$ext"
+            from="$from_expanded"
           fi
         fi;;
       ssh://git@*|git@*)
