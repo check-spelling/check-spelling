@@ -21,6 +21,7 @@ nektos
 perl
 PIPESTATUS
 pne
+quotemeta
 rawfile
 README
 realpath
