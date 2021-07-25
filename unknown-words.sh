@@ -944,7 +944,9 @@ remove_items() {
   if [ -n "$INPUT_ONLY_CHECK_CHANGED_FILES" ]; then
     echo "<!-- Because only_check_changed_files is active, checking for obsolete items cannot be performed-->"
   else
-    patch_remove=$(perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output")
+    if [ -z "$patch_remove" ]; then
+      patch_remove=$(perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output")
+    fi
     if [ -n "$patch_remove" ]; then
       echo "
         <details><summary>Previously acknowledged words that are now absent
