@@ -114,9 +114,16 @@ dispatcher() {
 }
 
 comment_task() {
+  if [ -n "$DEBUG" ]; then
+    set -x
+  fi
   define_variables
   set_up_tools
   set_up_files
+
+  if [ -n "$DEBUG" ]; then
+    find "$data_dir"
+  fi
 
   if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ]; then
     if [ -z "$NEW_TOKENS" ]; then
@@ -433,6 +440,14 @@ handle_comment() {
   trigger_node=$(jq -r '.comment.node_id // empty' "$GITHUB_EVENT_PATH")
   collapse_comment $trigger_node $bot_comment_node_id
 
+  # https://GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs
+  # | jq -r '.check_runs[] |'\
+  # ' select(.conclusion=="failure") | select(.app.slug=="github-actions") | select(.name=="Spell checking") |'\
+  # '.url'
+
+  # ' "\(.conclusion) \(.output.summary) \(.check_suite.id)"'
+
+  # PATCH https://GITHUB_API_URL/repos/$GITHUB_REPOSITORY/check-runs/{check_run_id}
   echo "# end"
   quit 0
 }
