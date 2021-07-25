@@ -13,7 +13,7 @@ strip_lead_and_blanks() {
   strip_lead | strip_blanks
 }
 path_to_pattern() {
-  perl -pne 's/^/^/;s/\./\\./g;s/$/\$/'
+  perl -pne 's/^/^\\Q/;s/$/\\E\$/'
 }
 calculate_exclude_patterns() {
   if [ -z "$should_exclude_patterns" ] && [ -s  "$should_exclude_file" ]; then
