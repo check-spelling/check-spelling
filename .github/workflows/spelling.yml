@@ -14,8 +14,9 @@ jobs:
     name: Spell checking
     permissions:
       contents: read
-      issues: write
       pull-requests: read
+    outputs:
+      internal_state_directory: ${{ steps.spelling.outputs.internal_state_directory }}
     runs-on: ubuntu-latest
     if: "contains(github.event_name, 'pull_request') || github.event_name == 'push'"
     steps:
@@ -27,12 +28,48 @@ jobs:
     - name: checkout
       if: github.event_name == 'push'
       uses: actions/checkout@v2
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
     - name: check-spelling
+      id: spelling
       uses: ./
       with:
         experimental_apply_changes_via_bot: 1
+        suppress_push_for_open_pull_request: 1
+        post_comment: 0
+    - name: store-comment
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        retention-days: 1
+        name: "check-spelling-comment-${{ github.run_id }}"
+        path: |
+          ${{ steps.spelling.outputs.internal_state_directory }}
+
+  comment:
+    name: Comment
+    runs-on: ubuntu-latest
+    needs: spelling
+    permissions:
+      contents: write
+      pull-requests: write
+    if: always() && needs.spelling.result == 'failure'
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: set up
+      run: |
+        mkdir /tmp/data
+    - name: retrieve-comment
+      uses: actions/download-artifact@v2
+      with:
+        name: "check-spelling-comment-${{ github.run_id }}"
+        path: /tmp/data
+    - name: comment
+      uses: ./
+      with:
+        experimental_apply_changes_via_bot: 1
+        custom_task: comment
+        internal_state_directory: /tmp/data
+
   update:
     name: Update PR
     permissions:

@@ -131,6 +131,14 @@ inputs:
     description: 'If set, only check files changed since the last push'
     required: false
     default: ''
+  custom_task:
+    description: 'Run an internal task instead of responding to a GitHub event. Values: "comment"'
+    required: false
+    default: ''
+  internal_state_directory:
+    description: 'Used for passing internal state from the (default) check mode to the comment module'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
@@ -148,6 +156,9 @@ outputs:
   warnings:
     description: "Warnings"
     value: ${{ steps.spelling.outputs.warnings }}
+  internal_state_directory:
+    description: 'Used for passing internal state from the (default) check mode to the comment module'
+    value: ${{ steps.spelling.outputs.internal_state_directory }}
 
 runs:
   using: 'composite'
@@ -162,12 +173,14 @@ runs:
         INPUT_BUCKET: ${{ inputs.bucket }}
         INPUT_PROJECT: ${{ inputs.project }}
         INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_CUSTOM_TASK: ${{ inputs.custom_task }}
         INPUT_PATH: ${{ inputs.experimental_path }}
         INPUT_DICTIONARY_VERSION: ${{ inputs.dictionary_version }}
         INPUT_DICTIONARY_URL: ${{ inputs.dictionary_url }}
         INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT: ${{ inputs.experimental_apply_changes_via_bot }}
         INPUT_EXPERIMENTAL_PARALLEL_JOBS: ${{ inputs.experimental_parallel_jobs }}
         INPUT_EXPERIMENTAL_COMMIT_NOTE: ${{ inputs.experimental_commit_note }}
+        INPUT_INTERNAL_STATE_DIRECTORY: ${{ inputs.internal_state_directory }}
         INPUT_POST_COMMENT: ${{ inputs.post_comment }}
         INPUT_LONGEST_WORD: ${{ inputs.longest_word }}
         INPUT_SHORTEST_WORD: ${{ inputs.shortest_word }}
