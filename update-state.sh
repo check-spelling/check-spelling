@@ -15,6 +15,11 @@ strip_lead_and_blanks() {
 path_to_pattern() {
   perl -pne 's/^/^/;s/\./\\./g;s/$/\$/'
 }
+calculate_exclude_patterns() {
+  if [ -z "$should_exclude_patterns" ] && [ -s  "$should_exclude_file" ]; then
+    should_exclude_patterns=$(sort "$should_exclude_file" | path_to_pattern)
+  fi
+}
 generate_instructions() {
   instructions=$(mktemp)
   if [ -z "$skip_wrapping" ]; then
@@ -55,6 +60,7 @@ generate_instructions() {
     '$q |
     strip_lead >> $instructions
   fi
+  calculate_exclude_patterns
   if [ -n "$should_exclude_patterns" ]; then
     echo "(cat $q$excludes_file$q - <<EOF
     $should_exclude_patterns
