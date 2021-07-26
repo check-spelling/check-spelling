@@ -61,6 +61,45 @@ inputs:
     deprecationMessage: 'Obsolete: outputs are always captured'
     required: false
     default: ''
+  dictionary_source_prefixes:
+    description: 'JSON map of prefixes for dictionary urls'
+    required: false
+    default: '{"cspell": "https://raw.githubusercontent.com/check-spelling/cspell-dicts/HEAD/dictionaries/"}'
+  extra_dictionaries:
+    description: 'Space delimited list of URLs (or `prefix:`+path) to additional word lists'
+    required: false
+    default: ''
+  check_extra_dictionaries:
+    description: 'Compare unknown tokens against these dictionaries and suggest if applicable'
+    required: false
+    default:
+      cspell:ada/ada.txt
+      cspell:aws/aws.txt
+      cspell:bash/bash-words.txt
+      cspell:companies/companies.txt
+      cspell:cpp/cpp.txt
+      cspell:csharp/csharp.txt
+      cspell:css/css.txt
+      cspell:django/django.txt
+      cspell:dotnet/dotnet.txt
+      cspell:elixir/elixir.txt
+      cspell:en_GB/src/wordsEnGb.txt
+      cspell:filetypes/filetypes.txt
+      cspell:fonts/fonts.txt
+      cspell:fullstack/fullstack.txt
+      cspell:golang/go.txt
+      cspell:haskell/haskell.txt
+      cspell:html/html.txt
+      cspell:java/java.txt
+      cspell:latex/latex.txt
+      cspell:lua/lua.txt
+      cspell:node/node.txt
+      cspell:npm/npm.txt
+      cspell:php/php.txt
+      cspell:python/python.txt
+      cspell:ruby/ruby.txt
+      cspell:rust/rust.txt
+      cspell:scala/scala.txt
   event_aliases:
     description: >-
       Try to treat a GitHub event "a" as GitHub event "b" (JSON map).
@@ -91,6 +130,9 @@ outputs:
   skipped_files:
     description: "Skipped files (could be added to excludes.txt)"
     value: ${{ steps.spelling.outputs.skipped_files }}
+  suggested_dictionaries:
+    description: "Suggested dictionaries (could be added to extra_dictionaries)"
+    value: ${{ steps.spelling.outputs.suggested_dictionaries }}
   warnings:
     description: "Warnings"
     value: ${{ steps.spelling.outputs.warnings }}
@@ -102,6 +144,9 @@ runs:
       env:
         INPUT_GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         INPUT_EVENT_ALIASES: "${{ inputs.event_aliases }}"
+        INPUT_DICTIONARY_ALIASES: "${{ inputs.dictionary_source_prefixes }}"
+        INPUT_EXTRA_DICTIONARIES: "${{ inputs.extra_dictionaries }}"
+        INPUT_CHECK_EXTRA_DICTIONARIES: "${{ inputs.check_extra_dictionaries }}"
         INPUT_BUCKET: ${{ inputs.bucket }}
         INPUT_PROJECT: ${{ inputs.project }}
         INPUT_CONFIG: ${{ inputs.config }}
