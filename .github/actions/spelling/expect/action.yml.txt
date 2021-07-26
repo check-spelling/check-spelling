@@ -1,2 +1,4 @@
+cspell
+dicts
 github
 jsoref
