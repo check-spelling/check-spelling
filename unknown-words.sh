@@ -614,6 +614,35 @@ set_up_jq() {
   fi
 }
 
+words_to_lines() {
+  cat | tr " " "\n"
+}
+
+build_dictionary_alias_pattern() {
+  if [ -z "$dictionary_alias_pattern" ]; then
+    dictionary_alias_pattern="$(
+      echo "$INPUT_DICTIONARY_ALIASES" |
+      jq -r 'to_entries | map( {("s{^" +.key + ":}{" + .value +"};"): 1 } ) | .[] | keys[]' |xargs echo
+    )"
+  fi
+}
+
+get_extra_dictionaries() {
+  extra_dictionaries="$(echo "$1" | words_to_lines)"
+  if [ -n "$extra_dictionaries" ]; then
+    extra_dictionaries="$(
+      echo "$extra_dictionaries" |
+      perl -pne "$dictionary_alias_pattern; s<(^https://(?:raw\.githubusercontent\.com)/)><-H 'Authorization: token $GITHUB_TOKEN' \$1>; s{^}{-O }"
+    )"
+  fi
+  extra_dictionaries_dir=$(mktemp -d)
+  (
+    cd $extra_dictionaries_dir
+    echo "$extra_dictionaries" | xargs curl -q -s
+  )
+  echo "$extra_dictionaries_dir"
+}
+
 set_up_files() {
   mkdir -p .git
   cp $spellchecker/reporter.json .git/
@@ -664,6 +693,31 @@ set_up_files() {
       exit 1
     fi
     eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
+  fi
+  if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
+    build_dictionary_alias_pattern
+    extra_dictionaries_dir=$(get_extra_dictionaries "$INPUT_EXTRA_DICTIONARIES")
+    if [ -n "$extra_dictionaries_dir" ]; then
+      (
+        cd "$extra_dictionaries_dir"
+        # Items that aren't proper should be moved to patterns instead
+        perl -ne "next unless /^[A-Za-z$q]+$/; print" * | sort -u >> "$dict"
+      )
+      rm -rf "$extra_dictionaries_dir"
+    fi
+  fi
+  if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
+    build_dictionary_alias_pattern
+    check_extra_dictionaries="$(
+      echo "$INPUT_EXTRA_DICTIONARIES $INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" |
+      words_to_lines |
+      sort |
+      uniq -u
+    )"
+    if [ -n "$check_extra_dictionaries" ]; then
+      export check_extra_dictionaries_dir=$(get_extra_dictionaries "$check_extra_dictionaries")
+      extra_dictionaries_cover_entries=$(mktemp)
+    fi
   fi
   get_project_files allow $allow_path
   if [ -s "$allow_path" ]; then
@@ -892,6 +946,30 @@ $header"
     OUTPUT="$header$1
 
 "
+    if [ -s "$extra_dictionaries_cover_entries" ]; then
+      OUTPUT="$OUTPUT
+<details><summary>Available dictionaries could cover words not in the dictionary</summary>
+
+$(cat "$extra_dictionaries_cover_entries")
+
+Consider adding them using:
+$B
+      with:
+        extra_dictionaries:
+$(
+  cat "$extra_dictionaries_cover_entries" |
+  perl -pne 's/\s.*//;s/^/          /;s{\[(.*)\]\(.*}{$1}'
+)
+$B
+To stop checking additional dictionaries, add:
+$B
+      with:
+        check_extra_dictionaries: ''
+$B
+
+</details>
+"
+    fi
     if [ -s "$should_exclude_file" ]; then
       echo "::set-output name=skipped_files::$should_exclude_file" >> $output_variables
       OUTPUT="$OUTPUT
@@ -1264,6 +1342,22 @@ fewer_misspellings() {
   quit
 }
 more_misspellings() {
+  if [ -n "$check_extra_dictionaries_dir" ]; then
+    begin_group 'Check for extra dictionaries'
+    (
+      cd "$check_extra_dictionaries_dir";
+      aliases="$dictionary_alias_pattern" extra_dictionaries="$check_extra_dictionaries" $spellchecker/dictionary-coverage.pl "$run_output" |
+      sort -nr |
+      perl -pne 's/^\d+ //' > "$extra_dictionaries_cover_entries"
+    )
+    if [ -s "$extra_dictionaries_cover_entries" ]; then
+      extra_dictionaries_output=$temp/suggested_dictionaries.txt
+      perl -pne 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
+      jq -s '.' > $extra_dictionaries_output
+      echo "::set-output name=suggested_dictionaries::$extra_dictionaries_output" >> $output_variables
+    fi
+    end_group
+  fi
   begin_group 'Unrecognized'
   title='Unrecognized words, please review'
   instructions=$(
