@@ -110,7 +110,7 @@ for my $directory (<>) {
   }
   open UNKNOWN, '<', "$directory/unknown";
   for $token (<UNKNOWN>) {
-    chomp $token;
+    $token =~ s/\R//;
     $token =~ s/^[^Ii]?'+(.*)/$1/;
     $token =~ s/(.*?)'+$/$1/;
     next unless $token =~ /./;
@@ -135,7 +135,7 @@ if (defined $ENV{'expect'}) {
   my $expect = $1;
   if (open(EXPECT, '<', $expect)) {
     while ($word = <EXPECT>) {
-      chomp $word;
+      $word =~ s/\R//;
       $expected{$word} = 0;
     }
     close EXPECT;
