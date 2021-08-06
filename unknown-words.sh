@@ -307,6 +307,7 @@ define_variables() {
   word_collator="$spellchecker/spelling-collator.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
+  diff_output="$temp/output.diff"
   tokens_file="$temp/tokens.txt"
 }
 
@@ -728,7 +729,7 @@ to_publish_expect() {
 }
 
 remove_items() {
-  patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print')
+  patch_remove=$(perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output")
   if [ -n "$patch_remove" ]; then
     echo "
 <details><summary>Previously acknowledged words that are now absent
@@ -1057,24 +1058,8 @@ compare_new_output() {
     (sed -e 's/#.*//' "$expect_path" | sort_unique) > "$sorted_expect"
     expect_path="$sorted_expect"
 
-    diff_output=$(
-      diff -w -U0 "$expect_path" "$run_output" |
-      grep_v_spellchecker)
-  end_group
-
-  if [ -z "$diff_output" ]; then
-    begin_group 'No misspellings'
-    title="No new words with misspellings found"
-      spelling_info "$title" "There are currently $(wc -l $expect_path|sed -e 's/ .*//') expected items." ""
-    end_group
-    quit 0
-  fi
-
-  begin_group 'New output'
-    new_output=$(
-      diff -w -U0 "$expect_path" "$run_output" |
-      grep_v_spellchecker |\
-      perl -n -w -e 'next unless /^\+/; next if /^\+{3} /; s/^.//; print;')
+    diff -w -U0 "$expect_path" "$run_output" |
+      grep_v_spellchecker > "$diff_output"
   end_group
 
   should_exclude_patterns=$(sort "$should_exclude_file" | path_to_pattern)
@@ -1122,8 +1107,18 @@ skip_curl() {
 }
 
 set_patch_remove_add() {
-  patch_remove=$(echo "$diff_output" | perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print')
-  patch_add=$(echo "$diff_output" | perl -ne 'next unless s/^\+([^+])/$1/; s/\n/ /; print')
+  patch_remove=$(perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output")
+  begin_group 'New output'
+    patch_add=$(perl -ne 'next unless s/^\+([^+])/$1/; s/\n/ /; print' "$diff_output")
+
+    if [ -z "$patch_add" ]; then
+      begin_group 'No misspellings'
+      title="No new words with misspellings found"
+        spelling_info "$title" "There are currently $(wc -l $expect_path|sed -e 's/ .*//') expected items." ""
+      end_group
+      quit 0
+    fi
+  end_group
 }
 
 make_instructions() {
@@ -1140,7 +1135,7 @@ make_instructions() {
 }
 
 fewer_misspellings() {
-  if [ -n "$new_output" ]; then
+  if [ -n "$patch_add" ]; then
     return
   fi
 
@@ -1180,7 +1175,7 @@ more_misspellings() {
   instructions=$(
     make_instructions
   )
-  spelling_warning "$title" "$(bullet_words_and_warn "$new_output")" "$instructions"
+  spelling_warning "$title" "$(bullet_words_and_warn "$patch_add")" "$instructions"
   end_group
   quit 1
 }
