@@ -521,7 +521,6 @@ set_up_tools() {
   }
   add_app curl ca-certificates
   add_app git
-  add_app parallel
   if [ -n "$apps" ]; then
     if command_v apt-get; then
       export DEBIAN_FRONTEND=noninteractive
@@ -634,16 +633,6 @@ welcome() {
   fi
 }
 
-xargs_zero() {
-  if command_v parallel; then
-    parallel --no-notice --no-run-if-empty -0 -n1 "$@"
-  elif [ $(uname) = "Linux" ]; then
-    xargs --no-run-if-empty -0 -n1 "$@"
-  else
-    arguments="$*" "$spellchecker/xargs_zero"
-  fi
-}
-
 run_spell_check() {
   begin_group 'Spell check files'
   file_list=$(mktemp)
@@ -655,15 +644,8 @@ run_spell_check() {
   begin_group 'Spell check'
   warning_output=$(mktemp)
   more_warnings=$(mktemp)
-  (
-    # Technically $should_exclude_file is an append race under parallel
-    # since the file isn't critical -- it's advisory, I'm going to wait
-    # on reports before fixing it.
-    # The fix is to have a directory and have each process append to a
-    # file named for its pid inside that directory, and then have the
-    # caller can collate...
-    cat $file_list) |\
-  parallel -0 -n8 "-j$job_count" "$word_splitter" |\
+  cat $file_list |\
+  xargs -0 -n8 "-P$job_count" "$word_splitter" |\
   expect="$expect_path" warning_output="$warning_output" more_warnings="$more_warnings" should_exclude_file="$should_exclude_file" "$word_collator" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
