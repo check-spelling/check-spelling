@@ -1284,6 +1284,43 @@ set_comments_url() {
   esac
 }
 
+file_size() {
+  perl -e '@x=stat(shift);print $x[7]' "$1"
+}
+
+trim_commit_comment() {
+  stripped=$(mktemp)
+  (perl -p -i.raw -e '$/=undef; s{'"$2"'}{$1 '"$3"'_truncated please see the log or artifact if available_\n}s; print STDERR "$2\n"' "$BODY") 2> "$stripped"
+  body_to_payload "$BODY"
+  previous_payload_size="$payload_size"
+  payload_size=$(file_size "$PAYLOAD")
+  if [ "$payload_size" -lt "$previous_payload_size" ]; then
+    echo "::warning ::Comment payload ($previous_payload_size) is likely to exceed GitHub size limit ($github_comment_size_limit) -- trimming: $1 (=>$payload_size)"
+    cat "$stripped"
+    rm "$stripped"
+  elif ! diff -q "$BODY.raw" "$BODY" > /dev/null; then
+    echo "Trimming $1 did not reduce the payload size ($previous_payload_size => $payload_size)"
+    cp "$BODY.raw" "$BODY"
+    payload_size="$previous_payload_size"
+  fi
+}
+
+minimize_comment_body() {
+  if [ $payload_size -gt $github_comment_size_limit ]; then
+    trim_commit_comment 'Script' '(<details><summary>)To accept these unrecognized.*?</summary>().*?(?=</details>\n)' 'Script unavailable</summary>\n\n'
+    if [ $payload_size -gt $github_comment_size_limit ]; then
+      trim_commit_comment 'Stale words' '(<details><summary>Previously acknowledged words that are now absent.*?</summary>)(.*?)(?=</details>)' '\n\n'
+      if [ $payload_size -gt $github_comment_size_limit ]; then
+        trim_commit_comment 'Unrecognized words' '(<details><summary>Unrecognized words.*?</summary>\n*)\`\`\`(.*?)\`\`\`'
+        if [ $payload_size -gt $github_comment_size_limit ]; then
+          body_to_payload "$BODY"
+          echo "::warning ::Truncated comment payload ($payload_size) is likely to exceed GitHub size limit ($github_comment_size_limit)"
+        fi
+      fi
+    fi
+  fi
+}
+
 post_commit_comment() {
   if [ -n "$OUTPUT" ]; then
     if to_boolean "$INPUT_POST_COMMENT"; then
@@ -1291,8 +1328,11 @@ post_commit_comment() {
       set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
       if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
         BODY=$(mktemp)
-        echo "$OUTPUT" > $BODY
-        body_to_payload $BODY
+        echo "$OUTPUT" > "$BODY"
+        body_to_payload "$BODY"
+        payload_size=$(file_size "$PAYLOAD")
+        github_comment_size_limit=65000
+        minimize_comment_body
         response=$(mktemp_json)
 
         res=0
