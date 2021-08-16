@@ -957,7 +957,12 @@ run_spell_check() {
       git 'ls-files' -z 2> /dev/null
     fi
   ) |\
-    "$spellchecker/exclude.pl" > $file_list
+    "$spellchecker/exclude.pl" > "$file_list"
+  if [ -n "$INPUT_CHECK_FILE_NAMES" ]; then
+    check_file_names="$spellchecker/paths-of-checked-files.txt"
+    cat "$file_list" | tr "\0" "\n" > "$check_file_names"
+    echo "$check_file_names" | tr "\n" "\0" >> "$file_list"
+  fi
   perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print "Checking $count files\n";' $file_list
   end_group
 

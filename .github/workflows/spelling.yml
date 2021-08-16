@@ -40,6 +40,7 @@ jobs:
       with:
         experimental_apply_changes_via_bot: 1
         suppress_push_for_open_pull_request: 1
+        check_file_names: 1
         post_comment: 0
         experimental_path: introspected
     - name: store-comment

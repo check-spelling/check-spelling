@@ -139,6 +139,10 @@ inputs:
     description: 'Used for passing internal state from the (default) check mode to the comment module'
     required: false
     default: ''
+  check_file_names:
+    description: 'Spell check file paths'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
@@ -187,6 +191,7 @@ runs:
         INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST: ${{ inputs.suppress_push_for_open_pull_request }}
         INPUT_REPORT_TITLE_SUFFIX: "${{ inputs.report_title_suffix }}"
         INPUT_ONLY_CHECK_CHANGED_FILES: ${{ inputs.only_check_changed_files }}
+        INPUT_CHECK_FILE_NAMES: ${{ inputs.check_file_names }}
         DEBUG: ${{ inputs.debug }}
         spellchecker: ${{ github.action_path }}
       run:
