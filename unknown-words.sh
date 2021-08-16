@@ -1367,6 +1367,8 @@ post_commit_comment() {
           fi
         fi
         rm -f $BODY 2>/dev/null
+        HTML_COMMENT_URL=$(jq -r '.html_url // empty' $response)
+        echo "Comment posted to ${HTML_COMMENT_URL:-$COMMENT_URL}"
       else
         echo "$OUTPUT"
       fi
