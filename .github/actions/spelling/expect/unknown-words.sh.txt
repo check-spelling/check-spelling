@@ -11,6 +11,7 @@ github
 githubusercontent
 grep
 gsutil
+html
 json
 jsoref
 junit
