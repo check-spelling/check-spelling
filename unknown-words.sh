@@ -1100,7 +1100,7 @@ $header"
     if [ -e "$fewer_misspellings_canary" ]; then
       OUTPUT="$OUTPUT
 
-(You can remove the previously acknowledged and now absent words.)"
+$(remove_items)"
     fi
   else
     if [ -e "$fewer_misspellings_canary" ]; then
