@@ -869,7 +869,6 @@ set_up_files() {
       )"
       if [ -n "$check_extra_dictionaries" ]; then
         export check_extra_dictionaries_dir=$(get_extra_dictionaries "$check_extra_dictionaries")
-        extra_dictionaries_cover_entries=$(mktemp)
       fi
     fi
     get_project_files allow $allow_path
@@ -888,6 +887,7 @@ set_up_files() {
       cp "$only_path" "$only"
     fi
   fi
+  extra_dictionaries_cover_entries=$(mktemp)
   get_project_files patterns $patterns_path
   if [ -s "$patterns_path" ]; then
     cp "$patterns_path" "$patterns"
@@ -1565,7 +1565,10 @@ fewer_misspellings() {
   quit
 }
 more_misspellings() {
-  if [ -z "$INPUT_CUSTOM_TASK" ]; then
+  if [ -s "$extra_dictionaries_json" ]; then
+    build_dictionary_alias_pattern
+    jq -r '.[]|keys[] as $k | "\($k)<\($k)> (\(.[$k][1])) covers \(.[$k][0]) of them"' $extra_dictionaries_json | perl -pne "$dictionary_alias_pattern"'s{^([^<]*)<([^>]*)>}{[$2]($1)};' > "$extra_dictionaries_cover_entries"
+  elif [ -z "$INPUT_CUSTOM_TASK" ]; then
     if [ ! -s "$extra_dictionaries_json" ]; then
       if [ -n "$check_extra_dictionaries_dir" ]; then
         begin_group 'Check for extra dictionaries'
@@ -1577,8 +1580,6 @@ more_misspellings() {
         )
         end_group
       fi
-    else
-      jq -r '.[]|keys[] as $k | "\($k)<\($k)> (\(.[$k][1])) covers \(.[$k][0]) of them"' $extra_dictionaries_json | perl -pne "$dictionary_alias_pattern"'s{^([^<]*)<([^>]*)>}{[$2]($1)};' > "$extra_dictionaries_cover_entries"
     fi
   fi
   if [ -s "$extra_dictionaries_cover_entries" ]; then
