@@ -759,9 +759,7 @@ get_extra_dictionaries() {
 }
 
 set_up_reporter() {
-  mkdir -p .git
-  cp $spellchecker/reporter.json .git/
-  echo "::add-matcher::.git/reporter.json"
+  echo "::add-matcher::$spellchecker/reporter.json"
   if [ -n "$DEBUG" ]; then
     echo 'env:'
     env|sort
