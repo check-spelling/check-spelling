@@ -1,6 +1,8 @@
 apps
 bdc
 cbeaff
+chmod
+Cwd
 dest
 elif
 eol
@@ -17,8 +19,10 @@ jsoref
 junit
 mailto
 metadata
+mkdir
 mktemp
 nektos
+noreply
 perl
 pid
 PIPESTATUS
