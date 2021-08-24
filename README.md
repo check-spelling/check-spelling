@@ -24,7 +24,7 @@ into word-like things for checking against a dictionary.
 * [Basic Configuration](#basic-configuration)
 * [**Documentation**](https://github.com/check-spelling/check-spelling/wiki/) and [Possible features](https://github.com/check-spelling/check-spelling/wiki/Possible-features)
 are listed on the [Wiki](https://github.com/check-spelling/check-spelling/wiki/)
-  * [Warning descriptions](https://github.com/check-spelling/check-spelling/wiki/Warnings)
+  * [Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Warnings)
 * [Configuration](https://github.com/check-spelling/check-spelling/wiki/Configuration)
   * [Workflow variables](https://github.com/check-spelling/check-spelling/wiki/Configuration#workflow-variables)
   * [Workflows](https://github.com/check-spelling/check-spelling/wiki/Configuration:-Workflows)
