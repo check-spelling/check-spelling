@@ -14,13 +14,16 @@ sub get_file_from_env {
   return $1;
 }
 
+my $early_warnings = get_file_from_env('early_warnings', '/dev/null');
 my $warning_output = get_file_from_env('warning_output', '/dev/stderr');
 my $more_warnings = get_file_from_env('more_warnings', '/dev/stderr');
+my $counter_summary = get_file_from_env('counter_summary', '/dev/stderr');
 my $should_exclude_file = get_file_from_env('should_exclude_file', '/dev/null');
 
 my @delayed_warnings;
 open WARNING_OUTPUT, '>', $warning_output;
 open MORE_WARNINGS, '>', $more_warnings;
+open COUNTER_SUMMARY, '>', $counter_summary;
 open SHOULD_EXCLUDE, '>', $should_exclude_file;
 
 sub get_field {
@@ -143,6 +146,23 @@ if (defined $ENV{'expect'}) {
 }
 
 my %seen = ();
+my %counters = ();
+
+sub count_warning {
+  my ($warning) = @_;
+  if ($warning =~ /\(([-\w]+)\)$/) {
+    my ($code) = ($1);
+    ++$counters{$code};
+  }
+}
+
+open WARNINGS, '<', $early_warnings;
+for my $warning (<WARNINGS>) {
+  chomp $warning;
+  count_warning $warning;
+  print WARNING_OUTPUT "$warning\n";
+}
+close WARNINGS;
 
 for my $directory (@directories) {
   next unless (-s "$directory/warnings");
@@ -160,6 +180,8 @@ for my $directory (@directories) {
         next;
       }
       $seen{$item} = 1;
+    } else {
+      count_warning $warning;
     }
     print WARNING_OUTPUT "$file: $warning\n";
   }
@@ -168,9 +190,21 @@ for my $directory (@directories) {
 close MORE_WARNINGS;
 
 for my $warning (@delayed_warnings) {
+  count_warning $warning;
   print WARNING_OUTPUT $warning;
 }
 close WARNING_OUTPUT;
+
+if (%counters) {
+  my $continue='';
+  print COUNTER_SUMMARY "{\n";
+  for my $code (sort keys %counters) {
+    print COUNTER_SUMMARY qq<$continue"$code": $counters{$code}\n>;
+    $continue=',';
+  }
+  print COUNTER_SUMMARY "}\n";
+}
+close COUNTER_SUMMARY;
 
 # group related words
 for my $char (sort keys %letter_map) {

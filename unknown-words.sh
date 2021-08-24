@@ -456,6 +456,7 @@ define_variables() {
   if [ -f "$output_variables" ]; then
     return
   fi
+  export early_warnings=$(mktemp)
   if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ]; then
     data_dir="$INPUT_INTERNAL_STATE_DIRECTORY"
   else
@@ -520,7 +521,8 @@ project_file_path() {
 }
 
 check_pattern_file() {
-  perl -i -e 'while (<>) {
+  perl -i -e 'open WARNINGS, ">>", $ENV{early_warnings};
+  while (<>) {
     next if /^#/;
     next unless /./;
     if (eval {qr/$_/}) {
@@ -530,10 +532,12 @@ check_pattern_file() {
       chomp $@;
       my $err = $@;
       $err =~ s{^.*? in regex; marked by <-- HERE in m/(.*) <-- HERE.*$}{$1};
-      print STDERR "$ARGV: line $., columns $-[0]-$-[0], Warning - bad regex (bad-regex)\n$@\n";
+      print WARNINGS "$ARGV: line $., columns $-[0]-$-[0], Warning - bad regex (bad-regex)\n$@\n";
       print "^\$\n";
     }
-  }' $1
+  }
+  close WARNINGS;
+  ' $1
 }
 
 check_for_newline_at_eof() {
@@ -542,7 +546,7 @@ check_for_newline_at_eof() {
     line=$(( $(cat "$maybe_missing_eol" | wc -l) + 1 ))
     start=$(tail -1 "$maybe_missing_eol" | wc -c)
     stop=$(( $start + 1 ))
-    echo "$maybe_missing_eol: line $line, columns $start-$stop, Warning - no newline at eof (no-newline-at-eof)" >&2
+    echo "$maybe_missing_eol: line $line, columns $start-$stop, Warning - no newline at eof (no-newline-at-eof)" >> "$early_warnings"
     echo >> "$maybe_missing_eol"
   fi
 }
@@ -552,7 +556,8 @@ check_dictionary() {
   expected_chars="[a-zA-Z']"
   unexpected_chars="[^a-zA-Z']"
   comment_char="#"
-  (perl -pi -e '
+  perl -pi -e '
+  open WARNINGS, ">>", $ENV{early_warnings};
   chomp;
   my $messy = 0;
   my $orig = $_;
@@ -562,18 +567,19 @@ check_dictionary() {
   if ('"/^${expected_chars}*(${unexpected_chars}+)/"') {
     $column_range="$-[1]-$+[1]";
     unless ('"/^${comment_char}/"') {
-      print STDERR "$ARGV: line $., columns $column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
+      print WARNINGS "$ARGV: line $., columns $column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
     }
     $_ = "";
   } else {
     if ($messy) {
       $_ = $orig;
       s/\R//;
-      print STDERR "$ARGV: line $., columns $-[0]-$+[0], Warning - entry has unexpected whitespace (whitespace-in-dictionary)\n";
+      print WARNINGS "$ARGV: line $., columns $-[0]-$+[0], Warning - entry has unexpected whitespace (whitespace-in-dictionary)\n";
     }
     $_ .= "\n";
   }
-' "$file") 2>&1
+  close WARNINGS;
+' "$file"
 }
 
 cleanup_file() {
@@ -684,7 +690,7 @@ get_project_files_deprecated() {
       else
         note=""
       fi
-      echo "::warning file=$example::deprecation: please rename '$2'$note to '$1'"
+      echo "::warning file=$example::deprecation: please rename '$2'$note to '$1' (deprecated-feature)" >> "$early_warnings"
     else
       append_to="$save_append_to"
     fi
@@ -815,6 +821,7 @@ set_up_files() {
     cp "$excludes_path" "$excludes"
   fi
   should_exclude_file=$data_dir/should_exclude.txt
+  counter_summary_file=$data_dir/counter_summary.json
   if [ -z "$INPUT_CUSTOM_TASK" ]; then
     get_project_files dictionary.words $dictionary_path
     get_project_files dictionary.txt $dictionary_path
@@ -976,7 +983,7 @@ run_spell_check() {
   more_warnings=$(mktemp)
   cat $file_list |\
   xargs -0 -n8 "-P$job_count" "$word_splitter" |\
-  expect="$expect_path" warning_output="$warning_output" more_warnings="$more_warnings" should_exclude_file="$should_exclude_file" "$word_collator" |\
+  expect="$expect_path" warning_output="$warning_output" more_warnings="$more_warnings" should_exclude_file="$should_exclude_file" counter_summary="$counter_summary_file" "$word_collator" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
   cat "$more_warnings" >> "$warning_output"
@@ -1172,6 +1179,18 @@ spelling_body() {
         </details>
       ' | strip_lead)"
     fi
+    if [ -s "$counter_summary_file" ]; then
+      output_warnings="$(echo "
+        <details><summary>Warnings ($(grep -c ':' "$counter_summary_file"))</summary>
+
+        See [Warning descriptions](https://github.com/check-spelling/check-spelling/wiki/Warning-descriptions) for more information.
+
+        Warning | Count
+        -|-
+        $(cat "$counter_summary_file" | jq -r 'to_entries[] | "[\(.key)](https://github.com/check-spelling/check-spelling/wiki/Warning-descriptions#\(.key)) | \(.value)"' )
+        </details>
+        " | strip_lead)"
+    fi
     if [ -n "$err" ]; then
       output_accept_script="$(echo "
         <details><summary>To accept these unrecognized words as correct$cleanup_text,
@@ -1190,7 +1209,7 @@ spelling_body() {
         output_advice="$N$N"`cat "$advice_path"`"$N"
       fi
     fi
-    OUTPUT=$(echo "$N$report_header$N$OUTPUT$1$output_dictionaries$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_advice
+    OUTPUT=$(echo "$N$report_header$N$OUTPUT$1$output_dictionaries$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_warnings$output_accept_script$output_advice
       " | perl -pne 's/^\s+$/\n/;'| uniq)
 }
 
