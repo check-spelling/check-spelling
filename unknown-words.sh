@@ -515,8 +515,7 @@ sort_unique() {
 }
 
 project_file_path() {
-  ext=$(echo "$2" | sed -e 's/^.*\.//')
-  echo $bucket/$project/$1.${ext:-txt}
+  echo $bucket/$project/$1
 }
 
 check_pattern_file() {
@@ -613,11 +612,12 @@ cleanup_file() {
 }
 
 get_project_files() {
-  file=$1
+  ext=$(echo "$1" | sed -e 's/^.*\.//')
+  file=$(echo "$1" | sed -e "s/\.$ext$//")
   dest=$2
-  type=$1
+  type=$file
   if [ ! -e "$dest" ] && [ -n "$bucket" ] && [ -n "$project" ]; then
-    from=$(project_file_path $file $dest)
+    from=$(project_file_path $file.$ext)
     case "$from" in
       .*)
         append_to="$from"
@@ -629,7 +629,6 @@ get_project_files() {
           from_expanded="$from"
         else
           if [ ! -e "$from" ]; then
-            ext=$(echo "$from" | sed -e 's/^.*\.//')
             from=$(echo $from | sed -e "s/\.$ext$//")
           fi
           if [ -d "$from" ]; then
@@ -799,14 +798,16 @@ set_up_reporter() {
 }
 
 set_up_files() {
-  get_project_files expect $expect_path
-  get_project_files_deprecated expect whitelist $expect_path
+  get_project_files word_expectations.words $expect_path
+  get_project_files expect.txt $expect_path
+  get_project_files_deprecated word_expectations.words whitelist.txt $expect_path
   expect_files=$from_expanded
   expect_file=$from
   touch $expect_path
   new_expect_file=$append_to
   new_expect_file_new=$append_to_generated
-  get_project_files excludes $excludelist_path
+  get_project_files file_ignore.patterns $excludelist_path
+  get_project_files excludes.txt $excludelist_path
   excludes_files=$from_expanded
   excludes_file=$from
   if [ -s "$excludes_path" ]; then
@@ -814,7 +815,8 @@ set_up_files() {
   fi
   should_exclude_file=$data_dir/should_exclude.txt
   if [ -z "$INPUT_CUSTOM_TASK" ]; then
-    get_project_files dictionary $dictionary_path
+    get_project_files dictionary.words $dictionary_path
+    get_project_files dictionary.txt $dictionary_path
     if [ -s "$dictionary_path" ]; then
       cp "$dictionary_path" "$dict"
     fi
@@ -871,33 +873,34 @@ set_up_files() {
         export check_extra_dictionaries_dir=$(get_extra_dictionaries "$check_extra_dictionaries")
       fi
     fi
-    get_project_files allow $allow_path
+    get_project_files dictionary_additions.words $allow_path
+    get_project_files allow.txt $allow_path
     if [ -s "$allow_path" ]; then
       cat "$allow_path" >> "$dict"
     fi
-    get_project_files reject $reject_path
+    get_project_files dictionary_removals.patterns $reject_path
+    get_project_files reject.txt $reject_path
     if [ -s "$reject_path" ]; then
       dictionary_temp=$(mktemp)
       if grep_v_string '^('$(echo $(cat "$reject_path")|tr " " '|')')$' < "$dict" > $dictionary_temp; then
         cat $dictionary_temp > "$dict"
       fi
     fi
-    get_project_files only $only_path
+    get_project_files file_exclusive.patterns $only_path
+    get_project_files only.txt $only_path
     if [ -s "$only_path" ]; then
       cp "$only_path" "$only"
     fi
   fi
   extra_dictionaries_cover_entries=$(mktemp)
-  get_project_files patterns $patterns_path
+  get_project_files line_masks.patterns $patterns_path
+  get_project_files patterns.txt $patterns_path
   if [ -s "$patterns_path" ]; then
     cp "$patterns_path" "$patterns"
   fi
-  get_project_files advice $advice_path
+  get_project_files advice.md $advice_path
   if [ ! -s "$advice_path" ]; then
-    get_project_files advice $advice_path_txt
-    if [ -s "$advice_path" ]; then
-      cp "$advice_path_txt" "$advice_path"
-    fi
+    get_project_files_deprecated advice.md advice.txt $advice_path_txt
   fi
 
   if [ -n "$debug" ]; then
@@ -1010,9 +1013,9 @@ to_retrieve_expect() {
     ssh://git@*|git@*)
       echo "git clone --depth 1 $bucket --single-branch --branch $project metadata; cp metadata/expect.txt .";;
     gs://*)
-      echo gsutil cp -Z $(project_file_path expect) expect.txt;;
+      echo gsutil cp -Z $(project_file_path expect.txt) expect.txt;;
     *://*)
-      echo curl -L -s "$(project_file_path expect)" -o expect.txt;;
+      echo curl -L -s "$(project_file_path expect.txt)" -o expect.txt;;
   esac
 }
 to_publish_expect() {
@@ -1022,15 +1025,15 @@ to_publish_expect() {
     ssh://git@*|git@*)
       echo "cp $1 metadata/expect.txt; (cd metadata; git commit expect.txt -m 'Updating expect'; git push)";;
     gs://*)
-      echo gsutil cp -Z $1 $(project_file_path expect);;
+      echo gsutil cp -Z $1 $(project_file_path expect.txt);;
     *://*)
-      echo "# command to publish $1 is not known. URL: $(project_file_path expect)";;
+      echo "# command to publish $1 is not known. URL: $(project_file_path expect.txt)";;
     *)
       if [ "$2" = new ]; then
         cmd="git add $bucket/$project || echo '... you want to ensure $1 is added to your repository...'"
         case $(realpath --relative-base="$bucket" "$1") in
           /*)
-            cmd="cp $1 $(project_file_path expect); $cmd";;
+            cmd="cp $1 $(project_file_path expect.txt); $cmd";;
         esac
         echo "$cmd"
       fi
