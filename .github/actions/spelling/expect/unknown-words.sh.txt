@@ -3,12 +3,14 @@ bdc
 cbeaff
 chmod
 Cwd
+DEBIAN
 dest
 elif
 eol
 esac
 excludelist
 fchurn
+FRONTEND
 github
 githubusercontent
 grep
@@ -16,6 +18,7 @@ gsutil
 json
 jsoref
 junit
+linux
 mailto
 metadata
 mkdir
