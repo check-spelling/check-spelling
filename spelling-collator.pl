@@ -152,15 +152,16 @@ for my $directory (@directories) {
   open WARNINGS, '<', "$directory/warnings";
   for $warning (<WARNINGS>) {
     chomp $warning;
-    $warning =~ s/(line \d+) cols (\d+-\d+): '(.*)'/$1, columns $2, Warning - `$3` is not a recognized word. (unrecognized-spelling)/;
-    my ($line, $range, $item) = ($1, $2, $3);
-    next if skip_item($item);
-    if (defined $seen{$item}) {
-      print MORE_WARNINGS "$file: $warning\n";
-    } else {
+    if ($warning =~ s/(line \d+) cols (\d+-\d+): '(.*)'/$1, columns $2, Warning - `$3` is not a recognized word. (unrecognized-spelling)/) {
+      my ($line, $range, $item) = ($1, $2, $3);
+      next if skip_item($item);
+      if (defined $seen{$item}) {
+        print MORE_WARNINGS "$file: $warning\n";
+        next;
+      }
       $seen{$item} = 1;
-      print WARNING_OUTPUT "$file: $warning\n";
     }
+    print WARNING_OUTPUT "$file: $warning\n";
   }
   close WARNINGS;
 }
