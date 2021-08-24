@@ -23,20 +23,24 @@ if (scalar @ARGV) {
   }
 }
 
-my $patterns_re = '^$';
-if (open(PATTERNS, '<', "$dirname/patterns.txt")) {
-  my @patterns;
+sub file_to_re {
+  my ($re) = @_;
+  return '$^' unless open(FILE, '<', "$dirname/$re");
+  my @file;
   local $/=undef;
-  local $file=<PATTERNS>;
-  close PATTERNS;
+  local $file=<FILE>;
+  close FILE;
   for (split /\R/, $file) {
     next if /^#/;
     chomp;
     next unless s/^(.+)/(?:$1)/;
-    push @patterns, $_;
+    push @file, $_;
   }
-  $patterns_re = join "|", @patterns if scalar @patterns;
+  return join "|", @file if scalar @file;
 }
+
+my $patterns_re = file_to_re 'patterns.txt';
+my $forbidden_re = file_to_re 'forbidden.txt';
 
 my $longest_word = get_val_from_env('INPUT_LONGEST_WORD', '');
 my $shortest_word = get_val_from_env('INPUT_SHORTEST_WORD', '');
@@ -123,7 +127,11 @@ while (<<>>) {
   next unless /./;
   my $raw_line = $_;
   # hook for custom line based text exclusions:
-  s/$patterns_re/ /g;
+  s/($patterns_re)/" "x length($1)/ge;
+  while (s/($forbidden_re)/ /g) {
+    my ($begin, $end, $match) = ($-[0] + 1, $+[0], $1);
+    print WARNINGS "line $., columns $begin-$end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
+  }
   # This is to make it easier to deal w/ rules:
   s/^/ /;
   while (s/([^\\])\\[rtn]/$1 /g) {}
