@@ -1,0 +1,2 @@
+# Flag duplicated "words"
+\b(\w{3,})\s\g{-1}\b
