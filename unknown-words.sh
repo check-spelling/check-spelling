@@ -477,6 +477,7 @@ define_variables() {
 
   dict="$spellchecker/words"
   patterns="$spellchecker/patterns.txt"
+  forbidden_path="$spellchecker/forbidden.txt"
   excludes="$spellchecker/excludes.txt"
   excludes_path="$temp/excludes.txt"
   only="$spellchecker/only.txt"
@@ -891,6 +892,7 @@ set_up_files() {
     if [ -s "$only_path" ]; then
       cp "$only_path" "$only"
     fi
+    get_project_files line_forbidden.patterns $forbidden_path
   fi
   extra_dictionaries_cover_entries=$(mktemp)
   get_project_files line_masks.patterns $patterns_path
