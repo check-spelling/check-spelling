@@ -481,6 +481,7 @@ define_variables() {
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
   tokens_file="$data_dir/tokens.txt"
+  action_log_ref="$data_dir/action_log_ref.txt"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   output_variables=$(mktemp)
 
@@ -1046,6 +1047,45 @@ remove_items() {
   fi
 }
 
+get_action_log_overview() {
+  echo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+}
+
+get_action_log() {
+  if [ -z "$action_log" ]; then
+    if [ -s "$action_log_ref" ]; then
+      action_log="$(cat $action_log_ref)"
+    else
+      action_log=$(get_action_log_overview)
+
+      run_info=$(mktemp)
+      if curl -s -H "$AUTHORIZATION_HEADER" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_info" 2>/dev/null; then
+        jobs_url=$(jq -r '.jobs_url // empty' "$run_info")
+        if [ -n "$jobs_url" ]; then
+          jobs_info=$(mktemp)
+          if curl -s -H "$AUTHORIZATION_HEADER" "$jobs_url" > "$jobs_info" 2>/dev/null; then
+            job=$(mktemp)
+            jq -r '.jobs[] | select(.status=="in_progress" and .runner_name=="'"$RUNNER_NAME"'" and .run_attempt=='"${GITHUB_RUN_ATTEMPT:-1}"')' "$jobs_info" > "$job" 2>/dev/null
+            job_log=$(jq -r .html_url "$job")
+            if [ -n "$job_log" ]; then
+              step_info=$(mktemp)
+              jq -r '.steps[] | select(.status=="pending") // empty' "$job" > "$step_info" 2>/dev/null
+              if [ ! -s "$step_info" ]; then
+                jq -r '.steps[] | select(.status=="queued" and .name=="check-spelling")' "$job" > "$step_info" 2>/dev/null
+              fi
+              step_number=$(jq -s -r .[0].number "$step_info")
+              action_log="$job_log#step:$step_number:1"
+            fi
+          fi
+        fi
+
+      fi
+      echo "$action_log" > "$action_log_ref"
+    fi
+  fi
+  echo "$action_log"
+}
+
 spelling_warning() {
   OUTPUT="### :red_circle: $1
 "
@@ -1072,6 +1112,15 @@ $OUTPUT"
 }
 spelling_body() {
   err="$2"
+  case "$GITHUB_EVENT_NAME" in
+    pull_request|pull_request_target)
+      details_note="See the [:open_file_folder: files]($(jq -r .pull_request.number "$GITHUB_EVENT_PATH")/files/) view or the [:scroll:action log]($(get_action_log)) for details.";;
+    push)
+      details_note="See the [:scroll:action log]($(get_action_log)) for details.";;
+    *)
+      details_note=$(echo '<!-- If you can see this, please [file a bug](https://github.com/check-spelling/check-spelling/issues/new)
+        referencing this comment url, as the code does not expect this to happen. -->' | strip_lead);;
+  esac
   if [ -z "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
     output_remove_items="$N$(remove_items)"
   fi
@@ -1185,7 +1234,7 @@ spelling_body() {
         output_advice="$N"`cat "$advice_path"`"$n"
       fi
     fi
-    OUTPUT=$(echo "$n$report_header$n$OUTPUT$1$output_dictionaries$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_warnings$output_accept_script$output_advice
+    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$1$output_dictionaries$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_warnings$output_accept_script$output_advice
       " | perl -pne 's/^\s+$/\n/;'| uniq)
 }
 
@@ -1273,7 +1322,7 @@ file_size() {
 
 trim_commit_comment() {
   stripped=$(mktemp)
-  (perl -p -i.raw -e '$/=undef; s{'"$2"'}{$1 '"$3"'_truncated please see the log or artifact if available_\n}s; print STDERR "$2\n"' "$BODY") 2> "$stripped"
+  (perl -p -i.raw -e '$/=undef; s{'"$2"'}{$1'"$3"'_Truncated, please see the log or artifact if available._\n}s; my $capture=$2; my $overview=q<'"$(get_action_log_overview)"'>; s{\n(See the) (\[action log\])}{\n$1 [overview]($overview) or $2}s unless m{\Q$overview\E}; print STDERR "$capture\n"' "$BODY") 2> "$stripped"
   body_to_payload "$BODY"
   previous_payload_size="$payload_size"
   payload_size=$(file_size "$PAYLOAD")
