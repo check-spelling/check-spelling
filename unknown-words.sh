@@ -1090,30 +1090,15 @@ $OUTPUT"
 }
 spelling_body() {
   err="$2"
-  if [ -n "$OUTPUT" ]; then
-    header="$OUTPUT
-
-"
-  else
-    header=""
+  if [ -z "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
+    output_remove_items="$N$N$(remove_items)"
   fi
-  header="$report_header
-
-$header"
-  if [ -z "$err" ]; then
-    OUTPUT="$header$1"
-    if [ -e "$fewer_misspellings_canary" ]; then
-      OUTPUT="$OUTPUT
-
-$(remove_items)"
-    fi
-  else
-    if [ -e "$fewer_misspellings_canary" ]; then
+    if [ -n "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
       cleanup_text=" (and remove the previously acknowledged and now absent words)"
     fi
     if [ "$GITHUB_EVENT_NAME" = "pull_request_target" ] || [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
       if [ -z "$GITHUB_HEAD_REF" ]; then
-        GITHUB_HEAD_REF=$(jq -r '.pull_request.head.ref  // empty' $GITHUB_EVENT_PATH)
+        GITHUB_HEAD_REF=$(jq -r '.pull_request.head.ref // empty' $GITHUB_EVENT_PATH)
       fi
     fi
     if [ -n "$GITHUB_HEAD_REF" ]; then
@@ -1135,80 +1120,78 @@ $(remove_items)"
       remote_ref=$(perl -pne 's{^ref: }{}' .git/HEAD)
     fi
     remote_ref=${remote_ref#refs/heads/}
-    OUTPUT="$header$1
-
-"
     if [ -s "$extra_dictionaries_cover_entries" ]; then
-      OUTPUT="$OUTPUT
-<details><summary>Available dictionaries could cover words not in the dictionary</summary>
+      output_dictionaries="$(echo "
+        <details><summary>Available dictionaries could cover words not in the dictionary</summary>
 
-$(cat "$extra_dictionaries_cover_entries")
+        $(cat "$extra_dictionaries_cover_entries")
 
-Consider adding them using:
-$B
-      with:
-        extra_dictionaries:
-$(
-  cat "$extra_dictionaries_cover_entries" |
-  perl -pne 's/\s.*//;s/^/          /;s{\[(.*)\]\(.*}{$1}'
-)
-$B
-To stop checking additional dictionaries, add:
-$B
-      with:
-        check_extra_dictionaries: ''
-$B
+        Consider adding them using:
+        $B
+              with:
+                extra_dictionaries:$N$(
+          cat "$extra_dictionaries_cover_entries" |
+          perl -pne 's/\s.*//;s/^/                  /;s{\[(.*)\]\(.*}{$1}'
+        )
+        $B
+        To stop checking additional dictionaries, add:
+        $B
+              with:
+                check_extra_dictionaries: ''
+        $B
 
-</details>
-"
+        </details>
+        " | perl -pne 's/^ {8}//')"
     fi
     if [ -s "$should_exclude_file" ]; then
       calculate_exclude_patterns
       echo "::set-output name=skipped_files::$should_exclude_file" >> $output_variables
-      OUTPUT="$OUTPUT
-<details><summary>Some files were automatically ignored</summary>
+      output_excludes="$(echo "
+        <details><summary>Some files were automatically ignored</summary>
 
-These sample patterns would exclude them:
-$B
-$should_exclude_patterns
-$B"
-if [ $(wc -l "$should_exclude_file" |perl -pne 's/(\d+)\s+.*/$1/') -gt 10 ]; then
-      OUTPUT="$OUTPUT
-"'You should consider excluding directory paths (e.g. `(?:^|/)vendor/`), filenames (e.g. `(?:^|/)yarn\.lock$`), or file extensions (e.g. `\.gz$`)
-'
-fi
-      OUTPUT="$OUTPUT
-You should consider adding them to:
-$B
-$(echo "$excludes_files" | xargs -n1 echo)
-$B"'
+        These sample patterns would exclude them:
+        $B
+        $should_exclude_patterns
+        $B"| strip_lead)"
+      if [ $(wc -l "$should_exclude_file" |perl -pne 's/(\d+)\s+.*/$1/') -gt 10 ]; then
+        output_excludes_large="$(echo "
+          "'You should consider excluding directory paths (e.g. `(?:^|/)vendor/`), filenames (e.g. `(?:^|/)yarn\.lock$`), or file extensions (e.g. `\.gz$`)
+          '| strip_lead)"
+      fi
+      output_excludes_suffix="$(echo "
 
-File matching is via Perl regular expressions.
+        You should consider adding them to:
+        $B$N" | strip_lead
 
-To check these files, more of their words need to be in the dictionary than not. You can use `patterns.txt` to exclude portions, add items to the dictionary (e.g. by adding them to `allow.txt`), or fix typos.
-</details>
-'
+        )$N$(echo "$excludes_files" |
+        xargs -n1 echo)$N$B$(echo '
+
+        File matching is via Perl regular expressions.
+
+        To check these files, more of their words need to be in the dictionary than not. You can use `patterns.txt` to exclude portions, add items to the dictionary (e.g. by adding them to `allow.txt`), or fix typos.
+        </details>
+      ' | strip_lead)"
     fi
-    OUTPUT="$OUTPUT
-<details><summary>To accept these unrecognized words as correct$cleanup_text,
-run the following commands</summary>
+    if [ -n "$err" ]; then
+      output_accept_script="$(echo "
+        <details><summary>To accept these unrecognized words as correct$cleanup_text,
+        run the following commands</summary>
 
-... in a clone of the [$remote_url_ssh]($remote_url_https) repository
-on the $b$remote_ref$b branch:
-"$(relative_note)"
+        ... in a clone of the [$remote_url_ssh]($remote_url_https) repository
+        on the $b$remote_ref$b branch:
+        "$(relative_note)"
 
-$B
-$err
-$B
-</details>
-"
-    if [ -s "$advice_path" ]; then
-      OUTPUT="$OUTPUT
-
-`cat "$advice_path"`
-"
+        $B
+        $err
+        $B
+        </details>
+        " | strip_lead)"
+      if [ -s "$advice_path" ]; then
+        output_advice="$N$N"`cat "$advice_path"`"$N"
+      fi
     fi
-  fi
+    OUTPUT=$(echo "$N$report_header$N$OUTPUT$1$output_dictionaries$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_advice
+      " | perl -pne 's/^\s+$/\n/;'| uniq)
 }
 
 quit() {
@@ -1601,13 +1584,20 @@ more_misspellings() {
   title='Please review'
   begin_group "Unrecognized ($unknown_count)"
   echo "::set-output name=unknown_words::$tokens_file" >> $output_variables
-  spelling_warning "$title" "
-<details><summary>Unrecognized words ($unknown_count)</summary>
+  unrecognized_words_title="Unrecognized words ($unknown_count)"
+  if [ "$unknown_count" -gt 10 ]; then
+    unknown_word_body="<details><summary>$unrecognized_words_title</summary>
 
 $B
 $(cat "$tokens_file")
 $B
-</details>
+</details>"
+  else
+    unknown_word_body="#### $unrecognized_words_title$N$N$(cat "$tokens_file")"
+  fi
+  spelling_warning "$title" "
+$unknown_word_body
+
 $(remove_items)
 " "$instructions"
   end_group
