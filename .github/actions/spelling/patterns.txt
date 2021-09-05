@@ -3,3 +3,5 @@
 ^..:0.Xx\S*}\\b$
 catching 'templatesz'
 \\templates(?![a-z])
+# dig flags
+ \+no
