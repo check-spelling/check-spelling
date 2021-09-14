@@ -1,5 +1,26 @@
 # @check-spelling/check-spelling GitHub Action
 
+## Upgrade to `main`
+
+The `master` branch has been replaced by the `main` branch.
+
+`master` is approximately equivalent to the `0.0.17-alpha` release,
+with the key addition of a security polling feature to check to see if the
+release is insecure.
+
+### `0.0.17-alpha` is insecure
+Version `0.0.17-alpha` is
+[insecure](https://github.com/check-spelling/check-spelling/security/advisories/GHSA-g86g-chm8-7r2p),
+and thus this version will not run.
+
+### Upgrading
+To upgrade, simply change your workflows to reference `check-spelling/check-spelling@main`
+instead of `check-spelling/check-spelling@master`.
+
+Now would be a good time to refresh your workflow. You can get the latest
+`main` oriented workflow from:
+[check-spelling/spell-check-this](https://github.com/check-spelling/spell-check-this/).
+
 ## Overview
 
 Everyone makes typos. This includes people writing documentation and comments,
