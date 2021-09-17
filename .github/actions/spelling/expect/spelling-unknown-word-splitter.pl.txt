@@ -1,4 +1,5 @@
 aeiou
+binmode
 cmp
 dirname
 elsif
@@ -9,6 +10,8 @@ misspellled
 perl
 rsqm
 rtn
+STDIN
+STDOUT
 substr
 symlinks
 tempdir

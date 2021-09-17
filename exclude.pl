@@ -15,7 +15,7 @@ sub file_to_re {
   my ($file, $fallback) = @_;
   my @items;
   if (-e $file) {
-    open FILE, '<', $file;
+    open FILE, '<:utf8', $file;
     local $/=undef;
     my $file=<FILE>;
     for (split /\R/, $file) {
