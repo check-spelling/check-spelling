@@ -1,12 +1,19 @@
-#!/bin/sh
-#! -*-perl-*-
-eval 'exec perl -x -T -w $0 ${1+"$@"}'
-  if 0;
+#!/usr/bin/perl -wT -Ilib
+
+
 # ~/bin/w
 # Search for potentially misspelled words
 # Output is:
 # misspellled
 # woord (WOORD, Woord, woord, woord's)
+
+use 5.022;
+use feature 'unicode_strings';
+use strict;
+use warnings;
+use Encode qw/decode_utf8 FB_DEFAULT/;
+binmode STDIN;
+binmode STDOUT, ':utf8';
 
 use File::Basename;
 use Cwd 'abs_path';
@@ -25,10 +32,10 @@ if (scalar @ARGV) {
 
 sub file_to_re {
   my ($re) = @_;
-  return '$^' unless open(FILE, '<', "$dirname/$re");
+  return '$^' unless open(FILE, '<:utf8', "$dirname/$re");
   my @file;
   local $/=undef;
-  local $file=<FILE>;
+  my $file=<FILE>;
   close FILE;
   for (split /\R/, $file) {
     next if /^#/;
@@ -39,8 +46,8 @@ sub file_to_re {
   return join "|", @file if scalar @file;
 }
 
-my $patterns_re = file_to_re 'patterns.txt';
-my $forbidden_re = file_to_re 'forbidden.txt';
+my $patterns_re = file_to_re('patterns.txt');
+my $forbidden_re = file_to_re('forbidden.txt');
 
 my $longest_word = get_val_from_env('INPUT_LONGEST_WORD', '');
 my $shortest_word = get_val_from_env('INPUT_SHORTEST_WORD', '');
@@ -48,6 +55,7 @@ my $shortest_word = get_val_from_env('INPUT_SHORTEST_WORD', '');
 my ($shortest, $longest) = (undef, undef);
 sub valid_word {
   # shortest_word is an absolute
+  our ($shortest, $longest, $word_match);
   $shortest = $shortest_word if $shortest_word;
   if ($longest_word) {
     # longest_word is an absolute
@@ -55,9 +63,10 @@ sub valid_word {
   } elsif (defined $longest) {
     # we allow for some sloppiness (a couple of stuck keys per word)
     # it's possible that this should scale with word length
+    $longest = 0 unless $longest;
     $longest += 2;
   }
-  return /\w{3}/ if (defined $shortest && defined $longest) && ($shortest > $longest);
+  return qr/\w{3}/ if (defined $shortest && defined $longest) && ($shortest > $longest);
   $shortest = 3 unless defined $shortest;
   $longest = '' unless defined $longest;
   $word_match = "\\w{$shortest,$longest}";
@@ -69,9 +78,9 @@ my $word_match = valid_word();
 # load dictionary
 my $dict = "$dirname/words";
 $dict = '/usr/share/dict/words' unless -e $dict;
-open(DICT, '<', $dict);
+open(DICT, '<:utf8', $dict);
 my %dictionary=();
-while ($word = <DICT>) {
+while (my $word = <DICT>) {
   chomp $word;
   next unless $word =~ $word_match;
   my $l = length $word;
@@ -98,10 +107,10 @@ my @reports;
 
 sub report_stats() {
   if ($unrecognized) {
-    open(STATS, '>', "$temp_dir/stats");
+    open(STATS, '>:utf8', "$temp_dir/stats");
       print STATS "{words: $words, unrecognized: $unrecognized, unknown: ".(keys %unique_unrecognized).", unique: ".(keys %unique)."}";
     close STATS;
-    open(UNKNOWN, '>', "$temp_dir/unknown");
+    open(UNKNOWN, '>:utf8', "$temp_dir/unknown");
       print UNKNOWN join "\n", sort keys %unique_unrecognized;
     close UNKNOWN;
     close WARNINGS;
@@ -109,6 +118,7 @@ sub report_stats() {
 }
 
 while (<<>>) {
+  $_ = decode_utf8($_, FB_DEFAULT);
   if ($last_file ne $ARGV) {
     $. = 1;
     $last_file = $ARGV;
@@ -116,13 +126,13 @@ while (<<>>) {
 
     $temp_dir = tempdir();
     push @reports, "$temp_dir\n";
-    open(NAME, '>', "$temp_dir/name");
+    open(NAME, '>:utf8', "$temp_dir/name");
       print NAME $last_file;
     close NAME;
     ($words, $unrecognized) = (0, 0);
     %unique = ();
     %unique_unrecognized = ();
-    open(WARNINGS, '>', "$temp_dir/warnings");
+    open(WARNINGS, '>:utf8', "$temp_dir/warnings");
   }
   next unless /./;
   my $raw_line = $_;
