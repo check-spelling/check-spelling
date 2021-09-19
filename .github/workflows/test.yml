@@ -1,0 +1,42 @@
+name: Test
+on:
+  push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "**"
+  pull_request:
+
+jobs:
+  test:
+    name: Perl
+    runs-on: ubuntu-latest
+    if: "contains(github.event_name, 'pull_request') || github.event_name == 'push'"
+    steps:
+    - name: checkout-merge
+      if: "contains(github.event_name, 'pull_request')"
+      uses: actions/checkout@v2
+      with:
+        ref: refs/pull/${{github.event.pull_request.number}}/merge
+    - name: checkout
+      if: github.event_name == 'push'
+      uses: actions/checkout@v2
+    - name: test
+      id: test
+      shell: bash
+      run: |
+        (
+          sudo apt-get update &&
+          sudo apt-get install -y cpanminus &&
+          cpanm -S --notest Module::Build::Tiny Devel::Cover
+        ) > /tmp/prework || (cat /tmp/prework && false)
+        ./Build.PL
+        ./Build build
+        cover -test
+    - name: store-coverage
+      uses: actions/upload-artifact@v2
+      with:
+        retention-days: 1
+        name: "check-spelling-coverage-${{ github.run_id }}"
+        path: |
+          cover_db

@@ -203,5 +203,6 @@ runs:
         DEBUG: ${{ inputs.debug }}
         spellchecker: ${{ github.action_path }}
       run:
+        sudo $GITHUB_ACTION_PATH/fast-install.pl;
         $GITHUB_ACTION_PATH/unknown-words.sh
       shell: bash
