@@ -5,6 +5,12 @@
 # plus `fchurn` which uses `dn` mostly rolled together.
 set -e
 export spellchecker=${spellchecker:-${GITHUB_ACTION_PATH:-/app}}
+
+if [ $(id -u) != 0 ]; then
+  SUDO=sudo
+fi
+$SUDO $spellchecker/fast-install.pl
+
 . "$spellchecker/common.sh"
 
 dispatcher() {
@@ -712,8 +718,8 @@ set_up_tools() {
   if [ -n "$apps" ]; then
     if command_v apt-get; then
       export DEBIAN_FRONTEND=noninteractive
-      apt-get -qq update &&
-      apt-get -qq install --no-install-recommends -y $apps >/dev/null 2>/dev/null
+      $SUDO apt-get -qq update &&
+      $SUDO apt-get -qq install --no-install-recommends -y $apps >/dev/null 2>/dev/null
       echo Installed: $apps >&2
     elif command_v brew; then
       brew install $apps
