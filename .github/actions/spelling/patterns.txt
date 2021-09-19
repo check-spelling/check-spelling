@@ -5,5 +5,9 @@ catching 'templatesz'
 \\templates(?![a-z])
 # action.yml check_extra_dictionaries
       cspell:\w+/[\w/]+\.txt$
+# perl include flags
+-Ilib\b
 # dig flags
  \+no
+# META.json
+"author"  : ".*"
