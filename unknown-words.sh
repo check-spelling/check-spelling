@@ -178,35 +178,39 @@ to_boolean() {
   esac
 }
 
+should_patch_head() {
+  if [ ! -d "$bucket/$project" ]; then
+    # if there is no directory in the merged state, then adding files into it
+    # will not result in a merge conflict
+    true
+  else
+    # if there is a directory in the merged state, then we don't want to
+    # suggest changes to the directory if it doesn't exist in the branch,
+    # because that would almost certainly result in merge conflicts.
+    # If people want to talk to the bot, they should rebase first.
+    issue=$(mktemp_json)
+    pull_request_url=$(jq -r '.pull_request.url // .issue.pull_request.url // empty' "$GITHUB_EVENT_PATH")
+    if [ -z "$pull_request_url" ]; then
+      false
+    else
+      define_variables
+      pull_request_info=$(mktemp_json)
+      pull_request "$pull_request_url" | jq -r ".head // empty" > $pull_request_info
+      pull_request_sha=$(jq -r ".sha // empty" $pull_request_info)
+      git fetch origin "$pull_request_sha" >&2
+      if git ls-tree "$pull_request_sha" -- "$bucket/$project" 2> /dev/null | grep -q tree; then
+        return 0
+      fi
+      return 1
+    fi
+  fi
+}
+
 offer_quote_reply() {
   if to_boolean "$INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT"; then
     case "$GITHUB_EVENT_NAME" in
       issue_comment|pull_request|pull_request_target)
-        if [ ! -d $bucket/$project ]; then
-          # if there is no directory in the merged state, then adding files into it
-          # will not result in a merge conflict
-          true
-        else
-          # if there is a directory in the merged state, then we don't want to
-          # suggest changes to the directory if it doesn't exist in the branch,
-          # because that would almost certainly result in merge conflicts.
-          # If people want to talk to the bot, they should rebase first.
-          issue=$(mktemp_json)
-          pull_request_url=$(jq -r '.pull_request.url // .issue.pull_request.url // empty' "$GITHUB_EVENT_PATH")
-          if [ -z "$pull_request_url" ]; then
-            false
-          else
-            define_variables
-            pull_request_info=$(mktemp_json)
-            pull_request "$pull_request_url" | jq -r ".head // empty" > $pull_request_info
-            pull_request_sha=$(jq -r ".sha // empty" $pull_request_info)
-            git fetch origin "$pull_request_sha" >&2
-            if git ls-tree "$pull_request_sha" -- "$bucket/$project" 2> /dev/null | grep -q tree; then
-              return 0
-            fi
-            return 1
-          fi
-        fi
+        should_patch_head
         ;;
       *)
         false
@@ -1113,7 +1117,11 @@ spelling_body() {
     if [ -n "$GITHUB_HEAD_REF" ]; then
       remote_url_ssh=$(jq -r '.pull_request.head.repo.ssh_url // empty' $GITHUB_EVENT_PATH)
       remote_url_https=$(jq -r '.pull_request.head.repo.clone_url // empty' $GITHUB_EVENT_PATH)
-      remote_ref=$GITHUB_HEAD_REF
+      if should_patch_head; then
+        remote_ref="$GITHUB_HEAD_REF"
+      else
+        remote_ref="$GITHUB_BASE_REF"
+      fi
     else
       remote_url_ssh=$(jq -r '.repository.ssh_url // empty' $GITHUB_EVENT_PATH)
       remote_url_https=$(jq -r '.repository.clone_url // empty' $GITHUB_EVENT_PATH)
