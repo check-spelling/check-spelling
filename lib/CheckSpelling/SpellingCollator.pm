@@ -160,13 +160,15 @@ sub main {
   our %counters;
   %counters = ();
 
-  open WARNINGS, '<:utf8', $early_warnings;
-  for my $warning (<WARNINGS>) {
-    chomp $warning;
-    count_warning $warning;
-    print WARNING_OUTPUT "$warning\n";
+  if (-s $early_warnings) {
+    open WARNINGS, '<:utf8', $early_warnings;
+    for my $warning (<WARNINGS>) {
+      chomp $warning;
+      count_warning $warning;
+      print WARNING_OUTPUT "$warning\n";
+    }
+    close WARNINGS;
   }
-  close WARNINGS;
 
   for my $directory (@directories) {
     next unless (-s "$directory/warnings");
