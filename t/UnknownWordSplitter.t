@@ -10,7 +10,7 @@ use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
 
 use Test::More;
-plan tests => 14;
+plan tests => 17;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -81,6 +81,14 @@ line 2, columns 1-9, Warning - `FooBarBar` matches a line_forbidden.patterns ent
 check_output_file("$output_dir/unknown", 'baz
 elf');
 
+$CheckSpelling::UnknownWordSplitter::largest_file = 1;
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+$CheckSpelling::UnknownWordSplitter::forbidden_re='$^';
+check_output_file("$output_dir/name", $filename);
+check_output_file("$output_dir/stats", undef);
+check_output_file("$output_dir/skipped", "size `72` exceeds limit `1`. (large-file)
+");
+$CheckSpelling::UnknownWordSplitter::largest_file = 1000000;
 $CheckSpelling::UnknownWordSplitter::patterns_re = 'i.';
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/name", $filename);
