@@ -88,6 +88,7 @@ sub init {
   our ($word_match, %unique);
   our $patterns_re = file_to_re "$dirname/patterns.txt";
   our $forbidden_re = file_to_re "$dirname/forbidden.txt";
+  our $largest_file = CheckSpelling::Util::get_val_from_env('INPUT_LARGEST_FILE', 1024*1024);
 
   $word_match = valid_word();
 
@@ -98,10 +99,22 @@ sub init {
 
 sub split_file {
   my ($file) = @_;
-  our ($unrecognized, $longest_word, $shortest_word, $words, $word_match, %unique, %unique_unrecognized, $forbidden_re, $patterns_re, %dictionary);
+  our ($unrecognized, $longest_word, $shortest_word, $largest_file, $words, $word_match, %unique, %unique_unrecognized, $forbidden_re, $patterns_re, %dictionary);
+  my $temp_dir = tempdir();
+  open(NAME, '>:utf8', "$temp_dir/name");
+    print NAME $file;
+  close NAME;
+  if (defined $largest_file) {
+    my $file_size = -s $file;
+    if ($file_size > $largest_file) {
+      open(SKIPPED, '>:utf8', "$temp_dir/skipped");
+      print SKIPPED "size `$file_size` exceeds limit `$largest_file`. (large-file)\n";
+      close SKIPPED;
+      return $temp_dir;
+    }
+  }
   open FILE, '<', $file;
   binmode FILE;
-  my $temp_dir = tempdir();
   ($words, $unrecognized) = (0, 0);
   %unique = ();
   %unique_unrecognized = ();
@@ -180,9 +193,6 @@ sub split_file {
     close WARNINGS;
   }
 
-  open(NAME, '>:utf8', "$temp_dir/name");
-    print NAME $file;
-  close NAME;
   return $temp_dir;
 }
 
