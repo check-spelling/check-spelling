@@ -1220,9 +1220,14 @@ spelling_body() {
       " | perl -pne 's/^\s+$/\n/;'| uniq)
 }
 
+report_output_variables() {
+  tr : = < $output_variables
+  cat $output_variables
+}
+
 quit() {
   echo "::remove-matcher owner=check-spelling::"
-  cat $output_variables
+  report_output_variables
   if [ -n "$quit_without_error" ]; then
     exit
   fi
@@ -1647,4 +1652,4 @@ if [ -z "$patch_add" ]; then
   fewer_misspellings
 fi
 more_misspellings
-cat $output_variables
+report_output_variables
