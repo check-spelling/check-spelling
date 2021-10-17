@@ -151,6 +151,10 @@ inputs:
     description: 'Set to the value of the current security advisory to accept the reported risk -- value must match -- do not set if there is no current advisory'
     required: false
     default: ''
+  largest_file:
+    description: 'File size limit'
+    required: false
+    default: '1048576'
 
 outputs:
   unknown_words:
@@ -200,6 +204,7 @@ runs:
         INPUT_REPORT_TITLE_SUFFIX: "${{ inputs.report_title_suffix }}"
         INPUT_ONLY_CHECK_CHANGED_FILES: ${{ inputs.only_check_changed_files }}
         INPUT_CHECK_FILE_NAMES: ${{ inputs.check_file_names }}
+        INPUT_LARGEST_FILE: ${{ inputs.largest_file }}
         DEBUG: ${{ inputs.debug }}
         spellchecker: ${{ github.action_path }}
       run:
