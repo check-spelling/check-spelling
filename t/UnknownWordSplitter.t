@@ -10,7 +10,7 @@ use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
 
 use Test::More;
-plan tests => 17;
+plan tests => 24;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -43,26 +43,50 @@ sub check_output_file_sorted_lines {
 
 my ($fh, $filename) = tempfile();
 print $fh "foo
+Mooprh
+BROADDEPlay
+
 bar";
 close $fh;
-is(CheckSpelling::UnknownWordSplitter::file_to_re($filename), "(?:foo)|(?:bar)");
+is(CheckSpelling::UnknownWordSplitter::file_to_re($filename), "(?:foo)|(?:Mooprh)|(?:BROADDEPlay)|(?:bar)");
 $CheckSpelling::UnknownWordSplitter::word_match = CheckSpelling::UnknownWordSplitter::valid_word();
 is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b\w{3,}\b)');
 $CheckSpelling::UnknownWordSplitter::shortest=100;
 $CheckSpelling::UnknownWordSplitter::longest=0;
 CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
 is($CheckSpelling::UnknownWordSplitter::shortest, 3);
-is($CheckSpelling::UnknownWordSplitter::longest, 5);
+is($CheckSpelling::UnknownWordSplitter::longest, 13);
+is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b\w{3,13}\b)');
+$ENV{'INPUT_LONGEST_WORD'} = 5;
+$ENV{'INPUT_SHORTEST_WORD'} = '';
+CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
 is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b\w{3,5}\b)');
 my $directory = tempdir();
+open $fh, '>:utf8', "$directory/words";
+print $fh 'bar
+foo
+';
+close $fh;
 open $fh, '>:utf8', "$directory/patterns.txt";
 print $fh '# ignore-me
 
 random-inconsequential-string
 ';
 close $fh;
-CheckSpelling::UnknownWordSplitter::init($directory);
-CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
+%CheckSpelling::UnknownWordSplitter::dictionary = ();
+my $output_directory;
+open(my $outputFH, '>', \$output_directory) or die; # This shouldn't fail
+my $oldFH = select $outputFH;
+CheckSpelling::UnknownWordSplitter::main($directory, ($filename));
+select $oldFH;
+ok($output_directory =~ /.*\n/);
+chomp($output_directory);
+ok(-d $output_directory);
+check_output_file("$output_directory/name", $filename);
+check_output_file("$output_directory/stats", '{words: 2, unrecognized: 1, unknown: 1, unique: 2}');
+check_output_file("$output_directory/unknown", 'Play');
+check_output_file("$output_directory/warnings", "line 3 cols 8-11: 'Play'
+");
 open $fh, '>:utf8', $filename;
 print $fh "FooBar baz Bar elf baz bar supercalifragelisticexpialidocious
 FooBarBar
@@ -90,13 +114,26 @@ check_output_file("$output_dir/skipped", "size `72` exceeds limit `1`. (large-fi
 ");
 $CheckSpelling::UnknownWordSplitter::largest_file = 1000000;
 $CheckSpelling::UnknownWordSplitter::patterns_re = 'i.';
+$ENV{'INPUT_LONGEST_WORD'} = 8;
+CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/name", $filename);
-check_output_file("$output_dir/stats", '{words: 7, unrecognized: 6, unknown: 5, unique: 2}');
-check_output_file_sorted_lines("$output_dir/warnings", "line 1 cols 8-10: 'baz'
+check_output_file("$output_dir/stats", '{words: 0, unrecognized: 13, unknown: 8, unique: 0}');
+check_output_file_sorted_lines("$output_dir/warnings", "line 1 cols 1-3: 'Foo'
+line 1 cols 12-14: 'Bar'
+line 1 cols 16-18: 'elf'
 line 1 cols 20-22: 'baz'
-line 1 cols 16-18: 'elf'");
-check_output_file("$output_dir/unknown", 'baz
+line 1 cols 24-26: 'bar'
+line 1 cols 4-6: 'Bar'
+line 1 cols 8-10: 'baz'
+line 2 cols 1-3: 'Foo'
+line 2 cols 4-6: 'Bar'
+line 2 cols 7-9: 'Bar'
+");
+check_output_file("$output_dir/unknown", 'Bar
+Foo
+bar
+baz
 elf
 exp
 ragel
