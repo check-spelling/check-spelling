@@ -96,13 +96,26 @@ sub main {
       print STDERR "Not a directory: $directory\n";
       next;
     }
-    # stats isn't written if all words in the file are in the dictionary
-    next unless (-s "$directory/stats");
 
     # if there's no filename, we can't report
     next unless open(NAME, '<:utf8', "$directory/name");
     my $file=<NAME>;
     close NAME;
+
+    if (-e "$directory/skipped") {
+      open SKIPPED, '<:utf8', "$directory/skipped";
+      my $reason=<SKIPPED>;
+      close SKIPPED;
+      chomp $reason;
+      push @delayed_warnings, "$file: line 1, columns 1-1, Warning - Skipping `$file` because $reason\n";
+      print SHOULD_EXCLUDE "$file\n";
+      push @cleanup_directories, $directory;
+      next;
+    }
+
+    # stats isn't written if all words in the file are in the dictionary
+    next unless (-s "$directory/stats");
+
     my ($words, $unrecognized, $unknown, $unique);
 
     {
