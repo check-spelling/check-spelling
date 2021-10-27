@@ -972,14 +972,22 @@ run_spell_check() {
     cat "$file_list" | tr "\0" "\n" > "$check_file_names"
     echo "$check_file_names" | tr "\n" "\0" >> "$file_list"
   fi
-  perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print "Checking $count files\n";' $file_list
+  count=$(perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print $count;' $file_list)
+  echo "Checking $count files"
   end_group
+  queue_size=$(($count / $job_count / 4))
+  if [ $queue_size -lt 4 ]; then
+    queue_size=$(($count / $job_count))
+  fi
+  if [ $queue_size -lt 1 ]; then
+    queue_size=1
+  fi
 
   begin_group 'Spell check'
   warning_output=$(mktemp -d)/warnings.txt
   more_warnings=$(mktemp)
   cat $file_list |\
-  xargs -0 -n8 "-P$job_count" "$word_splitter" |\
+  env -i SHELL="$SHELL" PATH="$PATH" LC_ALL="C" HOME="$HOME" xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
   expect="$expect_path" warning_output="$warning_output" more_warnings="$more_warnings" should_exclude_file="$should_exclude_file" counter_summary="$counter_summary_file" "$word_collator" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
