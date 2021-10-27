@@ -10,7 +10,7 @@ use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
 
 use Test::More;
-plan tests => 24;
+plan tests => 27;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -54,12 +54,14 @@ is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b\w{3,}\b)');
 $CheckSpelling::UnknownWordSplitter::shortest=100;
 $CheckSpelling::UnknownWordSplitter::longest=0;
 CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
+is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 4);
 is($CheckSpelling::UnknownWordSplitter::shortest, 3);
 is($CheckSpelling::UnknownWordSplitter::longest, 13);
 is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b\w{3,13}\b)');
 $ENV{'INPUT_LONGEST_WORD'} = 5;
 $ENV{'INPUT_SHORTEST_WORD'} = '';
 CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
+is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 4);
 is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b\w{3,5}\b)');
 my $directory = tempdir();
 open $fh, '>:utf8', "$directory/words";
@@ -116,6 +118,7 @@ $CheckSpelling::UnknownWordSplitter::largest_file = 1000000;
 $CheckSpelling::UnknownWordSplitter::patterns_re = 'i.';
 $ENV{'INPUT_LONGEST_WORD'} = 8;
 CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
+is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 1);
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/name", $filename);
 check_output_file("$output_dir/stats", '{words: 0, unrecognized: 13, unknown: 8, unique: 0}');
