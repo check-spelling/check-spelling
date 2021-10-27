@@ -6,7 +6,7 @@ use File::Temp qw/ tempfile tempdir /;
 use IO::Capture::Stderr;
 
 use Test::More;
-plan tests => 19;
+plan tests => 21;
 
 sub read_file {
   my ($file) = @_;
@@ -148,4 +148,74 @@ check_output_file($warning_output, "$file_name: line 2, columns 3-8, Warning - `
 ");
 check_output_file($counter_summary, '');
 check_output_file($more_warnings, 'test.txt: line 10, columns 4-10, Warning - `something` is not a recognized word. (unrecognized-spelling)
+');
+open $fd, '>', $expect;
+print $fd "
+AAA
+Bbb
+ccc
+DDD
+Eee
+fff
+GGG
+Hhh
+iii
+";
+close $fd;
+CheckSpelling::SpellingCollator::load_expect($expect);
+truncate($early_warnings, 0);
+truncate($warning_output, 0);
+truncate($more_warnings, 0);
+truncate($counter_summary, 0);
+my $case_items;
+($fd, $case_items) = tempfile();
+print $fd "AAA
+Aaa
+aaa
+BBB
+Bbb
+bbb
+CCC
+Ccc
+ccc
+Ddd
+ddd
+Eee
+eee
+Fff
+fff
+GGG
+Ggg
+HHH
+Hhh
+III
+Iii
+";
+close $fd;
+open $fd, '>', "$directory/name";
+print $fd "$case_items";
+close $fd;
+open $fh, '<', \$directories;
+$oldFH = select $outputFH;
+$capture->start();
+{
+  local *ARGV = $fh;
+  CheckSpelling::SpellingCollator::main();
+}
+$capture->stop();
+select $oldFH;
+is($output, "hhhh (hhhh, hhhhed)
+jjjjjy (jjjjjy, jjjjjies)
+nnnnnnnnns
+xxxpaz (xxxpaz, xxxpazs)
+hhhh (hhhh, hhhhed)
+jjjjjy (jjjjjy, jjjjjies)
+nnnnnnnnns
+xxxpaz (xxxpaz, xxxpazs)
+");
+@error_lines = $capture->read();
+$error_lines = join "\n", @error_lines;
+is($error_lines, 'Not a directory: /dev/null
+
+Could not find: /dev/no-such-dev
 ');
