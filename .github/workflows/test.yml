@@ -28,7 +28,7 @@ jobs:
         (
           sudo apt-get update &&
           sudo apt-get install -y cpanminus &&
-          cpanm -S --notest Module::Build::Tiny Devel::Cover
+          cpanm -S --notest Module::Build::Tiny Devel::Cover IO::Capture::Stderr
         ) > /tmp/prework || (cat /tmp/prework && false)
         ./Build.PL
         ./Build build

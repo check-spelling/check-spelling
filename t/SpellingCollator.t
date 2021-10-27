@@ -3,9 +3,10 @@
 use strict;
 
 use File::Temp qw/ tempfile tempdir /;
+use IO::Capture::Stderr;
 
 use Test::More;
-plan tests => 17;
+plan tests => 19;
 
 sub read_file {
   my ($file) = @_;
@@ -75,10 +76,20 @@ $ENV{'more_warnings'} = $more_warnings;
 $ENV{'counter_summary'} = $counter_summary;
 my $output;
 open $fh, "<", \$directories;
+my $capture = IO::Capture::Stderr->new();
+
+$capture->start();
 {
   local *ARGV = $fh;
   CheckSpelling::SpellingCollator::main();
 }
+$capture->stop();
+my @error_lines = $capture->read();
+my $error_lines = join "\n", @error_lines;
+is($error_lines, 'Not a directory: /dev/null
+
+Could not find: /dev/no-such-dev
+');
 check_output_file($warning_output, 'goose (animal)
 hello.txt: line 1, columns 1-1, Warning - Skipping `hello.txt` because blah (skipped)
 ');
@@ -115,16 +126,24 @@ unlink("$directory/skipped");
 open $fh, "<", \$directories;
 open(my $outputFH, '>', \$output) or die; # This shouldn't fail
 my $oldFH = select $outputFH;
+$capture->start();
 {
   local *ARGV = $fh;
   CheckSpelling::SpellingCollator::main();
 }
+$capture->stop();
 select $oldFH;
 is($output, "hhhh (hhhh, hhhhed)
 jjjjjy (jjjjjy, jjjjjies)
 nnnnnnnnns
 xxxpaz (xxxpaz, xxxpazs)
 ");
+@error_lines = $capture->read();
+$error_lines = join "\n", @error_lines;
+is($error_lines, 'Not a directory: /dev/null
+
+Could not find: /dev/no-such-dev
+');
 check_output_file($warning_output, "$file_name: line 2, columns 3-8, Warning - `something` is not a recognized word. (unrecognized-spelling)
 ");
 check_output_file($counter_summary, '');
