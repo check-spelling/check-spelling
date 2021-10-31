@@ -6,7 +6,47 @@ use File::Temp qw/ tempfile tempdir /;
 use IO::Capture::Stderr;
 
 use Test::More;
-plan tests => 21;
+plan tests => 29;
+
+sub fill_file {
+  my ($file, $content) = @_;
+  return unless $content;
+  open FILE, '>:utf8', $file;
+  print FILE $content;
+  close FILE;
+}
+
+sub stage_test {
+  my ($name, $stats, $skipped, $warnings, $unknown) = @_;
+  my $directory = tempdir();
+  fill_file("$directory/name", $name);
+  fill_file("$directory/stats", $stats);
+  fill_file("$directory/skipped", $skipped);
+  fill_file("$directory/warnings", $warnings);
+  fill_file("$directory/unknown", $unknown);
+  truncate($ENV{'early_warnings'}, 0);
+  truncate($ENV{'warning_output'}, 0);
+  truncate($ENV{'more_warnings'}, 0);
+  truncate($ENV{'counter_summary'}, 0);
+  return $directory;
+}
+
+sub run_test {
+  my ($directories) = @_;
+  my $output = '';
+  open(my $outputFH, '>', \$output) or die; # This shouldn't fail
+  my $oldFH = select $outputFH;
+  my $capture = IO::Capture::Stderr->new();
+  $capture->start();
+  {
+    open my $fh, "<", \$directories;
+    local *ARGV = $fh;
+    CheckSpelling::SpellingCollator::main();
+  }
+  $capture->stop();
+  select $oldFH;
+  return ($output, (join "\n", $capture->read()));
+}
 
 sub read_file {
   my ($file) = @_;
@@ -48,44 +88,26 @@ is($CheckSpelling::SpellingCollator::counters{'hi'}, 1);
 CheckSpelling::SpellingCollator::count_warning('hello (hi)');
 is($CheckSpelling::SpellingCollator::counters{'hi'}, 2);
 
-my $directory = tempdir();
+my ($fh, $early_warnings, $warning_output, $more_warnings, $counter_summary);
+
+($fh, $early_warnings) = tempfile;
+($fh, $warning_output) = tempfile;
+($fh, $more_warnings) = tempfile;
+($fh, $counter_summary) = tempfile;
+$ENV{'early_warnings'} = $early_warnings;
+$ENV{'warning_output'} = $warning_output;
+$ENV{'more_warnings'} = $more_warnings;
+$ENV{'counter_summary'} = $counter_summary;
+
+my $directory = stage_test("hello.txt", '', "blah (skipped)\n", '', '');
 my $directories = "$directory
 /dev
 /dev/null
 /dev/no-such-dev
 ";
 
-sub fill_file {
-  my ($file, $content) = @_;
-  open FILE, '>:utf8', $file;
-  print FILE $content;
-  close FILE;
-}
-
-fill_file("$directory/name", "hello.txt");
-fill_file("$directory/skipped", "blah (skipped)\n");
-my ($fh, $early_warnings, $warning_output, $more_warnings, $counter_summary);
-($fh, $early_warnings) = tempfile;
-($fh, $warning_output) = tempfile;
-($fh, $more_warnings) = tempfile;
-($fh, $counter_summary) = tempfile;
-$ENV{'early_warnings'} = $early_warnings;
 fill_file($early_warnings, "goose (animal)\n");
-$ENV{'warning_output'} = $warning_output;
-$ENV{'more_warnings'} = $more_warnings;
-$ENV{'counter_summary'} = $counter_summary;
-my $output;
-open $fh, "<", \$directories;
-my $capture = IO::Capture::Stderr->new();
-
-$capture->start();
-{
-  local *ARGV = $fh;
-  CheckSpelling::SpellingCollator::main();
-}
-$capture->stop();
-my @error_lines = $capture->read();
-my $error_lines = join "\n", @error_lines;
+my ($output, $error_lines) = run_test($directories);
 is($error_lines, 'Not a directory: /dev/null
 
 Could not find: /dev/no-such-dev
@@ -101,16 +123,13 @@ check_output_file($counter_summary, '{
 check_output_file($more_warnings, '');
 
 my $file_name='test.txt';
-fill_file("$directory/name", $file_name);
-fill_file("$directory/stats", '{words: 3, unrecognized: 2, unknown: 2, unique: 2}');
-fill_file("$directory/warnings", "line 2 cols 3-8: 'something'
+$directory = stage_test($file_name, '{words: 3, unrecognized: 2, unknown: 2, unique: 2}', '', "line 2 cols 3-8: 'something'
 line 3 cols 3-5: 'Foo'
 line 4 cols 3-6: 'foos'
 line 5 cols 7-9: 'foo'
 line 6 cols 3-9: 'fooies'
 line 6 cols 3-9: 'fozed'
-line 10 cols 4-10: 'something'");
-fill_file("$directory/unknown", "xxxpaz
+line 10 cols 4-10: 'something'", "xxxpaz
 xxxpazs
 jjjjjy
 jjjjjies
@@ -118,39 +137,19 @@ nnnnnnnnns
 hhhhed
 hhhh
 ");
-truncate($early_warnings, 0);
-truncate($warning_output, 0);
-truncate($more_warnings, 0);
-truncate($counter_summary, 0);
-unlink("$directory/skipped");
-open $fh, "<", \$directories;
-open(my $outputFH, '>', \$output) or die; # This shouldn't fail
-my $oldFH = select $outputFH;
-$capture->start();
-{
-  local *ARGV = $fh;
-  CheckSpelling::SpellingCollator::main();
-}
-$capture->stop();
-select $oldFH;
+($output, $error_lines) = run_test($directory);
 is($output, "hhhh (hhhh, hhhhed)
 jjjjjy (jjjjjy, jjjjjies)
 nnnnnnnnns
 xxxpaz (xxxpaz, xxxpazs)
 ");
-@error_lines = $capture->read();
-$error_lines = join "\n", @error_lines;
-is($error_lines, 'Not a directory: /dev/null
-
-Could not find: /dev/no-such-dev
-');
+is($error_lines, '');
 check_output_file($warning_output, "$file_name: line 2, columns 3-8, Warning - `something` is not a recognized word. (unrecognized-spelling)
 ");
 check_output_file($counter_summary, '');
 check_output_file($more_warnings, 'test.txt: line 10, columns 4-10, Warning - `something` is not a recognized word. (unrecognized-spelling)
 ');
-open $fd, '>', $expect;
-print $fd "
+fill_file($expect, "
 AAA
 Bbb
 ccc
@@ -160,16 +159,9 @@ fff
 GGG
 Hhh
 iii
-";
-close $fd;
+");
 CheckSpelling::SpellingCollator::load_expect($expect);
-truncate($early_warnings, 0);
-truncate($warning_output, 0);
-truncate($more_warnings, 0);
-truncate($counter_summary, 0);
-my $case_items;
-($fd, $case_items) = tempfile();
-print $fd "AAA
+$directory = stage_test('case.txt', '{words: 1000, unrecognized: 0, unknown: 0, unique: 1000}', '', '', "AAA
 Aaa
 aaa
 BBB
@@ -190,32 +182,46 @@ HHH
 Hhh
 III
 Iii
-";
-close $fd;
-open $fd, '>', "$directory/name";
-print $fd "$case_items";
-close $fd;
-open $fh, '<', \$directories;
-$oldFH = select $outputFH;
-$capture->start();
-{
-  local *ARGV = $fh;
-  CheckSpelling::SpellingCollator::main();
-}
-$capture->stop();
-select $oldFH;
-is($output, "hhhh (hhhh, hhhhed)
-jjjjjy (jjjjjy, jjjjjies)
-nnnnnnnnns
-xxxpaz (xxxpaz, xxxpazs)
-hhhh (hhhh, hhhhed)
-jjjjjy (jjjjjy, jjjjjies)
-nnnnnnnnns
-xxxpaz (xxxpaz, xxxpazs)
 ");
-@error_lines = $capture->read();
-$error_lines = join "\n", @error_lines;
-is($error_lines, 'Not a directory: /dev/null
+($output, $error_lines) = run_test($directory);
+is($output, "aaa (AAA, Aaa, aaa)
+bbb (BBB, Bbb, bbb)
+ccc (CCC, Ccc, ccc)
+ddd (Ddd, ddd)
+eee (Eee, eee)
+fff (Fff, fff)
+ggg (GGG, Ggg)
+hhh (HHH, Hhh)
+iii (III, Iii)
+");
+is($error_lines, '');
+check_output_file($warning_output, '');
+check_output_file($counter_summary, '');
+check_output_file($more_warnings, '');
 
-Could not find: /dev/no-such-dev
-');
+fill_file($expect, q<calloc
+alloc
+malloc
+>);
+
+$directory = stage_test('punctuation.txt', '{words: 1000, unrecognized: 0, unknown: 0, unique: 1000}', '', "line 1 cols 1-1: 'calloc'
+line 1 cols 1-1: 'calloc'd'
+line 1 cols 1-1: 'a'calloc'
+line 1 cols 1-1: 'malloc'
+line 1 cols 1-1: 'malloc'd'
+", q<
+calloc
+calloc'd
+a'calloc
+malloc
+malloc'd
+>);
+($output, $error_lines) = run_test($directory);
+is($output, "calloc (calloc, calloc'd)
+malloc (malloc, malloc'd)
+");
+is($error_lines, '');
+check_output_file($warning_output, q<punctuation.txt: line 1, columns 1-1, Warning - `a'calloc` is not a recognized word. (unrecognized-spelling)
+>);
+check_output_file($counter_summary, '');
+check_output_file($more_warnings, '');
