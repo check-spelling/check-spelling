@@ -24,7 +24,7 @@ sub main {
   my $unknown_words;
   unless (open($unknown_words, '<:utf8', $check)) {
     print STDERR "Could not read $check\n";
-    exit 0;
+    return 0;
   }
 
   for my $name (@dictionaries) {
