@@ -185,7 +185,7 @@ Hhh
 III
 Iii
 );
-$directory = stage_test('case.txt', '{words: 1000, unrecognized: 0, unknown: 0, unique: 1000}', '',
+$directory = stage_test('case.txt', '{words: 1000, unique: 1000}', '',
 (join "\n", map { "line 1 cols 1-1: '$_'" } @word_variants),
 (join "\n", @word_variants));
 ($output, $error_lines) = run_test($directory);
@@ -216,7 +216,7 @@ alloc
 malloc
 >);
 
-$directory = stage_test('punctuation.txt', '{words: 1000, unrecognized: 0, unknown: 0, unique: 1000}', '', "line 1 cols 1-1: 'calloc'
+$directory = stage_test('punctuation.txt', '{words: 1000, unique: 1000}', '', "line 1 cols 1-1: 'calloc'
 line 1 cols 1-1: 'calloc'd'
 line 1 cols 1-1: 'a'calloc'
 line 1 cols 1-1: 'malloc'
