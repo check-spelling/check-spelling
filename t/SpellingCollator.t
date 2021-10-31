@@ -67,6 +67,20 @@ sub check_output_file {
 
 use_ok('CheckSpelling::SpellingCollator');
 
+my ($fh, $early_warnings, $warning_output, $more_warnings, $counter_summary);
+
+($fh, $early_warnings) = tempfile;
+($fh, $warning_output) = tempfile;
+($fh, $more_warnings) = tempfile;
+($fh, $counter_summary) = tempfile;
+$ENV{'early_warnings'} = $early_warnings;
+$ENV{'warning_output'} = $warning_output;
+$ENV{'more_warnings'} = $more_warnings;
+$ENV{'counter_summary'} = $counter_summary;
+
+my $directory = stage_test('empty.txt', '', '', '', '');
+run_test($directory);
+
 my ($fd, $expect) = tempfile;
 $ENV{'expect'} = $expect;
 print $fd "foo
@@ -88,18 +102,7 @@ is($CheckSpelling::SpellingCollator::counters{'hi'}, 1);
 CheckSpelling::SpellingCollator::count_warning('hello (hi)');
 is($CheckSpelling::SpellingCollator::counters{'hi'}, 2);
 
-my ($fh, $early_warnings, $warning_output, $more_warnings, $counter_summary);
-
-($fh, $early_warnings) = tempfile;
-($fh, $warning_output) = tempfile;
-($fh, $more_warnings) = tempfile;
-($fh, $counter_summary) = tempfile;
-$ENV{'early_warnings'} = $early_warnings;
-$ENV{'warning_output'} = $warning_output;
-$ENV{'more_warnings'} = $more_warnings;
-$ENV{'counter_summary'} = $counter_summary;
-
-my $directory = stage_test("hello.txt", '', "blah (skipped)\n", '', '');
+$directory = stage_test("hello.txt", '', "blah (skipped)\n", '', '');
 my $directories = "$directory
 /dev
 /dev/null
