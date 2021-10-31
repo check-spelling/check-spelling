@@ -52,7 +52,7 @@ is(CheckSpelling::UnknownWordSplitter::file_to_re($filename), "(?:foo)|(?:Mooprh
 $CheckSpelling::UnknownWordSplitter::word_match = CheckSpelling::UnknownWordSplitter::valid_word();
 is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b\w{3,}\b)');
 $CheckSpelling::UnknownWordSplitter::shortest=100;
-$CheckSpelling::UnknownWordSplitter::longest=0;
+$CheckSpelling::UnknownWordSplitter::longest="";
 CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
 is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 4);
 is($CheckSpelling::UnknownWordSplitter::shortest, 3);
