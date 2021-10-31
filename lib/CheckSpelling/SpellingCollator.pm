@@ -11,7 +11,7 @@ my %letter_map;
 
 sub get_field {
   my ($record, $field) = @_;
-  return undef unless $record =~ (/\b$field:\s*(\d+)/);
+  return 0 unless $record =~ (/\b$field:\s*(\d+)/);
   return $1;
 }
 
