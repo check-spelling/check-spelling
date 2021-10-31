@@ -160,8 +160,7 @@ GGG
 Hhh
 iii
 ");
-CheckSpelling::SpellingCollator::load_expect($expect);
-$directory = stage_test('case.txt', '{words: 1000, unrecognized: 0, unknown: 0, unique: 1000}', '', '', "AAA
+my @word_variants=qw(AAA
 Aaa
 aaa
 BBB
@@ -182,7 +181,10 @@ HHH
 Hhh
 III
 Iii
-");
+);
+$directory = stage_test('case.txt', '{words: 1000, unrecognized: 0, unknown: 0, unique: 1000}', '',
+(join "\n", map { "line 1 cols 1-1: '$_'" } @word_variants),
+(join "\n", @word_variants));
 ($output, $error_lines) = run_test($directory);
 is($output, "aaa (AAA, Aaa, aaa)
 bbb (BBB, Bbb, bbb)
@@ -195,7 +197,14 @@ hhh (HHH, Hhh)
 iii (III, Iii)
 ");
 is($error_lines, '');
-check_output_file($warning_output, '');
+check_output_file($warning_output, q<case.txt: line 1, columns 1-1, Warning - `Aaa` is not a recognized word. (unrecognized-spelling)
+case.txt: line 1, columns 1-1, Warning - `aaa` is not a recognized word. (unrecognized-spelling)
+case.txt: line 1, columns 1-1, Warning - `bbb` is not a recognized word. (unrecognized-spelling)
+case.txt: line 1, columns 1-1, Warning - `Ddd` is not a recognized word. (unrecognized-spelling)
+case.txt: line 1, columns 1-1, Warning - `ddd` is not a recognized word. (unrecognized-spelling)
+case.txt: line 1, columns 1-1, Warning - `eee` is not a recognized word. (unrecognized-spelling)
+case.txt: line 1, columns 1-1, Warning - `Ggg` is not a recognized word. (unrecognized-spelling)
+>);
 check_output_file($counter_summary, '');
 check_output_file($more_warnings, '');
 
