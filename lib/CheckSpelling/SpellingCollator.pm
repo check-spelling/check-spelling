@@ -15,12 +15,35 @@ sub get_field {
   return $1;
 }
 
+sub maybe {
+  my ($next, $value) = @_;
+  $next = $value unless $next && $next < $value;
+  return $next;
+}
+
 my %expected = ();
 sub expect_item {
   my ($item, $value) = @_;
   our %expected;
-  return 0 unless defined $expected{$item};
-  $expected{$item} ||= $value;
+  my $next;
+  if (defined $expected{$item}) {
+    $next = $expected{$item};
+    $next = $value if $value < $next;
+  } elsif ($item =~ /^([A-Z])(.*)/) {
+    $item = $1 . lc $2;
+    if (defined $expected{$item}) {
+      $next = $expected{$item};
+      $next = maybe($next, $value + .1);
+    } else {
+      $item = lc $item;
+      if (defined $expected{$item}) {
+        $next = $expected{$item};
+        $next = maybe($next, $value + .2);
+      }
+    }
+  }
+  return 0 unless defined $next;
+  $expected{$item} = $next;
   return $value;
 }
 
