@@ -41,6 +41,11 @@ sub file_to_re {
   return join "|", @file if scalar @file;
 }
 
+sub not_empty {
+  my ($thing) = @_;
+  return defined $thing && $thing ne ''
+}
+
 sub valid_word {
   # shortest_word is an absolute
   our ($shortest, $longest, $shortest_word, $longest_word);
@@ -48,12 +53,12 @@ sub valid_word {
   if ($longest_word) {
     # longest_word is an absolute
     $longest = $longest_word;
-  } elsif (defined $longest && $longest ne '') {
+  } elsif (not_empty($longest)) {
     # we allow for some sloppiness (a couple of stuck keys per word)
     # it's possible that this should scale with word length
     $longest += 2;
   }
-  return qr/\w{3}/ if (defined $shortest && defined $longest && $longest ne '') && ($shortest > $longest);
+  return qr/\w{3}/ if (defined $shortest && not_empty($longest)) && ($shortest > $longest);
   $shortest = 3 unless defined $shortest;
   $longest = '' unless defined $longest;
   $word_match = "\\w{$shortest,$longest}";
@@ -73,7 +78,7 @@ sub load_dictionary {
     chomp $word;
     next unless $word =~ $word_match;
     my $l = length $word;
-    $longest = -1 unless defined $longest and $longest ne '';
+    $longest = -1 unless not_empty($longest);
     $longest = $l if $l > $longest;
     $shortest = $l if $l < $shortest;
     $dictionary{$word}=1;
