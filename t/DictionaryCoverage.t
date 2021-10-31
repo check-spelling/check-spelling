@@ -5,7 +5,8 @@ use strict;
 use File::Temp qw/ tempfile tempdir /;
 use File::Basename;
 use Test::More;
-plan tests => 7;
+use IO::Capture::Stderr;
+plan tests => 8;
 use_ok('CheckSpelling::DictionaryCoverage');
 
 my $name = '/dev/null';
@@ -65,3 +66,9 @@ my $dict_name = basename $dict;
 is($output2, "1 [other:$one_match_name]($one_match) (4) covers 1 of them
 2 [suggest:$dict_name]($dict) (3) covers 2 of them
 ");
+my $capture = IO::Capture::Stderr->new();
+$capture->start();
+CheckSpelling::DictionaryCoverage::main("/dev/no-such-file", ());
+$capture->stop();
+is((join "\n", $capture->read()), 'Could not read /dev/no-such-file
+');
