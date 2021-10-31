@@ -49,6 +49,7 @@ sub skip_item {
 sub load_expect {
   my ($expect) = @_;
   our %expected;
+  %expected = ();
   if (open(EXPECT, '<:utf8', $expect)) {
     while ($word = <EXPECT>) {
       $word =~ s/\R//;
@@ -85,6 +86,7 @@ sub main {
   open SHOULD_EXCLUDE, '>:utf8', $should_exclude_file;
 
   my @delayed_warnings;
+  %letter_map = ();
 
   for my $directory (<>) {
     chomp $directory;
