@@ -35,8 +35,10 @@ sub skip_item {
     } else {
       $key =~ s/s$//;
     }
-  } elsif ($key =~ /.[^aeiou]ed$/) {
-    $key =~ s/ed$//;
+  } elsif ($key =~ /^(.+[^aeiou])ed$/) {
+    $key = $1;
+  } elsif ($key =~ /^(.+)'[ds]$/) {
+    $key = $1;
   } else {
     return 0;
   }
