@@ -25,7 +25,7 @@ my %unique;
 my %unique_unrecognized;
 my ($last_file, $words, $unrecognized) = ('', 0, 0);
 
-sub file_to_re {
+sub file_to_list {
   my ($re) = @_;
   my @file;
   if (open(FILE, '<:utf8', $re)) {
@@ -39,6 +39,12 @@ sub file_to_re {
       push @file, $_;
     }
   }
+  return @file;
+}
+
+sub file_to_re {
+  my ($re) = @_;
+  my @file = file_to_list($re);
   return '$^' unless scalar @file;
   return join "|", @file;
 }
