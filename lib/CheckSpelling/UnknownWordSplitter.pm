@@ -42,11 +42,15 @@ sub file_to_list {
   return @file;
 }
 
+sub list_to_re {
+  my (@list) = @_;
+  return '$^' unless scalar @list;
+  return join "|", @list;
+}
+
 sub file_to_re {
   my ($re) = @_;
-  my @file = file_to_list($re);
-  return '$^' unless scalar @file;
-  return join "|", @file;
+  return list_to_re(file_to_list($re));
 }
 
 sub not_empty {
