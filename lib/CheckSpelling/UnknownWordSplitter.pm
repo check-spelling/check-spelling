@@ -27,18 +27,20 @@ my ($last_file, $words, $unrecognized) = ('', 0, 0);
 
 sub file_to_re {
   my ($re) = @_;
-  return '$^' unless open(FILE, '<:utf8', $re);
   my @file;
-  local $/=undef;
-  my $file=<FILE>;
-  close FILE;
-  for (split /\R/, $file) {
-    next if /^#/;
-    chomp;
-    next unless s/^(.+)/(?:$1)/;
-    push @file, $_;
+  if (open(FILE, '<:utf8', $re)) {
+    local $/=undef;
+    my $file=<FILE>;
+    close FILE;
+    for (split /\R/, $file) {
+      next if /^#/;
+      chomp;
+      next unless s/^(.+)/(?:$1)/;
+      push @file, $_;
+    }
   }
-  return join "|", @file if scalar @file;
+  return '$^' unless scalar @file;
+  return join "|", @file;
 }
 
 sub not_empty {
