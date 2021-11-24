@@ -155,6 +155,10 @@ inputs:
     description: 'File size limit'
     required: false
     default: '1048576'
+  unknown_word_limit:
+    description: 'Only report an unknown word this many times'
+    required: false
+    default: '5'
 
 outputs:
   unknown_words:
@@ -205,6 +209,7 @@ runs:
         INPUT_ONLY_CHECK_CHANGED_FILES: ${{ inputs.only_check_changed_files }}
         INPUT_CHECK_FILE_NAMES: ${{ inputs.check_file_names }}
         INPUT_LARGEST_FILE: ${{ inputs.largest_file }}
+        INPUT_UNKNOWN_WORD_LIMIT: ${{ inputs.unknown_word_limit }}
         DEBUG: ${{ inputs.debug }}
         spellchecker: ${{ github.action_path }}
       run:
