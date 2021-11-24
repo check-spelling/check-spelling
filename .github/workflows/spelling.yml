@@ -44,6 +44,8 @@ jobs:
         check_file_names: 1
         post_comment: 0
         experimental_path: introspected
+        unknown_word_limit: 2
+
     - name: store-comment
       if: failure() && steps.spelling.outputs.internal_state_directory
       uses: actions/upload-artifact@v2
