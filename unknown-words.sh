@@ -437,6 +437,40 @@ handle_comment() {
   trigger_node=$(jq -r '.comment.node_id // empty' "$GITHUB_EVENT_PATH")
   collapse_comment $trigger_node $bot_comment_node_id
 
+  pr_number=$(jq -r '.issue.number' "$GITHUB_EVENT_PATH")
+  pr_path_escaped=$(echo "$GITHUB_REPOSITORY/pull/$pr_number" | perl -pne 's{/}{\%2F}g')
+  pr_query=$(echo '{
+      repository(owner:"'${GITHUB_REPOSITORY%/*}'", name:"'${GITHUB_REPOSITORY#*/}'") {
+        pullRequest(number:'$pr_number') {
+          headRepository {
+            nameWithOwner
+          }
+          headRefName
+        }
+      }
+    }' |
+    strip_lead_and_blanks
+  )
+  pr_query_json=$(echo '{}' | jq -r --arg query "$pr_query" '.query=$query')
+  repository_edit_branch=$(
+    curl -s \
+    -H "$AUTHORIZATION_HEADER" \
+    -H "Content-Type: application/json" \
+    --data-binary "$pr_query_json" \
+    "$GITHUB_GRAPHQL_URL" |
+    jq -r '(.data.repository.pullRequest.headRepository.nameWithOwner + "/edit/" + .data.repository.pullRequest.headRefName)'
+  )
+
+  OUTPUT="### :hourglass: check-spelling updated
+
+  Unfortunately at the present time, the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
+
+  To trigger another validation round and hopefully a :white_check_mark:, please add a blank line, e.g. to [$expect_file]($GITHUB_SERVER_URL/$repository_edit_branch/$expect_file?pr=$pr_path_escaped)."
+  BODY=$(mktemp)
+  echo "$OUTPUT" > "$BODY"
+  body_to_payload "$BODY"
+  COMMENTS_URL=$(jq -r '.issue.comments_url' "$GITHUB_EVENT_PATH")
+  comment "$COMMENTS_URL" "$PAYLOAD"
   echo "# end"
   quit 0
 }
