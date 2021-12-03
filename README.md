@@ -3,7 +3,7 @@
 ## Overview
 
 Everyone makes typos. This includes people writing documentation and comments,
-but it also includes programmers naming variables, functions, apis, classes,
+but it also includes programmers naming variables, functions, APIs, classes,
 and filenames.
 
 Often, programmers will use `InitialCapitalization`, `camelCase`,
