@@ -9,7 +9,7 @@ and filenames.
 Often, programmers will use `InitialCapitalization`, `camelCase`,
 `ALL_CAPS`, or `IDLCase` when naming their things. When they do this, it makes
 it much harder for naive spelling tools to recognize misspellings, and as such,
-with a really high false-positive rate, people don't tend to enable spellchecking
+with a really high false-positive rate, people don't tend to enable spell checking
 at all.
 
 This repository's tools are capable of tolerating all of those variations.
