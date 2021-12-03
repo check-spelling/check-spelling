@@ -1,4 +1,4 @@
-name: 'Check spelling'
+name: 'Check Spelling'
 description: 'Spell check commits'
 author: 'jsoref'
 branding:
