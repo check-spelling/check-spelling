@@ -1471,32 +1471,36 @@ post_commit_comment() {
           fi
           rm "$BODY.orig"
         fi
-        if offer_quote_reply; then
-          (
-            if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
-              apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
+        if [ -n "$COMMENT_URL" ]; then
+          if offer_quote_reply; then
+            (
+              if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+                apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
+              fi
+              echo
+              echo "To have the bot do this for you, reply quoting the following line:"
+              echo "@check-spelling-bot apply [changes]($COMMENT_URL)$apply_changes_suffix."
+            )>> $BODY
+            no_patch=
+          fi
+          if [ -z "$no_patch" ]; then
+            body_to_payload $BODY
+            comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response || res=$?
+            if [ $res -gt 0 ]; then
+              if [ -z "$DEBUG" ]; then
+                echo "Failed to patch $COMMENT_URL"
+              fi
             fi
-            echo
-            echo "To have the bot do this for you, reply quoting the following line:"
-            echo "@check-spelling-bot apply [changes]($COMMENT_URL)$apply_changes_suffix."
-          )>> $BODY
-          no_patch=
-        fi
-        if [ -z "$no_patch" ]; then
-          body_to_payload $BODY
-          comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response || res=$?
-          if [ $res -gt 0 ]; then
-            if [ -z "$DEBUG" ]; then
-              echo "Failed to patch $COMMENT_URL"
+            if [ -n "$DEBUG" ]; then
+              cat $response
             fi
           fi
-          if [ -n "$DEBUG" ]; then
-            cat $response
-          fi
+          rm -f $BODY 2>/dev/null
+          HTML_COMMENT_URL=$(jq -r '.html_url // empty' $response)
+          echo "Comment posted to ${HTML_COMMENT_URL:-$COMMENT_URL}"
+        else
+          cat "$BODY"
         fi
-        rm -f $BODY 2>/dev/null
-        HTML_COMMENT_URL=$(jq -r '.html_url // empty' $response)
-        echo "Comment posted to ${HTML_COMMENT_URL:-$COMMENT_URL}"
       else
         echo "$OUTPUT"
       fi
