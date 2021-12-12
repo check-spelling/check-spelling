@@ -572,27 +572,34 @@ check_dictionary() {
   file="$1"
   expected_chars="a-zA-Z'"
   comment_char="#"
-  perl -pi -e '
+  perl -e '
   open WARNINGS, ">>", $ENV{early_warnings};
-  chomp;
+  my $file = $ARGV[0];
+  open FILE, "<", $file;
+  $/ = undef;
+  my $content = <FILE>;
+  close FILE;
+  open FILE, ">", $file;
+
+  my $first_end = undef;
   my $messy = 0;
-  my $orig = $_;
-  if (s/\n|\r|\x0b|\f|\x85|\x2028|\x2029/a/g) {
-    $messy = 1;
-  }
-  if ('"/^[${expected_chars}]*([^${expected_chars}]+)/"') {
-    $column_range="$-[1]-$+[1]";
-    unless ('"/^${comment_char}/"') {
-      print WARNINGS "$ARGV: line $., columns $column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
+  $. = 0;
+  while ($content =~ s/([^\r\n\x0b\f\x85\x2028\x2029]*)(\r\n|\n|\r|\x0b|\f|\x85|\x2028|\x2029)//m) {
+    ++$.;
+    my ($line, $end) = ($1, $2);
+    unless (defined $first_end) {
+      $first_end = $end;
+    } elsif ($end ne $first_end) {
+      print WARNINGS "$file: line $., columns $-[0]-$+[0], Warning - entry has inconsistent line ending (unexpected-line-ending)\n";
     }
-    $_ = "";
-  } else {
-    if ($messy) {
-      $_ = $orig;
-      s/\R//;
-      print WARNINGS "$ARGV: line $., columns $-[0]-$+[0], Warning - entry has unexpected whitespace (whitespace-in-dictionary)\n";
+    if ($line =~ '"/^[${expected_chars}]*([^${expected_chars}]+)/"') {
+      $column_range="$-[1]-$+[1]";
+      unless ($line =~ '"/^${comment_char}/"') {
+        print WARNINGS "$file: line $., columns $column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
+      }
+      $line = "";
     }
-    $_ .= "\n";
+    print FILE "$line\n";
   }
   close WARNINGS;
 ' "$file"
