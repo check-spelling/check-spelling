@@ -629,8 +629,7 @@ check_for_newline_at_eof() {
 
 check_dictionary() {
   file="$1"
-  expected_chars="[a-zA-Z']"
-  unexpected_chars="[^a-zA-Z']"
+  expected_chars="a-zA-Z'"
   comment_char="#"
   perl -pi -e '
   open WARNINGS, ">>", $ENV{early_warnings};
@@ -640,7 +639,7 @@ check_dictionary() {
   if (s/\n|\r|\x0b|\f|\x85|\x2028|\x2029/a/g) {
     $messy = 1;
   }
-  if ('"/^${expected_chars}*(${unexpected_chars}+)/"') {
+  if ('"/^[${expected_chars}]*([^${expected_chars}]+)/"') {
     $column_range="$-[1]-$+[1]";
     unless ('"/^${comment_char}/"') {
       print WARNINGS "$ARGV: line $., columns $column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
