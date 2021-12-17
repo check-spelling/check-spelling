@@ -37,7 +37,7 @@ dispatcher() {
       exit 1
       ;;
     push)
-      if [ -n "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST" ]; then
+      if to_boolean "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"; then
         pull_request_json=$(mktemp_json)
         pull_request_headers=$(mktemp)
         pull_heads_query="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?head=${GITHUB_REPOSITORY%/*}:$GITHUB_REF"
@@ -81,7 +81,7 @@ dispatcher() {
       exec "$spellchecker/check-pull-requests.sh"
       ;;
     issue_comment)
-      if [ -n "$DEBUG" ]; then
+      if to_boolean "$DEBUG"; then
         set -x
       fi
       handle_comment
@@ -166,17 +166,6 @@ comment_task() {
   more_misspellings
 }
 
-to_boolean() {
-  case "$1" in
-    1|true|TRUE)
-      true
-    ;;
-    *)
-      false
-    ;;
-  esac
-}
-
 should_patch_head() {
   if [ ! -d "$bucket/$project" ]; then
     # if there is no directory in the merged state, then adding files into it
@@ -241,7 +230,7 @@ react_comment_and_die() {
     res=0
     comment "$COMMENTS_URL" "$PAYLOAD" > /dev/null || res=$?
     if [ $res -gt 0 ]; then
-      if [ -z "$DEBUG" ]; then
+      if ! to_boolean "$DEBUG"; then
         echo "failed posting to $COMMENTS_URL"
         cat "$PAYLOAD"
       fi
@@ -414,7 +403,7 @@ handle_comment() {
   res=0
   comment "$comment_url" > $comment || res=$?
   if [ $res -gt 0 ]; then
-    if [ -z "$DEBUG" ]; then
+    if ! to_boolean "$DEBUG"; then
       echo "failed to retrieve $comment_url"
     fi
     return $res
@@ -502,7 +491,7 @@ define_variables() {
   fi
   bucket=${INPUT_BUCKET:-$bucket}
   project=${INPUT_PROJECT:-$project}
-  if [ -n "$junit" ]; then
+  if to_boolean "$junit"; then
     quit_without_error=1
   fi
   if [ -z "$bucket" ] && [ -z "$project" ] && [ -n "$INPUT_CONFIG" ]; then
@@ -821,14 +810,14 @@ get_extra_dictionaries() {
 
 set_up_reporter() {
   echo "::add-matcher::$spellchecker/reporter.json"
-  if [ -n "$DEBUG" ]; then
+  if to_boolean "$DEBUG"; then
     echo 'env:'
     env|sort
   fi
   if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -s "$GITHUB_EVENT_PATH" ]; then
     GITHUB_EVENT_PATH=/dev/null
   fi
-  if [ -n "$DEBUG" ]; then
+  if to_boolean "$DEBUG"; then
     echo 'GITHUB_EVENT_PATH:'
     cat $GITHUB_EVENT_PATH
   fi
@@ -950,7 +939,7 @@ set_up_files() {
 
 welcome() {
   echo "Checking spelling..."
-  if [ -n "$DEBUG" ]; then
+  if to_boolean "$DEBUG"; then
     begin_group 'Excluded paths'
     if [ -e "$excludes" ]; then
       echo 'Excluded paths:'
@@ -979,7 +968,7 @@ run_spell_check() {
   begin_group 'Spell check files'
   file_list=$(mktemp)
   (
-    if [ -n "$INPUT_ONLY_CHECK_CHANGED_FILES" ]; then
+    if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
       COMPARE=$(cat "$GITHUB_EVENT_PATH" | jq -r '.compare // empty' 2>/dev/null)
       if [ -n "$COMPARE" ]; then
         BEFORE=$(echo "$COMPARE" | perl -ne 'if (m{/compare/(.*)\.\.\.}) { print $1; } elsif (m{/commit/([0-9a-f]+)$}) { print "$1^"; };')
@@ -1000,7 +989,7 @@ run_spell_check() {
     fi
   ) |\
     "$spellchecker/exclude.pl" > "$file_list"
-  if [ -n "$INPUT_CHECK_FILE_NAMES" ]; then
+  if to_boolean "$INPUT_CHECK_FILE_NAMES"; then
     check_file_names="$spellchecker/paths-of-checked-files.txt"
     cat "$file_list" | tr "\0" "\n" > "$check_file_names"
     echo "$check_file_names" | tr "\n" "\0" >> "$file_list"
@@ -1089,7 +1078,7 @@ to_publish_expect() {
 }
 
 remove_items() {
-  if [ -n "$INPUT_ONLY_CHECK_CHANGED_FILES" ]; then
+  if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
     echo "<!-- Because only_check_changed_files is active, checking for obsolete items cannot be performed-->"
   else
     if [ -z "$patch_remove" ]; then
@@ -1303,7 +1292,7 @@ spelling_body() {
 quit() {
   echo "::remove-matcher owner=check-spelling::"
   cat $output_variables
-  if [ -n "$quit_without_error" ]; then
+  if to_boolean "$quit_without_error"; then
     exit
   fi
   exit $1
@@ -1313,7 +1302,7 @@ body_to_payload() {
   BODY="$1"
   PAYLOAD=$(mktemp)
   echo '{}' | jq --rawfile body "$BODY" '.body = $body' > $PAYLOAD
-  if [ -n "$DEBUG" ]; then
+  if to_boolean "$DEBUG"; then
     cat $PAYLOAD >&2
   fi
 }
@@ -1449,14 +1438,14 @@ post_commit_comment() {
         res=0
         comment "$COMMENTS_URL" "$PAYLOAD" > $response || res=$?
         if [ $res -gt 0 ]; then
-          if [ -z "$DEBUG" ]; then
+          if ! to_boolean "$DEBUG"; then
             echo "failed posting to $COMMENTS_URL"
             cat "$PAYLOAD"
           fi
           no_patch=1
         fi
 
-        if [ -n "$DEBUG" ]; then
+        if to_boolean "$DEBUG"; then
           cat $response
         fi
         COMMENT_URL=$(jq -r '.url // empty' $response)
@@ -1487,11 +1476,11 @@ post_commit_comment() {
             body_to_payload $BODY
             comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response || res=$?
             if [ $res -gt 0 ]; then
-              if [ -z "$DEBUG" ]; then
+              if ! to_boolean "$DEBUG"; then
                 echo "Failed to patch $COMMENT_URL"
               fi
             fi
-            if [ -n "$DEBUG" ]; then
+            if to_boolean "$DEBUG"; then
               cat $response
             fi
           fi

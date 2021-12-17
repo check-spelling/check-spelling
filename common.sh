@@ -6,6 +6,18 @@ if [ "$INITIALIZED" != defined ]; then
   else
     export AUTHORIZATION_HEADER='X-No-Authorization: Sorry About That'
   fi
+
+  to_boolean() {
+    case "$1" in
+      1|true|TRUE)
+        true
+      ;;
+      *)
+        false
+      ;;
+    esac
+  }
+
   "$spellchecker/secpoll.sh"
 
   if [ "$RUNNER_OS" = "Windows" ]; then
@@ -18,7 +30,7 @@ if [ "$INITIALIZED" != defined ]; then
   }
   start=$(now)
   export temp=$(mktemp -d)
-  if [ -n "$DEBUG" ]; then
+  if to_boolean "$DEBUG"; then
     set -x
     begin_group() {
       echo "::group::$1"
