@@ -1345,6 +1345,10 @@ minimize_comment_body() {
   if [ $payload_size -le $github_comment_size_limit ]; then
     return 0
   fi
+  trim_commit_comment 'Available dictionaries' '(<details><summary>Available dictionaries.*?</summary>\n*)(.*?)(?=</details>)' ''
+  if [ $payload_size -le $github_comment_size_limit ]; then
+    return 0
+  fi
   trim_commit_comment 'Unrecognized words' '(<details><summary>Unrecognized words.*?</summary>\n*)\`\`\`(.*?)\`\`\`'
   if [ $payload_size -le $github_comment_size_limit ]; then
     return 0
