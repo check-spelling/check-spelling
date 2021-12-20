@@ -1315,6 +1315,14 @@ minimize_comment_body() {
   if [ $payload_size -le $github_comment_size_limit ]; then
     return 0
   fi
+  trim_commit_comment 'Files' '(<details><summary>Some files were automatically ignored</summary>)\n.*?\`\`\`(.*?)\`\`\`.*?(?=</details>)' '\n\n'
+  if [ $payload_size -le $github_comment_size_limit ]; then
+    return 0
+  fi
+  trim_commit_comment '' '(\nSee the [^\n]*\n)(.*)$' '\n\n'
+  if [ $payload_size -le $github_comment_size_limit ]; then
+    return 0
+  fi
   cat "$BODY"
   body_to_payload "$BODY"
   echo "::warning ::Truncated comment payload ($payload_size) is likely to exceed GitHub size limit ($github_comment_size_limit)"
