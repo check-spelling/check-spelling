@@ -13,6 +13,7 @@ jobs:
   spelling:
     name: Spell checking
     permissions:
+      actions: write
       contents: read
       pull-requests: read
     outputs:
@@ -81,6 +82,7 @@ jobs:
   update:
     name: Update PR
     permissions:
+      actions: write
       contents: write
       pull-requests: write
     runs-on: ubuntu-latest
