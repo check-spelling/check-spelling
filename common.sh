@@ -6,6 +6,7 @@ if [ "$INITIALIZED" != defined ]; then
   else
     export AUTHORIZATION_HEADER='X-No-Authorization: Sorry About That'
   fi
+  "$spellchecker/secpoll.sh"
 
   if [ "$RUNNER_OS" = "Windows" ]; then
     echo "::error ::Windows isn't currently supported"
