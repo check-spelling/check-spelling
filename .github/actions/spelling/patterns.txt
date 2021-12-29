@@ -5,3 +5,5 @@ catching 'templatesz'
 \\templates(?![a-z])
 # action.yml check_extra_dictionaries
       cspell:\w+/[\w/]+\.txt$
+# dig flags
+ \+no

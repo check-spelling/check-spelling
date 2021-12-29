@@ -143,6 +143,14 @@ inputs:
     description: 'Spell check file paths'
     required: false
     default: ''
+  anonymize_secpoll_source:
+    description: 'Perform secpoll queries via a public dns server'
+    required: false
+    default: ''
+  ignore_security_advisory:
+    description: 'Set to the value of the current security advisory to accept the reported risk -- value must match -- do not set if there is no current advisory'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
