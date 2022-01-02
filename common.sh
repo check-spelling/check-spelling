@@ -1,12 +1,5 @@
 #!/bin/bash
 if [ "$INITIALIZED" != defined ]; then
-  GITHUB_TOKEN=${GITHUB_TOKEN:-$INPUT_GITHUB_TOKEN}
-  if [ -n "$GITHUB_TOKEN" ]; then
-    export AUTHORIZATION_HEADER="Authorization: token $GITHUB_TOKEN"
-  else
-    export AUTHORIZATION_HEADER='X-No-Authorization: Sorry About That'
-  fi
-
   to_boolean() {
     case "$1" in
       1|true|TRUE)
