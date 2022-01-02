@@ -87,7 +87,6 @@ dispatcher() {
       handle_comment
       ;;
     pull_request_review_comment)
-      . "$spellchecker/update-state.sh"
       ( echo 'check-spelling does not currently support comments on code.
 
           If you are trying to ask @check-spelling-bot to update a PR,
@@ -119,9 +118,16 @@ dispatcher() {
   esac
 }
 
+load_env() {
+  input_variables=$(mktemp)
+  echo "$INPUTS" |
+    grep -v "'" |
+    jq -r 'keys[] as $k | "INPUT_\($k | ascii_upcase)='$q'\(.[$k])'$q$Q |
+    perl -pne 's{^}{export };s{\$}{\\\$}g' > "$input_variables"
+  . "$input_variables"
+}
+
 comment_task() {
-  define_variables
-  set_up_tools
   set_up_files
 
   if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ]; then
@@ -160,7 +166,6 @@ comment_task() {
   if [ -f "$SUGGESTED_DICTIONARIES" ]; then
     cat "$SUGGESTED_DICTIONARIES" > $extra_dictionaries_json
   fi
-  . "$spellchecker/update-state.sh"
   fewer_misspellings_canary=$(mktemp)
   quit_without_error=1
   more_misspellings
@@ -180,7 +185,6 @@ should_patch_head() {
     if [ -z "$pull_request_url" ]; then
       false
     else
-      define_variables
       pull_request_info=$(mktemp_json)
       pull_request "$pull_request_url" | jq -r ".head // empty" > "$pull_request_info"
       pull_request_sha=$(jq -r ".sha // empty" $pull_request_info)
@@ -333,10 +337,7 @@ handle_comment() {
     quit 0
   fi
 
-  define_variables
-  set_up_tools
   set_up_files
-  . "$spellchecker/update-state.sh"
 
   comment=$(mktemp_json)
   jq -r '.comment // empty' "$GITHUB_EVENT_PATH" > $comment
@@ -483,6 +484,15 @@ define_variables() {
   if [ -f "$output_variables" ]; then
     return
   fi
+  . "$spellchecker/update-state.sh"
+  load_env
+  GITHUB_TOKEN=${GITHUB_TOKEN:-$INPUT_GITHUB_TOKEN}
+  if [ -n "$GITHUB_TOKEN" ]; then
+    export AUTHORIZATION_HEADER="Authorization: token $GITHUB_TOKEN"
+  else
+    export AUTHORIZATION_HEADER='X-No-Authorization: Sorry About That'
+  fi
+
   export early_warnings=$(mktemp)
   if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ]; then
     data_dir="$INPUT_INTERNAL_STATE_DIRECTORY"
@@ -786,7 +796,7 @@ words_to_lines() {
 build_dictionary_alias_pattern() {
   if [ -z "$dictionary_alias_pattern" ]; then
     dictionary_alias_pattern="$(
-      echo "$INPUT_DICTIONARY_ALIASES" |
+      echo "$INPUT_DICTIONARY_SOURCE_PREFIXES" |
       jq -r 'to_entries | map( {("s{^" +.key + ":}{" + .value +"};"): 1 } ) | .[] | keys[]' |xargs echo
     )"
   fi
@@ -850,6 +860,7 @@ set_up_files() {
     if [ ! -s "$dict" ]; then
       DICTIONARY_VERSION=${DICTIONARY_VERSION:-$INPUT_DICTIONARY_VERSION}
       DICTIONARY_URL=${DICTIONARY_URL:-$INPUT_DICTIONARY_URL}
+      DICTIONARY_URL="$(perl -e 'my $url = q<'"$DICTIONARY_URL"'>; $url =~ s{\$DICTIONARY_VERSION}{'"$DICTIONARY_VERSION"'}g; print $url;')"
       if [ -z "$DICTIONARY_URL" ] && [ -n "$ACT" ]; then
         (
           echo "This workflow appears to be running under nektos/act"
@@ -862,7 +873,7 @@ set_up_files() {
           if [ -z "$INPUT_CONFIG" ]; then
             echo "        config: fill_this_in"
           fi
-          if [ -z "$INPUT_DICTIONARY_ALIASES" ]; then
+          if [ -z "$INPUT_DICTIONARY_SOURCE_PREFIXES" ]; then
             echo "        dictionary_source_prefixes: fill_this_in"
           fi
           if [ -z "$INPUT_DICTIONARY_VERSION" ]; then
@@ -957,8 +968,8 @@ welcome() {
     fi
     end_group
   fi
-  if [ -n "$INPUT_PATH" ]; then
-    cd "$INPUT_PATH"
+  if [ -n "$INPUT_EXPERIMENTAL_PATH" ]; then
+    cd "$INPUT_EXPERIMENTAL_PATH"
   fi
 }
 
@@ -1645,7 +1656,6 @@ fewer_misspellings() {
     make_instructions
   )
   if [ -n "$INPUT_EXPERIMENTAL_COMMIT_NOTE" ]; then
-    . "$spellchecker/update-state.sh"
     skip_push_and_pop=1
 
     instructions_head=$(mktemp)
@@ -1722,11 +1732,10 @@ $(remove_items)
 }
 
 set_up_reporter
-dispatcher
-define_variables
 set_up_tools
+define_variables
+dispatcher
 set_up_files
-. "$spellchecker/update-state.sh"
 welcome
 run_spell_check
 exit_if_no_unknown_words
