@@ -38,6 +38,7 @@ regex
 spellchecker
 ssh
 uname
+upcase
 url
 vnd
 whitelist
