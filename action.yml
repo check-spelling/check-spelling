@@ -158,6 +158,10 @@ inputs:
     description: 'Only report an unknown word this many times'
     required: false
     default: '5'
+  quit_without_error:
+    description: 'Suppress failure code exit code -- it will be available via outputs.result_code'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
@@ -178,6 +182,9 @@ outputs:
   internal_state_directory:
     description: 'Used for passing internal state from the (default) check mode to the comment module'
     value: ${{ steps.spelling.outputs.internal_state_directory }}
+  result_code:
+    description: "Result code (indicates unrecognized words were found)"
+    value: ${{ steps.spelling.outputs.result_code }}
 
 runs:
   using: 'composite'
