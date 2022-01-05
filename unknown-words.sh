@@ -171,6 +171,9 @@ comment_task() {
   fi
   fewer_misspellings_canary=$(mktemp)
   quit_without_error=1
+  if [ -z "$patch_add" ]; then
+    quit
+  fi
   more_misspellings
 }
 
@@ -545,7 +548,7 @@ define_variables() {
   fi
   bucket=${INPUT_BUCKET:-$bucket}
   project=${INPUT_PROJECT:-$project}
-  if to_boolean "$junit"; then
+  if to_boolean "$junit" || to_boolean "$INPUT_QUIT_WITHOUT_ERROR"; then
     quit_without_error=1
   fi
   if [ -z "$bucket" ] && [ -z "$project" ] && [ -n "$INPUT_CONFIG" ]; then
@@ -1355,6 +1358,8 @@ spelling_body() {
 
 quit() {
   echo "::remove-matcher owner=check-spelling::"
+  echo "::set-output name=result_code::$1"
+  echo "result_code=$1" >> "$GITHUB_ENV"
   cat $output_variables
   if to_boolean "$quit_without_error"; then
     exit
