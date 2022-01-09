@@ -1403,6 +1403,37 @@ react() {
     -d '{"content":"'"$reaction"'"}'
 }
 
+unlock_pr() {
+  pr_locked="$(jq -r .pull_request.locked "$GITHUB_EVENT_PATH")"
+  if to_boolean "$pr_locked"; then
+    locked_pull_url="$(jq -r .pull_request._links.issue.href "$GITHUB_EVENT_PATH")"/lock
+    curl -L -s -S \
+      -X DELETE \
+      -H "$AUTHORIZATION_HEADER" \
+      -H "Accept: application/vnd.github.v3+json" \
+      "$locked_pull_url"
+  fi
+}
+
+lock_pr() {
+  if to_boolean "$pr_locked"; then
+    lock_reason="$(jq -r '.pull_request.active_lock_reason // ""' "$GITHUB_EVENT_PATH")"
+    if [ -n "$lock_reason" ]; then
+      lock_method=-d
+      lock_data='{"lock_reason":"'"$lock_reason"'"}'
+    else
+      lock_method=-H
+      lock_data='Content-Length: 0'
+    fi
+    curl -L -s -S \
+      -X PUT \
+      -H "$AUTHORIZATION_HEADER" \
+      -H "Accept: application/vnd.github.v3+json" \
+      "$lock_method" "$lock_data" \
+      "$locked_pull_url"
+  fi
+}
+
 comment() {
   comments_url="$1"
   payload="$2"
@@ -1505,6 +1536,7 @@ post_commit_comment() {
         response=$(mktemp_json)
 
         res=0
+        unlock_pr
         comment "$COMMENTS_URL" "$PAYLOAD" > $response || res=$?
         if [ $res -gt 0 ]; then
           if ! to_boolean "$DEBUG"; then
@@ -1561,6 +1593,7 @@ post_commit_comment() {
         else
           cat "$BODY"
         fi
+        lock_pr
       else
         echo "$OUTPUT"
       fi
