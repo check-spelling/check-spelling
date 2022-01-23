@@ -375,7 +375,11 @@ show_github_actions_push_disclaimer() {
   echo "$OUTPUT" > "$BODY"
   body_to_payload "$BODY"
   COMMENTS_URL=$(jq -r '.issue.comments_url' "$GITHUB_EVENT_PATH")
-  comment "$COMMENTS_URL" "$PAYLOAD"
+  response=$(mktemp)
+  comment "$COMMENTS_URL" "$PAYLOAD" > $response || res=$?
+  if [ $res -eq 0 ]; then
+    echo "Comment posted to $(jq -r '.html_url // empty' $response)"
+  fi
 }
 
 are_head_and_base_in_same_repo() {
