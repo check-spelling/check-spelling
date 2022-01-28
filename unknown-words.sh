@@ -1346,11 +1346,13 @@ spelling_body() {
       output_warnings="$(echo "
         <details><summary>Warnings ($(grep -c ':' "$counter_summary_file"))</summary>
 
-        See [Warning descriptions](https://github.com/check-spelling/check-spelling/wiki/Warning-descriptions) for more information.
+        $details_note
 
         [:information_source: Warnings](https://github.com/check-spelling/check-spelling/wiki/Warning-descriptions) | Count
         -|-
         $(cat "$counter_summary_file" | jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Warning-descriptions#\(.key)) | \(.value)"' )
+
+        See [:information_source: Warning descriptions](https://github.com/check-spelling/check-spelling/wiki/Warning-descriptions) for more information.
         </details>
         " | strip_lead)"
     fi
