@@ -1339,11 +1339,13 @@ spelling_body() {
       output_warnings="$(echo "
         <details><summary>Warnings ($(grep -c ':' "$counter_summary_file"))</summary>
 
-        See [Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) for more information.
+        $details_note
 
         [:information_source: Warnings](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) | Count
         -|-
         $(jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file")
+
+        See [:information_source: Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) for more information.
         </details>
         " | strip_lead)"
     fi
