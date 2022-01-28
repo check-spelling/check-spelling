@@ -100,6 +100,10 @@ inputs:
       cspell:ruby/ruby.txt
       cspell:rust/rust.txt
       cspell:scala/scala.txt
+  extra_dictionary_limit:
+    description: 'Limit the number of suggested extra dictionaries.'
+    required: false
+    default: '5'
   event_aliases:
     description: >-
       Try to treat a GitHub event "a" as GitHub event "b" (JSON map).
