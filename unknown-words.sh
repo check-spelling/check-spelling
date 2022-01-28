@@ -570,6 +570,10 @@ define_variables() {
   if ! [ "$job_count" -eq "$job_count" ] 2>/dev/null || [ "$job_count" -lt 2 ]; then
     job_count=1
   fi
+  extra_dictionary_limit=$(echo "${INPUT_EXTRA_DICTIONARY_LIMIT}" | perl -pne 's/\D+//g')
+  if [ -z "$extra_dictionary_limit" ]; then
+    extra_dictionary_limit=5
+  fi
 
   dict="$spellchecker/words"
   patterns="$spellchecker/patterns.txt"
@@ -1278,16 +1282,25 @@ spelling_body() {
     fi
     remote_ref=${remote_ref#refs/heads/}
     if [ -s "$extra_dictionaries_cover_entries" ]; then
+      expected_item_count=$(wc -l $expect_path|sed -e 's/ .*//')
+      if [ $expected_item_count -gt 0 ]; then
+        expect_details="This includes both **expected items** ($expected_item_count) from $expect_files and **unrecognized words** ($unknown_count)
+        "
+      fi
+
+      extra_dictionaries_cover_entries_limited=$(mktemp)
+      head -$extra_dictionary_limit "$extra_dictionaries_cover_entries" > "$extra_dictionaries_cover_entries_limited"
       output_dictionaries="$(echo "
         <details><summary>Available dictionaries could cover words not in the dictionary</summary>
 
-        $(cat "$extra_dictionaries_cover_entries")
+        $expect_details
+        $(cat "$extra_dictionaries_cover_entries_limited")
 
         Consider adding them using:
         $B
               with:
                 extra_dictionaries:$n$(
-          cat "$extra_dictionaries_cover_entries" |
+          cat "$extra_dictionaries_cover_entries_limited" |
           perl -pne 's/\s.*//;s/^/                  /;s{\[(.*)\]\(.*}{$1}'
         )
         $B
