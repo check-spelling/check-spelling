@@ -11,6 +11,14 @@ dispatcher() {
   if [ -n "$INPUT_EVENT_ALIASES" ]; then
     GITHUB_EVENT_NAME=$(echo "$INPUT_EVENT_ALIASES" | jq -r ".$GITHUB_EVENT_NAME // \"$GITHUB_EVENT_NAME\"")
   fi
+  if [ -n "$CUSTOM_TASK" ]; then
+    INPUT_CUSTOM_TASK=${INPUT_CUSTOM_TASK:-$CUSTOM_TASK}
+  fi
+  case "$INPUT_CUSTOM_TASK" in
+    comment)
+      comment_task
+    ;;
+  esac
   case "$GITHUB_EVENT_NAME" in
     '')
       (
@@ -103,6 +111,53 @@ dispatcher() {
       exit 1
       ;;
   esac
+}
+
+comment_task() {
+  define_variables
+  set_up_tools
+  set_up_files
+
+  if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ]; then
+    if [ -z "$NEW_TOKENS" ]; then
+      NEW_TOKENS="$tokens_file"
+    fi
+    if [ -z "$STALE_TOKENS" ]; then
+      STALE_TOKENS="$INPUT_INTERNAL_STATE_DIRECTORY/remove_words.txt"
+    fi
+  else
+    # This behavior was used internally and is not recommended.
+    # I hope to remove support for it relatively soon, as I don't think anyone
+    # externally picked up this flavor.
+    # check-spelling/spell-check-this never suggested it.
+    handle_mixed_archive() {
+      if [ -n "$1" ]; then
+        ls -d $(dirname "$1")/*/$(basename "$1") 2>/dev/null || echo "$1"
+      fi
+    }
+    NEW_TOKENS=$(handle_mixed_archive "$NEW_TOKENS")
+    STALE_TOKENS=$(handle_mixed_archive "$STALE_TOKENS")
+    NEW_EXCLUDES=$(handle_mixed_archive "$NEW_EXCLUDES")
+    SUGGESTED_DICTIONARIES=$(handle_mixed_archive "$SUGGESTED_DICTIONARIES")
+  fi
+  touch "$diff_output"
+
+  if [ -f "$NEW_TOKENS" ]; then
+    patch_add="$(cat "$NEW_TOKENS")"
+  fi
+  if [ -f "$STALE_TOKENS" ]; then
+    patch_remove="$(cat "$STALE_TOKENS")"
+  fi
+  if [ -f "$NEW_EXCLUDES" ]; then
+    cat "$NEW_EXCLUDES" > $should_exclude_file
+  fi
+  if [ -f "$SUGGESTED_DICTIONARIES" ]; then
+    cat "$SUGGESTED_DICTIONARIES" > $extra_dictionaries_json
+  fi
+  . "$spellchecker/update-state.sh"
+  fewer_misspellings_canary=$(mktemp)
+  quit_without_error=1
+  more_misspellings
 }
 
 to_boolean() {
@@ -385,6 +440,11 @@ define_variables() {
   if [ -f "$output_variables" ]; then
     return
   fi
+  if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ]; then
+    data_dir="$INPUT_INTERNAL_STATE_DIRECTORY"
+  else
+    data_dir=$(mktemp -d)
+  fi
   bucket=${INPUT_BUCKET:-$bucket}
   project=${INPUT_PROJECT:-$project}
   if [ -z "$bucket" ] && [ -z "$project" ] && [ -n "$INPUT_CONFIG" ]; then
@@ -415,7 +475,8 @@ define_variables() {
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
-  tokens_file="$temp/tokens.txt"
+  tokens_file="$data_dir/tokens.txt"
+  extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   output_variables=$(mktemp)
 }
 
@@ -717,79 +778,81 @@ set_up_files() {
   if [ -s "$excludes_path" ]; then
     cp "$excludes_path" "$excludes"
   fi
-  should_exclude_file=$temp/should_exclude.txt
-  get_project_files dictionary $dictionary_path
-  if [ -s "$dictionary_path" ]; then
-    cp "$dictionary_path" "$dict"
-  fi
-  if [ ! -s "$dict" ]; then
-    DICTIONARY_VERSION=${DICTIONARY_VERSION:-$INPUT_DICTIONARY_VERSION}
-    DICTIONARY_URL=${DICTIONARY_URL:-$INPUT_DICTIONARY_URL}
-    if [ -z "$DICTIONARY_URL" ] && [ -n "$ACT" ]; then
-      (
-        echo "This workflow appears to be running under nektos/act"
-        echo "Unfortunately, this run has hit: https://github.com/nektos/act/issues/655"
-        echo
-        echo "In order to run locally, please use:"
-        echo
-        echo "      with:"
-        echo "        dictionary_url: fill_this_in"
-        if [ -z "$INPUT_CONFIG" ]; then
-          echo "        config: fill_this_in"
-        fi
-        if [ -z "$INPUT_DICTIONARY_ALIASES" ]; then
-          echo "        dictionary_source_prefixes: fill_this_in"
-        fi
-        if [ -z "$INPUT_DICTIONARY_VERSION" ]; then
-          echo "        dictionary_version: fill_this_in"
-        fi
-        echo
-        echo "You can use the defaults from https://github.com/check-spelling/check-spelling/blob/HEAD/action.yml"
-        echo "Note: you may need to omit backslashes for the dictionary_url."
-      ) >&2
-      exit 1
+  should_exclude_file=$data_dir/should_exclude.txt
+  if [ -z "$INPUT_CUSTOM_TASK" ]; then
+    get_project_files dictionary $dictionary_path
+    if [ -s "$dictionary_path" ]; then
+      cp "$dictionary_path" "$dict"
     fi
-    eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
-  fi
-  if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
-    build_dictionary_alias_pattern
-    extra_dictionaries_dir=$(get_extra_dictionaries "$INPUT_EXTRA_DICTIONARIES")
-    if [ -n "$extra_dictionaries_dir" ]; then
-      (
-        cd "$extra_dictionaries_dir"
-        # Items that aren't proper should be moved to patterns instead
-        perl -ne "next unless /^[A-Za-z$q]+$/; print" * | sort -u >> "$dict"
-      )
-      rm -rf "$extra_dictionaries_dir"
+    if [ ! -s "$dict" ]; then
+      DICTIONARY_VERSION=${DICTIONARY_VERSION:-$INPUT_DICTIONARY_VERSION}
+      DICTIONARY_URL=${DICTIONARY_URL:-$INPUT_DICTIONARY_URL}
+      if [ -z "$DICTIONARY_URL" ] && [ -n "$ACT" ]; then
+        (
+          echo "This workflow appears to be running under nektos/act"
+          echo "Unfortunately, this run has hit: https://github.com/nektos/act/issues/655"
+          echo
+          echo "In order to run locally, please use:"
+          echo
+          echo "      with:"
+          echo "        dictionary_url: fill_this_in"
+          if [ -z "$INPUT_CONFIG" ]; then
+            echo "        config: fill_this_in"
+          fi
+          if [ -z "$INPUT_DICTIONARY_ALIASES" ]; then
+            echo "        dictionary_source_prefixes: fill_this_in"
+          fi
+          if [ -z "$INPUT_DICTIONARY_VERSION" ]; then
+            echo "        dictionary_version: fill_this_in"
+          fi
+          echo
+          echo "You can use the defaults from https://github.com/check-spelling/check-spelling/blob/HEAD/action.yml"
+          echo "Note: you may need to omit backslashes for the dictionary_url."
+        ) >&2
+        exit 1
+      fi
+      eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
     fi
-  fi
-  if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
-    build_dictionary_alias_pattern
-    check_extra_dictionaries="$(
-      echo "$INPUT_EXTRA_DICTIONARIES $INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" |
-      words_to_lines |
-      sort |
-      uniq -u
-    )"
-    if [ -n "$check_extra_dictionaries" ]; then
-      export check_extra_dictionaries_dir=$(get_extra_dictionaries "$check_extra_dictionaries")
-      extra_dictionaries_cover_entries=$(mktemp)
+    if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
+      build_dictionary_alias_pattern
+      extra_dictionaries_dir=$(get_extra_dictionaries "$INPUT_EXTRA_DICTIONARIES")
+      if [ -n "$extra_dictionaries_dir" ]; then
+        (
+          cd "$extra_dictionaries_dir"
+          # Items that aren't proper should be moved to patterns instead
+          perl -ne "next unless /^[A-Za-z$q]+$/; print" * | sort -u >> "$dict"
+        )
+        rm -rf "$extra_dictionaries_dir"
+      fi
     fi
-  fi
-  get_project_files allow $allow_path
-  if [ -s "$allow_path" ]; then
-    cat "$allow_path" >> "$dict"
-  fi
-  get_project_files reject $reject_path
-  if [ -s "$reject_path" ]; then
-    dictionary_temp=$(mktemp)
-    if grep_v_string '^('$(echo $(cat "$reject_path")|tr " " '|')')$' < "$dict" > $dictionary_temp; then
-      cat $dictionary_temp > "$dict"
+    if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
+      build_dictionary_alias_pattern
+      check_extra_dictionaries="$(
+        echo "$INPUT_EXTRA_DICTIONARIES $INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" |
+        words_to_lines |
+        sort |
+        uniq -u
+      )"
+      if [ -n "$check_extra_dictionaries" ]; then
+        export check_extra_dictionaries_dir=$(get_extra_dictionaries "$check_extra_dictionaries")
+        extra_dictionaries_cover_entries=$(mktemp)
+      fi
     fi
-  fi
-  get_project_files only $only_path
-  if [ -s "$only_path" ]; then
-    cp "$only_path" "$only"
+    get_project_files allow $allow_path
+    if [ -s "$allow_path" ]; then
+      cat "$allow_path" >> "$dict"
+    fi
+    get_project_files reject $reject_path
+    if [ -s "$reject_path" ]; then
+      dictionary_temp=$(mktemp)
+      if grep_v_string '^('$(echo $(cat "$reject_path")|tr " " '|')')$' < "$dict" > $dictionary_temp; then
+        cat $dictionary_temp > "$dict"
+      fi
+    fi
+    get_project_files only $only_path
+    if [ -s "$only_path" ]; then
+      cp "$only_path" "$only"
+    fi
   fi
   get_project_files patterns $patterns_path
   if [ -s "$patterns_path" ]; then
@@ -835,6 +898,8 @@ welcome() {
 }
 
 run_spell_check() {
+  echo "::set-output name=internal_state_directory::$data_dir" >> $output_variables
+
   begin_group 'Spell check files'
   file_list=$(mktemp)
   (
@@ -863,7 +928,7 @@ run_spell_check() {
   end_group
 
   begin_group 'Spell check'
-  warning_output=$temp/warnings.txt
+  warning_output=$(mktemp -d)/warnings.txt
   more_warnings=$(mktemp)
   cat $file_list |\
   xargs -0 -n8 "-P$job_count" "$word_splitter" |\
@@ -944,7 +1009,7 @@ remove_items() {
         <details><summary>Previously acknowledged words that are now absent
         </summary>$patch_remove</details>
       " | strip_lead_and_blanks
-      remove_words=$temp/remove_words.txt
+      remove_words=$data_dir/remove_words.txt
       echo "$patch_remove" > $remove_words
       echo "::set-output name=stale_words::$remove_words" >> $output_variables
     else
@@ -1052,6 +1117,7 @@ $B
 "
     fi
     if [ -s "$should_exclude_file" ]; then
+      calculate_exclude_patterns
       echo "::set-output name=skipped_files::$should_exclude_file" >> $output_variables
       OUTPUT="$OUTPUT
 <details><summary>Some files were automatically ignored</summary>
@@ -1310,8 +1376,6 @@ compare_new_output() {
     diff -w -U0 "$expect_path" "$run_output" |
       grep_v_spellchecker > "$diff_output"
   end_group
-
-  should_exclude_patterns=$(sort "$should_exclude_file" | path_to_pattern)
 }
 
 generate_curl_instructions() {
@@ -1419,21 +1483,26 @@ fewer_misspellings() {
   quit
 }
 more_misspellings() {
-  if [ -n "$check_extra_dictionaries_dir" ]; then
-    begin_group 'Check for extra dictionaries'
-    (
-      cd "$check_extra_dictionaries_dir";
-      aliases="$dictionary_alias_pattern" extra_dictionaries="$check_extra_dictionaries" $spellchecker/dictionary-coverage.pl "$run_output" |
-      sort -nr |
-      perl -pne 's/^\d+ //' > "$extra_dictionaries_cover_entries"
-    )
-    if [ -s "$extra_dictionaries_cover_entries" ]; then
-      extra_dictionaries_output=$temp/suggested_dictionaries.txt
-      perl -pne 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
-      jq -s '.' > $extra_dictionaries_output
-      echo "::set-output name=suggested_dictionaries::$extra_dictionaries_output" >> $output_variables
+  if [ -z "$INPUT_CUSTOM_TASK" ]; then
+    if [ ! -s "$extra_dictionaries_json" ]; then
+      if [ -n "$check_extra_dictionaries_dir" ]; then
+        begin_group 'Check for extra dictionaries'
+        (
+          cd "$check_extra_dictionaries_dir";
+          aliases="$dictionary_alias_pattern" extra_dictionaries="$check_extra_dictionaries" $spellchecker/dictionary-coverage.pl "$run_output" |
+          sort -nr |
+          perl -pne 's/^\d+ //' > "$extra_dictionaries_cover_entries"
+        )
+        end_group
+      fi
+    else
+      jq -r '.[]|keys[] as $k | "\($k)<\($k)> (\(.[$k][1])) covers \(.[$k][0]) of them"' $extra_dictionaries_json | perl -pne "$dictionary_alias_pattern"'s{^([^<]*)<([^>]*)>}{[$2]($1)};' > "$extra_dictionaries_cover_entries"
     fi
-    end_group
+  fi
+  if [ -s "$extra_dictionaries_cover_entries" ]; then
+    perl -pne 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
+    jq -s '.' > $extra_dictionaries_json
+    echo "::set-output name=suggested_dictionaries::$extra_dictionaries_json" >> $output_variables
   fi
 
   instructions=$(
