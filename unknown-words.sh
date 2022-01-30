@@ -195,6 +195,23 @@ pr_head_sha_task() {
   quit
 }
 
+get_workflow_path() {
+  action_run=$(mktemp_json)
+  if curl -s \
+    -H "$AUTHORIZATION_HEADER" \
+    "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$action_run"; then
+    workflow_url=$(jq -r '.workflow_url // empty' "$action_run")
+    if [ -n "$workflow_url" ]; then
+      workflow_json=$(mktemp_json)
+      if curl -s \
+        -H "$AUTHORIZATION_HEADER" \
+        "$workflow_url" > "$workflow_json"; then
+        jq -r .path "$workflow_json"
+      fi
+    fi
+  fi
+}
+
 should_patch_head() {
   if [ ! -d "$bucket/$project" ]; then
     # if there is no directory in the merged state, then adding files into it
@@ -1294,13 +1311,17 @@ spelling_body() {
 
       extra_dictionaries_cover_entries_limited=$(mktemp)
       head -$extra_dictionary_limit "$extra_dictionaries_cover_entries" > "$extra_dictionaries_cover_entries_limited"
+      workflow_path=$(get_workflow_path)
+      if [ -n "$workflow_path" ]; then
+        workflow_path_hint=" (in $b$(get_workflow_path)$b)"
+      fi
       output_dictionaries="$(echo "
         <details><summary>Available dictionaries could cover words not in the dictionary</summary>
 
         $expect_details
         $(cat "$extra_dictionaries_cover_entries_limited")
 
-        Consider adding them using:
+        Consider adding them using$workflow_path_hint:
         $B
               with:
                 extra_dictionaries:$n$(
