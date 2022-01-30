@@ -32,6 +32,7 @@ jobs:
       id: spelling
       uses: ./
       with:
+        experimental_apply_changes_via_bot: 1
         suppress_push_for_open_pull_request: 1
         post_comment: 0
     - name: store-comment
@@ -65,5 +66,25 @@ jobs:
     - name: comment
       uses: ./
       with:
+        experimental_apply_changes_via_bot: 1
         custom_task: comment
         internal_state_directory: /tmp/data
+
+  update:
+    name: Update PR
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    if: ${{
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '@check-spelling-bot apply')
+      }}
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: apply spelling updates
+      uses: ./
+      with:
+        experimental_apply_changes_via_bot: 1
