@@ -144,6 +144,7 @@ sub split_file {
   open(WARNINGS, '>:utf8', "$temp_dir/warnings");
   while (<FILE>) {
     $_ = decode_utf8($_, FB_DEFAULT);
+    s/\R$//;
     next unless /./;
     my $raw_line = $_;
     # hook for custom line based text exclusions:
