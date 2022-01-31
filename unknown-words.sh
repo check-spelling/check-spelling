@@ -481,6 +481,7 @@ define_variables() {
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
   tokens_file="$data_dir/tokens.txt"
+  action_log_ref="$data_dir/action_log_ref.txt"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   output_variables=$(mktemp)
 
@@ -1048,7 +1049,35 @@ remove_items() {
 
 get_action_log() {
   if [ -z "$action_log" ]; then
-    action_log="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+    if [ -s "$action_log_ref" ]; then
+      action_log="$(cat $action_log_ref)"
+    else
+      action_log="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+      run_info=$(mktemp)
+      if curl -s -H "$AUTHORIZATION_HEADER" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_info" 2>/dev/null; then
+        jobs_url=$(jq -r '.jobs_url // empty' "$run_info")
+        if [ -n "$jobs_url" ]; then
+          jobs_info=$(mktemp)
+          if curl -s -H "$AUTHORIZATION_HEADER" "$jobs_url" > "$jobs_info" 2>/dev/null; then
+            job=$(mktemp)
+            jq -r '.jobs[] | select(.status=="in_progress" and .runner_name=="'"$RUNNER_NAME"'" and .run_attempt=='"${GITHUB_RUN_ATTEMPT:-1}"')' "$jobs_info" > "$job" 2>/dev/null
+            job_log=$(jq -r .html_url "$job")
+            if [ -n "$job_log" ]; then
+              step_info=$(mktemp)
+              jq -r '.steps[] | select(.status=="pending") // empty' "$job" > "$step_info" 2>/dev/null
+              if [ ! -s "$step_info" ]; then
+                jq -r '.steps[] | select(.status=="queued" and .name=="check-spelling")' "$job" > "$step_info" 2>/dev/null
+              fi
+              step_number=$(jq -s -r .[0].number "$step_info")
+              action_log="$job_log#step:$step_number:1"
+            fi
+          fi
+        fi
+
+      fi
+      echo "$action_log" > "$action_log_ref"
+    fi
   fi
   echo "$action_log"
 }
