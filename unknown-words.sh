@@ -1177,12 +1177,16 @@ remove_items() {
   fi
 }
 
+get_action_log_overview() {
+  echo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+}
+
 get_action_log() {
   if [ -z "$action_log" ]; then
     if [ -s "$action_log_ref" ]; then
       action_log="$(cat $action_log_ref)"
     else
-      action_log="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      action_log=$(get_action_log_overview)
 
       run_info=$(mktemp)
       if curl -s -H "$AUTHORIZATION_HEADER" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_info" 2>/dev/null; then
@@ -1499,7 +1503,7 @@ file_size() {
 
 trim_commit_comment() {
   stripped=$(mktemp)
-  (perl -p -i.raw -e '$/=undef; s{'"$2"'}{$1 '"$3"'_truncated please see the log or artifact if available_\n}s; print STDERR "$2\n"' "$BODY") 2> "$stripped"
+  (perl -p -i.raw -e '$/=undef; s{'"$2"'}{$1'"$3"'_Truncated, please see the log or artifact if available._\n}s; my $capture=$2; my $overview=q<'"$(get_action_log_overview)"'>; s{\n(See the) (\[action log\])}{\n$1 [overview]($overview) or $2}s unless m{\Q$overview\E}; print STDERR "$capture\n"' "$BODY") 2> "$stripped"
   body_to_payload "$BODY"
   previous_payload_size="$payload_size"
   payload_size=$(file_size "$PAYLOAD")
