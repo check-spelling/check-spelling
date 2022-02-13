@@ -141,6 +141,14 @@ sub split_file {
   ($words, $unrecognized) = (0, 0);
   %unique = ();
   %unique_unrecognized = ();
+
+  local $SIG{__WARN__} = sub {
+    my $message = shift;
+    $message =~ s/> line/> in $file - line/;
+    chomp $message;
+    print STDERR "$message\n";
+  };
+
   open(WARNINGS, '>:utf8', "$temp_dir/warnings");
   while (<FILE>) {
     $_ = decode_utf8($_, FB_DEFAULT);
