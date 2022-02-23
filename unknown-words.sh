@@ -217,23 +217,35 @@ should_patch_head() {
 }
 
 offer_quote_reply() {
+  if [ -n "$offer_quote_reply_cached" ]; then
+    return $offer_quote_reply_cached
+  fi
   if to_boolean "$INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT"; then
     case "$GITHUB_EVENT_NAME" in
       issue_comment)
         issue=$(mktemp_json)
         pull_request_info=$(mktemp_json)
-        [ $(are_issue_head_and_base_in_same_repo) == 'true' ] && should_patch_head
+        if [ $(are_issue_head_and_base_in_same_repo) != 'true' ] || ! should_patch_head; then
+          offer_quote_reply_cached=1
+        else
+          offer_quote_reply_cached=0
+        fi
         ;;
       pull_request|pull_request_target)
-        [ $(are_head_and_base_in_same_repo "$GITHUB_EVENT_PATH" '.pull_request') == 'true' ] && should_patch_head
+        if [ $(are_head_and_base_in_same_repo "$GITHUB_EVENT_PATH" '.pull_request') != 'true' ] || ! should_patch_head; then
+          offer_quote_reply_cached=1
+        else
+          offer_quote_reply_cached=0
+        fi
         ;;
       *)
-        false
+        offer_quote_reply_cached=1
         ;;
     esac
   else
-    false
+    offer_quote_reply_cached=1
   fi
+  return $offer_quote_reply_cached
 }
 
 repo_is_private() {
@@ -1332,7 +1344,10 @@ spelling_body() {
         output_advice="$N"`cat "$advice_path"`"$n"
       fi
     fi
-    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$1$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_dictionaries$output_warnings$output_advice
+    if offer_quote_reply; then
+      output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
+    fi
+    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$1$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_warnings$output_advice
       " | perl -pne 's/^\s+$/\n/;'| uniq)
 }
 
@@ -1509,6 +1524,7 @@ post_commit_comment() {
         fi
         if [ -n "$COMMENT_URL" ]; then
           if offer_quote_reply; then
+            quote_reply_insertion=$(mktemp)
             (
               if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
                 apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
@@ -1516,7 +1532,8 @@ post_commit_comment() {
               echo
               echo "To have the bot do this for you, reply quoting the following line:"
               echo "@check-spelling-bot apply [changes]($COMMENT_URL)$apply_changes_suffix."
-            )>> $BODY
+            )> "$quote_reply_insertion"
+            perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$BODY"
             no_patch=
           fi
           if [ -z "$no_patch" ]; then
