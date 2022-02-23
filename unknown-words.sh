@@ -179,9 +179,9 @@ get_pull_request_url() {
 }
 
 get_pr_sha_from_url() {
-  pull_request_info=$(mktemp_json)
-  pull_request "$1" | jq -r ".head // empty" > "$pull_request_info"
-  jq -r ".sha // empty" "$pull_request_info"
+  pull_request_head_info=$(mktemp_json)
+  pull_request "$1" | jq -r ".head // empty" > "$pull_request_head_info"
+  jq -r ".sha // empty" "$pull_request_head_info"
 }
 
 pr_head_sha_task() {
@@ -219,8 +219,13 @@ should_patch_head() {
 offer_quote_reply() {
   if to_boolean "$INPUT_EXPERIMENTAL_APPLY_CHANGES_VIA_BOT"; then
     case "$GITHUB_EVENT_NAME" in
-      issue_comment|pull_request|pull_request_target)
-        should_patch_head
+      issue_comment)
+        issue=$(mktemp_json)
+        pull_request_info=$(mktemp_json)
+        [ $(are_issue_head_and_base_in_same_repo) == 'true' ] && should_patch_head
+        ;;
+      pull_request|pull_request_target)
+        [ $(are_head_and_base_in_same_repo "$GITHUB_EVENT_PATH" '.pull_request') == 'true' ] && should_patch_head
         ;;
       *)
         false
@@ -346,6 +351,17 @@ show_github_actions_push_disclaimer() {
   comment "$COMMENTS_URL" "$PAYLOAD"
 }
 
+are_head_and_base_in_same_repo() {
+  jq -r '('$2'.head.repo.full_name // "head") == ('$2'.base.repo.full_name // "base")' "$1"
+}
+
+are_issue_head_and_base_in_same_repo() {
+  jq -r '.issue // empty' "$GITHUB_EVENT_PATH" > "$issue"
+  pull_request_url=$(jq -r '.pull_request.url // empty' "$issue")
+  pull_request "$pull_request_url" > "$pull_request_info"
+  are_head_and_base_in_same_repo "$pull_request_info" ''
+}
+
 handle_comment() {
   action=$(jq -r '.action // empty' "$GITHUB_EVENT_PATH")
   if [ "$action" != "created" ]; then
@@ -372,12 +388,9 @@ handle_comment() {
   trigger_comment_url=$(jq -r '.url // empty' $comment)
   sender_login=$(jq -r '.sender.login // empty' "$GITHUB_EVENT_PATH")
   issue_user_login=$(jq -r '.issue.user.login // empty' "$GITHUB_EVENT_PATH")
-  issue=$(mktemp_json)
-  jq -r '.issue // empty' "$GITHUB_EVENT_PATH" > $issue
-  pull_request_url=$(jq -r '.pull_request.url // empty' $issue)
-  pull_request_info=$(mktemp_json)
-  pull_request "$pull_request_url" | jq .head > $pull_request_info
-  pull_request_sha=$(jq -r '.sha // empty' $pull_request_info)
+  pull_request_head_info=$(mktemp_json)
+  jq .head "$pull_request_info" > "$pull_request_head_info"
+  pull_request_sha=$(jq -r '.sha // empty' "$pull_request_head_info")
   set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$pull_request_sha"
   react_prefix_base="Could not perform [request]($trigger_comment_url)."
   react_prefix="$react_prefix_base"
@@ -395,14 +408,14 @@ handle_comment() {
         ;;
     esac
   fi
-  number=$(jq -r '.number // empty' $issue)
-  created_at=$(jq -r '.created_at // empty' $comment)
-  issue_url=$(jq -r '.url // empty' $issue)
-  pull_request_ref=$(jq -r '.ref // empty' $pull_request_info)
+  number=$(jq -r '.number // empty' "$issue")
+  created_at=$(jq -r '.created_at // empty' "$comment")
+  issue_url=$(jq -r '.url // empty' "$issue")
+  pull_request_ref=$(jq -r '.ref // empty' "$pull_request_head_info")
   if git remote get-url origin | grep -q ^https://; then
-    pull_request_repo=$(jq -r '.repo.clone_url // empty' $pull_request_info)
+    pull_request_repo=$(jq -r '.repo.clone_url // empty' "$pull_request_head_info")
   else
-    pull_request_repo=$(jq -r '.repo.ssh_url // empty' $pull_request_info)
+    pull_request_repo=$(jq -r '.repo.ssh_url // empty' "$pull_request_head_info")
   fi
   git remote add request $pull_request_repo
   git fetch request "$pull_request_sha"
