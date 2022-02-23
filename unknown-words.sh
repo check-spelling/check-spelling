@@ -390,7 +390,11 @@ handle_comment() {
   created_at=$(jq -r '.created_at // empty' $comment)
   issue_url=$(jq -r '.url // empty' $issue)
   pull_request_ref=$(jq -r '.ref // empty' $pull_request_info)
-  pull_request_repo=$(jq -r '.repo.clone_url // empty' $pull_request_info)
+  if git remote get-url origin | grep -q ^https://; then
+    pull_request_repo=$(jq -r '.repo.clone_url // empty' $pull_request_info)
+  else
+    pull_request_repo=$(jq -r '.repo.ssh_url // empty' $pull_request_info)
+  fi
   git remote add request $pull_request_repo
   git fetch request "$pull_request_sha"
   git config advice.detachedHead false
