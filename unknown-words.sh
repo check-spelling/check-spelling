@@ -466,12 +466,23 @@ handle_comment() {
   git checkout "$pull_request_sha"
 
   number_filter() {
-    perl -pne 's/\{.*\}//'
+    perl -pne 's<\{.*\}></(\\d+)>'
   }
+  export pull_request_base=$(jq -r '.comment.html_url' "$GITHUB_EVENT_PATH" | perl -pne 's/\d+$/(\\d+)/')
   comments_base=$(jq -r '.repository.comments_url // empty' "$GITHUB_EVENT_PATH" | number_filter)
-  issue_comments_base=$(jq -r '.repository.issue_comment_url // empty' "$GITHUB_EVENT_PATH" | number_filter)
-  export comments_url="$comments_base|$issue_comments_base"
-  comment_url=$(echo "$trigger" | perl -ne 'next unless m{((?:$ENV{comments_url})/\d+)}; print "$1\n";')
+  export issue_comments_base=$(jq -r '.repository.issue_comment_url // empty' "$GITHUB_EVENT_PATH" | number_filter)
+  export comments_url="$pull_request_base|$comments_base|$issue_comments_base"
+
+  comment_url=$(echo "$trigger" | perl -ne '
+    next unless m{((?:$ENV{comments_url}))};
+    my $capture=$1;
+    my $old_base=$ENV{pull_request_base};
+    my $prefix=$ENV{issue_comments_base};
+    $old_base=~s{\Q(\d+)\E$}{};
+    $prefix=~s{\Q(\d+)\E$}{};
+    $capture =~ s{$old_base}{$prefix};
+    print "$capture\n";
+  ')
   [ -n "$comment_url" ] ||
     confused_comment "$trigger_comment_url" "Did not find $comments_url in comment"
 
@@ -535,8 +546,8 @@ handle_comment() {
     confused_comment "$trigger_comment_url" "didn't change repository"
   react_prefix="$react_prefix_base"
   github_user_and_email $sender_login
-  git_commit "$(echo "Update per $comment_url
-                      Accepted in $trigger_comment_url
+  git_commit "$(echo "Update per $(comment_url_to_html_url $comment_url)
+                      Accepted in $(comment_url_to_html_url $trigger_comment_url)
                     "|strip_lead)" ||
     confused_comment "$trigger_comment_url" "Failed to generate commit"
   git push request "HEAD:$pull_request_ref" ||
@@ -1504,6 +1515,10 @@ comment() {
     "$comments_url"
 }
 
+comment_url_to_html_url() {
+  (comment "$1" | jq -r '.html_url') || echo "$1"
+}
+
 set_comments_url() {
   event="$1"
   file="$2"
@@ -1621,7 +1636,7 @@ post_commit_comment() {
               fi
               echo
               echo "To have the bot do this for you, reply quoting the following line:"
-              echo "@check-spelling-bot apply [changes]($COMMENT_URL)$apply_changes_suffix."
+              echo "@check-spelling-bot apply [changes]($(comment_url_to_html_url $COMMENT_URL))$apply_changes_suffix."
             )> "$quote_reply_insertion"
             perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$BODY"
             no_patch=
