@@ -282,7 +282,7 @@ react_comment_and_die() {
   react "$trigger_comment_url" "$react" > /dev/null
   if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
     PAYLOAD=$(mktemp_json)
-    echo '{}' | jq --arg body "@check-spelling-bot: $react_prefix $message" '.body = $body' > $PAYLOAD
+    echo '{}' | jq --arg body "@check-spelling-bot: $react_prefix $message${N}See [log]($(get_action_log)) for details." '.body = $body' > $PAYLOAD
 
     res=0
     comment "$COMMENTS_URL" "$PAYLOAD" > /dev/null || res=$?
@@ -423,7 +423,7 @@ handle_comment() {
   jq .head "$pull_request_info" > "$pull_request_head_info"
   pull_request_sha=$(jq -r '.sha // empty' "$pull_request_head_info")
   set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$pull_request_sha"
-  react_prefix_base="Could not perform [request]($trigger_comment_url)."
+  react_prefix_base="Could not perform [request]($(comment_url_to_html_url $trigger_comment_url))."
   react_prefix="$react_prefix_base"
   if [ "$sender_login" != "$issue_user_login" ]; then
     collaborators_url=$(jq -r '.repository.collaborators_url // empty' "$GITHUB_EVENT_PATH")
@@ -435,7 +435,7 @@ handle_comment() {
       write)
         ;;
       *)
-        confused_comment "$trigger_comment_url" "Commenter (@$sender_login) isn't author (@$issue_user_login) / collaborator"
+        confused_comment "$trigger_comment_url" "Commenter (@$sender_login) isn't author (@$issue_user_login) / collaborator."
         ;;
     esac
   fi
@@ -471,18 +471,15 @@ handle_comment() {
     $prefix=~s{\Q(\d+)\E$}{};
     $capture =~ s{$old_base}{$prefix};
     print "$capture\n";
-  ')
+  ' | sort -u)
   [ -n "$comment_url" ] ||
-    confused_comment "$trigger_comment_url" "Did not find $comments_url in comment"
+    confused_comment "$trigger_comment_url" "Did not find match for _/_$b$comments_url${b}_/_ in comment."
+  [ $(echo "$comment_url" | wc -l) -gt 1 ] &&
+    confused_comment "$trigger_comment_url" "Found more than one _/_$b$comments_url${b}_/_ match in comment:$n$B$n$comment_url$n$B"
 
   res=0
-  comment "$comment_url" > $comment || res=$?
-  if [ $res -gt 0 ]; then
-    if ! to_boolean "$DEBUG"; then
-      echo "failed to retrieve $comment_url"
-    fi
-    return $res
-  fi
+  comment "$comment_url" > $comment ||
+    confused_comment "$trigger_comment_url" "Failed to retrieve $b$comment_url$b."
 
   comment_body=$(mktemp)
   jq -r '.body // empty' $comment > $comment_body
@@ -491,8 +488,10 @@ handle_comment() {
   bot_comment_url=$(jq -r '.issue_url // .comment.url' $comment)
   rm $comment
   github_actions_bot="github-actions[bot]"
+  [ -n "$bot_comment_author" ] ||
+    confused_comment "$trigger_comment_url" "Could not retrieve author of $(comment_url_to_html_url $comment_url)."
   [ "$bot_comment_author" = "$github_actions_bot" ] ||
-    confused_comment "$trigger_comment_url" "Expected @$github_actions_bot to be author of $comment_url (found @$bot_comment_author)"
+    confused_comment "$trigger_comment_url" "Expected @$github_actions_bot to be author of $(comment_url_to_html_url $comment_url) (found @$bot_comment_author)."
   [ "$issue_url" = "$bot_comment_url" ] ||
     confused_comment "$trigger_comment_url" "Referenced comment was for a different object: $bot_comment_url"
   capture_items() {
@@ -517,7 +516,7 @@ handle_comment() {
   if [ $res -gt 0 ]; then
     echo "instructions_head failed ($res)"
     cat $instructions_head
-    return $res
+    confused_comment "$trigger_comment_url" "Failed to set up environment to apply changes for $(comment_url_to_html_url $comment_url)."
   fi
   rm $comment_body $instructions_head
   instructions=$(generate_instructions)
@@ -528,19 +527,19 @@ handle_comment() {
     echo "instructions failed ($res)"
     cat $instructions
     res=0
-    confused_comment "$trigger_comment_url" "failed to apply"
+    confused_comment "$trigger_comment_url" "Failed to apply $(comment_url_to_html_url $comment_url)."
   fi
   rm $instructions
   git status --u=no --porcelain | grep -q . ||
-    confused_comment "$trigger_comment_url" "didn't change repository"
+    confused_comment "$trigger_comment_url" "$(comment_url_to_html_url $comment_url) didn't change repository."
   react_prefix="$react_prefix_base"
   github_user_and_email $sender_login
   git_commit "$(echo "Update per $(comment_url_to_html_url $comment_url)
                       Accepted in $(comment_url_to_html_url $trigger_comment_url)
                     "|strip_lead)" ||
-    confused_comment "$trigger_comment_url" "Failed to generate commit"
+    confused_comment "$trigger_comment_url" "Failed to generate commit for $(comment_url_to_html_url $comment_url)."
   git push request "HEAD:$pull_request_ref" ||
-    confused_comment "$trigger_comment_url" "Failed to push to $pull_request_repo"
+    confused_comment "$trigger_comment_url" "Failed to push to $pull_request_repo."
 
   react "$trigger_comment_url" 'eyes' > /dev/null
   react "$comment_url" 'rocket' > /dev/null
@@ -1522,7 +1521,7 @@ comment() {
 }
 
 comment_url_to_html_url() {
-  (comment "$1" | jq -r '.html_url') || echo "$1"
+  comment "$1" | jq -r ".html_url // $Q$1$Q"
 }
 
 set_comments_url() {
