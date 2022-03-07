@@ -22,7 +22,7 @@ jobs:
     if: "contains(github.event_name, 'pull_request') || github.event_name == 'push'"
     steps:
     - name: checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: test-clean
       shell: bash
       run:
@@ -64,7 +64,7 @@ jobs:
     if: always() && needs.spelling.result == 'failure' && needs.spelling.outputs.internal_state_directory
     steps:
     - name: checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: set up
       run: |
         mkdir /tmp/data
@@ -94,7 +94,7 @@ jobs:
       }}
     steps:
     - name: checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: apply spelling updates
       uses: ./
       with:
