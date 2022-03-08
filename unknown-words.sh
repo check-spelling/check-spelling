@@ -170,6 +170,17 @@ get_previous_comment() {
   rm "$pr_comments"
 }
 
+get_comment_url_from_id() {
+  id="$1"
+  comment_url_from_id_query="query { node(id:$Q$id$Q) { ... on IssueComment { url } } }"
+  comment_url_from_id_json=$(echo '{}' | jq -r --arg query "$comment_url_from_id_query" '.query=$query')
+  call_curl \
+    -H "Content-Type: application/json" \
+    --data-binary "$comment_url_from_id_json" \
+    "$GITHUB_GRAPHQL_URL" |
+    jq -r '.data.node.url // empty'
+}
+
 comment_task() {
   set_up_files
 
@@ -323,7 +334,7 @@ react_comment_and_die() {
   react "$trigger_comment_url" "$react" > /dev/null
   if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
     PAYLOAD=$(mktemp_json)
-    echo '{}' | jq --arg body "@check-spelling-bot: $react_prefix $message${N}See [log]($(get_action_log)) for details." '.body = $body' > $PAYLOAD
+    echo '{}' | jq --arg body "@check-spelling-bot: ${react_prefix}$message${N}See [log]($(get_action_log)) for details." '.body = $body' > $PAYLOAD
 
     res=0
     comment "$COMMENTS_URL" "$PAYLOAD" > /dev/null || res=$?
@@ -464,7 +475,7 @@ handle_comment() {
   jq .head "$pull_request_info" > "$pull_request_head_info"
   pull_request_sha=$(jq -r '.sha // empty' "$pull_request_head_info")
   set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$pull_request_sha"
-  react_prefix_base="Could not perform [request]($(comment_url_to_html_url $trigger_comment_url))."
+  react_prefix_base="Could not perform [request]($(comment_url_to_html_url $trigger_comment_url)).$N"
   react_prefix="$react_prefix_base"
   if [ "$sender_login" != "$issue_user_login" ]; then
     collaborators_url=$(jq -r '.repository.collaborators_url // empty' "$GITHUB_EVENT_PATH")
@@ -522,12 +533,9 @@ handle_comment() {
   comment "$comment_url" > $comment ||
     confused_comment "$trigger_comment_url" "Failed to retrieve $b$comment_url$b."
 
-  comment_body=$(mktemp)
-  jq -r '.body // empty' $comment > $comment_body
   bot_comment_author=$(jq -r '.user.login // empty' $comment)
   bot_comment_node_id=$(jq -r '.node_id // empty' $comment)
   bot_comment_url=$(jq -r '.issue_url // .comment.url' $comment)
-  rm $comment
   github_actions_bot="github-actions[bot]"
   [ -n "$bot_comment_author" ] ||
     confused_comment "$trigger_comment_url" "Could not retrieve author of $(comment_url_to_html_url $comment_url)."
@@ -535,6 +543,42 @@ handle_comment() {
     confused_comment "$trigger_comment_url" "Expected @$github_actions_bot to be author of $(comment_url_to_html_url $comment_url) (found @$bot_comment_author)."
   [ "$issue_url" = "$bot_comment_url" ] ||
     confused_comment "$trigger_comment_url" "Referenced comment was for a different object: $bot_comment_url"
+
+  comment_body=$(mktemp)
+  jq -r '.body // empty' "$comment" > "$comment_body"
+  rm "$comment"
+  grep -q '@check-spelling-bot Report' "$comment_body" ||
+    confused_comment "$trigger_comment_url" "$(comment_url_to_html_url $comment_url) does not appear to be a @check-spelling-bot report"
+
+  minimized_info=$(mktemp_json)
+  call_curl \
+  -H "Content-Type: application/json" \
+  --data-binary "$(echo '{}' | jq --arg query "query { node(id: $Q$bot_comment_node_id$Q) { ... on IssueComment { isMinimized minimizedReason } } }" '.query = $query')" \
+  $GITHUB_GRAPHQL_URL > "$minimized_info"
+
+  if [ $(jq '.data.node.isMinimized' "$minimized_info") == 'true' ]; then
+    minimized_reason=$(jq -r '.data.node.minimizedReason | ascii_downcase // empty' "$minimized_info")
+    decorated_reason=" (_${minimized_reason}_)"
+    minimized_reason_suffix='.'
+    previous_comment_node_id=$(get_previous_comment)
+    if [ -n "$previous_comment_node_id" ]; then
+      latest_comment_url=$(get_comment_url_from_id "$previous_comment_node_id")
+      if [ -n "$latest_comment_url" ] && [ "$comment_url" != "$latest_comment_url" ]; then
+        minimized_reason_suffix=". Did you mean to apply the most recent report ($latest_comment_url)?"
+      fi
+    fi
+    case "$minimized_reason" in
+      "")
+        ;;
+      "resolved")
+        minimized_reason="$decorated_reason. This probably means the changes have already been applied";;
+      "outdated")
+        minimized_reason="$decorated_reason. This probably means the referenced comment has been obsoleted by a more recent push & review";;
+      *)
+        minimized_reason="$decorated_reason";;
+    esac
+    confused_comment "$trigger_comment_url" "The referenced report $(comment_url_to_html_url $comment_url) is hidden$minimized_reason$minimized_reason_suffix"
+  fi
   capture_items() {
     perl -ne 'next unless s{^\s*my \@'$1'=qw\('$q$Q'(.*)'$Q$q'\);$}{$1}; print'
   }
@@ -562,25 +606,25 @@ handle_comment() {
   rm $comment_body $instructions_head
   instructions=$(generate_instructions)
 
-  react_prefix="$react_prefix [Instructions]($comment_url)"
+  react_prefix="${react_prefix}[Instructions]($(comment_url_to_html_url $comment_url)) "
   . $instructions || res=$?
   if [ $res -gt 0 ]; then
     echo "instructions failed ($res)"
     cat $instructions
     res=0
-    confused_comment "$trigger_comment_url" "Failed to apply $(comment_url_to_html_url $comment_url)."
+    confused_comment "$trigger_comment_url" "failed to apply."
   fi
   rm $instructions
   git status --u=no --porcelain | grep -q . ||
-    confused_comment "$trigger_comment_url" "$(comment_url_to_html_url $comment_url) didn't change repository."
+    confused_comment "$trigger_comment_url" "didn't change repository content.${N}Maybe someone already applied these changes?"
   react_prefix="$react_prefix_base"
   github_user_and_email $sender_login
   git_commit "$(echo "Update per $(comment_url_to_html_url $comment_url)
                       Accepted in $(comment_url_to_html_url $trigger_comment_url)
                     "|strip_lead)" ||
-    confused_comment "$trigger_comment_url" "Failed to generate commit for $(comment_url_to_html_url $comment_url)."
+    confused_comment "$trigger_comment_url" "did not generate a commit."
   git push request "HEAD:$pull_request_ref" ||
-    confused_comment "$trigger_comment_url" "Failed to push to $pull_request_repo."
+    confused_comment "$trigger_comment_url" "generated a commit, but the $pull_request_repo rejected the commit.${N}Maybe this task lost a race with another push?"
 
   react "$trigger_comment_url" 'eyes' > /dev/null
   react "$comment_url" 'rocket' > /dev/null
