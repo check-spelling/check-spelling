@@ -44,8 +44,7 @@ dispatcher() {
         pull_request_json=$(mktemp_json)
         pull_request_headers=$(mktemp)
         pull_heads_query="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?head=${GITHUB_REPOSITORY%/*}:$GITHUB_REF"
-        curl -s \
-          -H "$AUTHORIZATION_HEADER" \
+        call_curl \
           -D "$pull_request_headers" \
           "$pull_heads_query" > $pull_request_json
         if [ -n "$(jq .documentation_url $pull_request_json 2>/dev/null)" ]; then
@@ -197,14 +196,12 @@ pr_head_sha_task() {
 
 get_workflow_path() {
   action_run=$(mktemp_json)
-  if curl -s \
-    -H "$AUTHORIZATION_HEADER" \
+  if call_curl \
     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$action_run"; then
     workflow_url=$(jq -r '.workflow_url // empty' "$action_run")
     if [ -n "$workflow_url" ]; then
       workflow_json=$(mktemp_json)
-      if curl -s \
-        -H "$AUTHORIZATION_HEADER" \
+      if call_curl \
         "$workflow_url" > "$workflow_json"; then
         jq -r .path "$workflow_json"
       fi
@@ -308,8 +305,7 @@ confused_comment() {
 
 github_user_and_email() {
   user_json=$(mktemp_json)
-  curl -s \
-    -H "$AUTHORIZATION_HEADER" \
+  call_curl \
     "$GITHUB_API_URL/users/$1" > $user_json
 
   github_name=$(jq -r '.name // empty' $user_json)
@@ -363,8 +359,7 @@ show_github_actions_push_disclaimer() {
   )
   pr_query_json=$(echo '{}' | jq -r --arg query "$pr_query" '.query=$query')
   repository_edit_branch=$(
-    curl -s \
-    -H "$AUTHORIZATION_HEADER" \
+    call_curl \
     -H "Content-Type: application/json" \
     --data-binary "$pr_query_json" \
     "$GITHUB_GRAPHQL_URL" |
@@ -816,7 +811,7 @@ get_project_files_deprecated() {
 
 download() {
   exit_value=0
-  curl -L -s "$1" -o "$2" -f || exit_value=$?
+  curl -A "$curl_ua" -L -s "$1" -o "$2" -f || exit_value=$?
   if [ $exit_value = 0 ]; then
     echo "Downloaded $1 (to $2)" >&2
   else
@@ -860,6 +855,11 @@ set_up_tools() {
     fi
   fi
   set_up_jq
+  curl_ua="check-spelling/$(cat $spellchecker/version); $(curl --version|perl -ne '$/=undef; <>; s/\n.*//;s{ }{/};s/ .*//;print')"
+}
+
+call_curl() {
+  curl -A "$curl_ua" -s -H "$AUTHORIZATION_HEADER" "$@"
 }
 
 set_up_jq() {
@@ -898,7 +898,7 @@ get_extra_dictionaries() {
   extra_dictionaries_dir=$(mktemp -d)
   (
     cd $extra_dictionaries_dir
-    echo "$extra_dictionaries" | xargs curl -q -s
+    echo "$extra_dictionaries" | xargs curl -A "$curl_ua" -s
   )
   echo "$extra_dictionaries_dir"
 }
@@ -1068,8 +1068,7 @@ run_spell_check() {
       COMPARE=$(jq -r '.compare // empty' "$GITHUB_EVENT_PATH" 2>/dev/null)
       if [ -n "$COMPARE" ]; then
         BEFORE=$(echo "$COMPARE" | perl -ne 'if (m{/compare/(.*)\.\.\.}) { print $1; } elsif (m{/commit/([0-9a-f]+)$}) { print "$1^"; };')
-        BEFORE=$(curl -s \
-          -H "$AUTHORIZATION_HEADER" \
+        BEFORE=$(call_curl \
           "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$BEFORE" | jq -r '.sha // empty')
       elif [ -n "$GITHUB_BASE_REF" ]; then
         BEFORE=$GITHUB_BASE_REF
@@ -1206,11 +1205,11 @@ get_action_log() {
       action_log=$(get_action_log_overview)
 
       run_info=$(mktemp)
-      if curl -s -H "$AUTHORIZATION_HEADER" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_info" 2>/dev/null; then
+      if call_curl "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_info" 2>/dev/null; then
         jobs_url=$(jq -r '.jobs_url // empty' "$run_info")
         if [ -n "$jobs_url" ]; then
           jobs_info=$(mktemp)
-          if curl -s -H "$AUTHORIZATION_HEADER" "$jobs_url" > "$jobs_info" 2>/dev/null; then
+          if call_curl "$jobs_url" > "$jobs_info" 2>/dev/null; then
             job=$(mktemp)
             jq -r '.jobs[] | select(.status=="in_progress" and .runner_name=="'"$RUNNER_NAME"'" and .run_attempt=='"${GITHUB_RUN_ATTEMPT:-1}"')' "$jobs_info" > "$job" 2>/dev/null
             job_log=$(jq -r .html_url "$job")
@@ -1429,16 +1428,14 @@ body_to_payload() {
 
 collaborator() {
   collaborator_url="$1"
-  curl -L -s \
-    -H "$AUTHORIZATION_HEADER" \
+  call_curl -L \
     -H "Accept: application/vnd.github.v3+json" \
     "$collaborator_url" 2> /dev/null
 }
 
 pull_request() {
   pull_request_url="$1"
-  curl -L -s -S \
-    -H "$AUTHORIZATION_HEADER" \
+  call_curl -L -S \
     -H "Content-Type: application/json" \
     "$pull_request_url"
 }
@@ -1446,9 +1443,8 @@ pull_request() {
 react() {
   url="$1"
   reaction="$2"
-  curl -L -s -S \
+  call_curl -L -S \
     -X POST \
-    -H "$AUTHORIZATION_HEADER" \
     -H "Accept: application/vnd.github.squirrel-girl-preview+json" \
     "$url"/reactions \
     -d '{"content":"'"$reaction"'"}'
@@ -1458,9 +1454,8 @@ unlock_pr() {
   pr_locked="$(jq -r .pull_request.locked "$GITHUB_EVENT_PATH")"
   if to_boolean "$pr_locked"; then
     locked_pull_url="$(jq -r .pull_request._links.issue.href "$GITHUB_EVENT_PATH")"/lock
-    curl -L -s -S \
+    call_curl -L -S \
       -X DELETE \
-      -H "$AUTHORIZATION_HEADER" \
       -H "Accept: application/vnd.github.v3+json" \
       "$locked_pull_url"
   fi
@@ -1476,9 +1471,8 @@ lock_pr() {
       lock_method=-H
       lock_data='Content-Length: 0'
     fi
-    curl -L -s -S \
+    call_curl -L -S \
       -X PUT \
-      -H "$AUTHORIZATION_HEADER" \
       -H "Accept: application/vnd.github.v3+json" \
       "$lock_method" "$lock_data" \
       "$locked_pull_url"
@@ -1495,9 +1489,8 @@ comment() {
       method="-X $method"
     fi
   fi
-  curl -L -s -S \
+  call_curl -L -S \
     $method \
-    -H "$AUTHORIZATION_HEADER" \
     -H "Content-Type: application/json" \
     -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
     $payload \
@@ -1695,8 +1688,7 @@ collapse_comment_mutation() {
 }
 
 collapse_comment() {
-  curl -s \
-  -H "$AUTHORIZATION_HEADER" \
+  call_curl \
   -H "Content-Type: application/json" \
   --data-binary "$(collapse_comment_mutation "$@")" \
   $GITHUB_GRAPHQL_URL
