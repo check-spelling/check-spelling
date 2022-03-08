@@ -5,6 +5,7 @@ chmod
 Cwd
 DEBIAN
 dest
+downcase
 elif
 eol
 esac
