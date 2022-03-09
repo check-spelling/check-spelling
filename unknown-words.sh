@@ -1491,7 +1491,7 @@ spelling_body() {
     fi
     if [ -n "$err" ]; then
       output_accept_script="$(echo "
-        <details><summary>To accept these unrecognized words as correct$cleanup_text,
+        <details><summary>To accept :heavy_check_mark: these unrecognized words as correct$cleanup_text,
         run the following commands</summary>
 
         ... in a clone of the [$remote_url_ssh]($remote_url_https) repository
