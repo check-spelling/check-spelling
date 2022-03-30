@@ -44,9 +44,9 @@ dispatcher() {
         pull_request_json=$(mktemp_json)
         pull_request_headers=$(mktemp)
         pull_heads_query="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?head=${GITHUB_REPOSITORY%/*}:$GITHUB_REF"
-        call_curl \
-          -D "$pull_request_headers" \
+        keep_headers=1 call_curl \
           "$pull_heads_query" > $pull_request_json
+        mv "$response_headers" "$pull_request_headers"
         if [ -n "$(jq .documentation_url $pull_request_json 2>/dev/null)" ]; then
           (
             echo "Request for '$pull_heads_query' appears to have yielded an error, it is probably an authentication error."
@@ -859,7 +859,27 @@ set_up_tools() {
 }
 
 call_curl() {
-  curl -A "$curl_ua" -s -H "$AUTHORIZATION_HEADER" "$@"
+  curl_attempt=0
+  response_headers=$(mktemp)
+  response_body=$(mktemp)
+  until [ "$curl_attempt" -ge 3 ]
+  do
+    response_code=$(
+      curl -D "$response_headers" -w "%{http_code}" -A "$curl_ua" -s -H "$AUTHORIZATION_HEADER" "$@" -o "$response_body"
+    )
+    if [ "$response_code" -ne 429 ]; then
+      cat "$response_body"
+      rm -f "$response_body"
+      if [ -z "$keep_headers" ]; then
+        rm -f "$response_headers"
+      fi
+      return
+    fi
+    delay=$(perl -e 'my $delay=5; while (<>) { next unless /^retry-after:\s*(\d+)/i; $delay=$1 || 1; }; print $delay' "$response_headers")
+    (echo "call_curl received a 429 and will wait for ${delay}s:"; grep -E -i 'x-github-request-id|x-rate-limit-|retry-after' "$response_headers") >&2
+    sleep "$delay"
+    curl_attempt=$(($curl_attempt + 1))
+  done
 }
 
 set_up_jq() {
