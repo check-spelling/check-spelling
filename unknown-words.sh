@@ -129,6 +129,47 @@ load_env() {
   . "$input_variables"
 }
 
+get_previous_comment() {
+  comment_search_re="$(title="$report_header" perl -e 'my $title=quotemeta($ENV{title}); $title=~ s/\\././g; print "(?:^|\n)$title";')"
+
+  # In English
+  # we're composing a list
+  #   but decomposing our input
+  #   selecting elements
+  #     if the user.login.id is our target user
+  #     and it isn't the comment we just posted...
+  #     and the body has our magic keyword (this requires some tuning for matrices)
+  #   from that element, we only want the node_id
+  # we want the last element
+  #   if there's no element, we want the empty string (not 'null')
+  jq_comment_query='[ .[] | select(. | (.user.id=='"$comment_author_id"') and (.node_id != "'"$posted_comment_node_id"'") and (.body | test ("'"$comment_search_re"'") ) ) | .node_id ] | .[-1] // empty'
+
+  get_page() {
+    url="$1"
+    dir="$2"
+    keep_headers=1 call_curl "$url" > "$pr_comments"
+    # Subset of rfc8288#section-3
+    link=$(perl -ne 'next unless s/^link:.*<([^>]*)>[^,]*'"$dir"'.*/$1/; print' "$response_headers" )
+    if [ -n "$link" ] && [ "$dir" = "last" ]; then
+      get_page "$link" "prev"
+      return
+    fi
+    node_id=$(jq -r "$jq_comment_query" "$pr_comments")
+    if [ -n "$node_id" ]; then
+      echo "$node_id"
+      return
+    fi
+    if [ -n "$link" ]; then
+      get_page "$link" "prev"
+      return
+    fi
+  }
+
+  pr_comments=$(mktemp_json)
+  get_page "$COMMENTS_URL" "last"
+  rm "$pr_comments"
+}
+
 comment_task() {
   set_up_files
 
@@ -1524,11 +1565,10 @@ comment() {
 track_comment() {
   HTML_COMMENT_URL=$(jq -r '.html_url // empty' $response)
   echo "Comment posted to ${HTML_COMMENT_URL:-$COMMENT_URL}"
-  if [ -n "$INPUT_COMMENT_REF" ]; then
-    posted_comment_node_id="$(jq -r '.node_id // empty' "$response")"
-    if [ -n "$posted_comment_node_id" ]; then
-      echo "$posted_comment_node_id" >> $INPUT_COMMENT_REF
-    fi
+  comment_author_id="$(jq -r '.user.id // empty' "$response")"
+  posted_comment_node_id="$(jq -r '.node_id // empty' "$response")"
+  if [ -n "$INPUT_COMMENT_REF" ] && [ -n "$posted_comment_node_id" ]; then
+    echo "$posted_comment_node_id" >> $INPUT_COMMENT_REF
   fi
 }
 
@@ -1702,7 +1742,7 @@ minimize_comment_call() {
       input:
       {
         subjectId: ${Q}$comment_node${Q},
-        classifier: RESOLVED
+        classifier: ${reason:-RESOLVED}
       }
     ){
       minimizedComment {
@@ -1908,6 +1948,13 @@ $(remove_items)
 " "$instructions"
   end_group
   echo "$title"
+  if [ -n "$comment_author_id" ]; then
+    previous_comment_node_id=$(get_previous_comment)
+    if [ -n "$previous_comment_node_id" ]; then
+      reason=OUTDATED collapse_comment "$previous_comment_node_id" > /dev/null
+    fi
+  fi
+
   quit 1
 }
 
