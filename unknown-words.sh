@@ -378,7 +378,7 @@ show_github_actions_push_disclaimer() {
   response=$(mktemp)
   comment "$COMMENTS_URL" "$PAYLOAD" > $response || res=$?
   if [ $res -eq 0 ]; then
-    echo "Comment posted to $(jq -r '.html_url // empty' $response)"
+    track_comment "$response"
   fi
 }
 
@@ -1520,6 +1520,11 @@ comment() {
     "$comments_url"
 }
 
+track_comment() {
+  HTML_COMMENT_URL=$(jq -r '.html_url // empty' $response)
+  echo "Comment posted to ${HTML_COMMENT_URL:-$COMMENT_URL}"
+}
+
 comment_url_to_html_url() {
   comment "$1" | jq -r ".html_url // $Q$1$Q"
 }
@@ -1659,8 +1664,7 @@ post_commit_comment() {
             fi
           fi
           rm -f $BODY 2>/dev/null
-          HTML_COMMENT_URL=$(jq -r '.html_url // empty' $response)
-          echo "Comment posted to ${HTML_COMMENT_URL:-$COMMENT_URL}"
+          track_comment "$response"
         else
           cat "$BODY"
         fi
