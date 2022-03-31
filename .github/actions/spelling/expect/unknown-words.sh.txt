@@ -35,6 +35,7 @@ quotemeta
 rawfile
 README
 realpath
+rfc
 regex
 spellchecker
 ssh
