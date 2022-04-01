@@ -30,6 +30,7 @@ noreply
 perl
 PIPESTATUS
 pne
+pwd
 quotemeta
 rawfile
 README

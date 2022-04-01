@@ -678,6 +678,7 @@ define_variables() {
   action_log_ref="$data_dir/action_log_ref.txt"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   output_variables=$(mktemp)
+  instructions_preamble=$(mktemp)
 
   report_header="# @check-spelling-bot Report"
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
@@ -1006,6 +1007,24 @@ set_up_reporter() {
 }
 
 set_up_files() {
+  if [ ! -d "$bucket/$project/" ] && [ -n "$INPUT_SPELL_CHECK_THIS" ]; then
+    spell_check_this_repo=$(mktemp -d)
+    spelling_config=.github/actions/spelling/
+    if git clone --depth 1 "https://github.com/$INPUT_SPELL_CHECK_THIS" "$spell_check_this_repo" > /dev/null 2> /dev/null; then
+      mkdir -p "$spelling_config"
+      rsync -a "$spell_check_this_repo/$spelling_config" "$bucket/$project/"
+      spell_check_this_repo_url=$(cd "$spell_check_this_repo"; git remote get-url origin)
+      (
+        echo "mkdir -p $spelling_config"
+        echo 'rsync -a $('
+        echo 'cd $(mktemp -d)'
+        echo "git clone --depth 1 --no-tags $spell_check_this_repo_url . > /dev/null 2> /dev/null"
+        echo "cd $spelling_config; pwd"
+        echo ')/' "$bucket/$project/"
+        echo "git add '$bucket/$project/'"
+      ) > "$instructions_preamble"
+    fi
+  fi
   get_project_files word_expectations.words $expect_path
   get_project_files expect.txt $expect_path
   get_project_files_deprecated word_expectations.words whitelist.txt $expect_path

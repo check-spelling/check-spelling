@@ -29,6 +29,9 @@ generate_instructions() {
     echo '(cd $(git rev-parse --show-toplevel)' >> $instructions
     to_retrieve_expect >> $instructions
   fi
+  if [ -s "$instructions_preamble" ]; then
+    cat "$instructions_preamble" >> "$instructions"
+  fi
   if [ -n "$patch_remove" ]; then
     if [ -z "$expect_files" ]; then
       expect_files=$expect_file
