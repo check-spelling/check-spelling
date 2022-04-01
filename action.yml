@@ -167,6 +167,10 @@ inputs:
     description: 'Suppress failure code exit code -- it will be available via outputs.result_code'
     required: false
     default: ''
+  spell_check_this:
+    description: 'Repository with default configuration to use if no configuration is found'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
