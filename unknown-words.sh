@@ -674,6 +674,11 @@ define_variables() {
   if [ -z "$extra_dictionary_limit" ]; then
     extra_dictionary_limit=5
   fi
+  if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
+    ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.a-z0-9]+/[-_.a-z0-9]+(?:|\@[-_.a-z0-9]+)$};'; then
+    INPUT_SPELL_CHECK_THIS=''
+    echo "$(get_workflow_path): line 0, columns 1-1, Warning - unsupported repository (unsupported-repo-notation)" >> "$early_warnings"
+  fi
 
   dict="$spellchecker/words"
   patterns="$spellchecker/patterns.txt"
@@ -699,6 +704,7 @@ define_variables() {
   action_log_ref="$data_dir/action_log_ref.txt"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   output_variables=$(mktemp)
+  instructions_preamble=$(mktemp)
 
   report_header="# @check-spelling-bot Report"
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
@@ -1027,6 +1033,31 @@ set_up_reporter() {
 }
 
 set_up_files() {
+  if [ ! -d "$bucket/$project/" ] && [ -n "$INPUT_SPELL_CHECK_THIS" ]; then
+    spell_check_this_repo=$(mktemp -d)
+    spelling_config=.github/actions/spelling/
+    spell_check_this_repo_name=${INPUT_SPELL_CHECK_THIS%%@*}
+    if [ "$spell_check_this_repo_name" != "$INPUT_SPELL_CHECK_THIS" ]; then
+      spell_check_this_repo_branch=${INPUT_SPELL_CHECK_THIS##*@}
+      if [ -n "$spell_check_this_repo_branch" ]; then
+        spell_check_this_repo_branch="--branch $spell_check_this_repo_branch"
+      fi
+    fi
+    if git clone --depth 1 "https://github.com/$spell_check_this_repo_name" $spell_check_this_repo_branch "$spell_check_this_repo" > /dev/null 2> /dev/null; then
+      mkdir -p "$spelling_config"
+      cp -R "$spell_check_this_repo/$spelling_config"/* "$bucket/$project/"
+      spell_check_this_repo_url=$(cd "$spell_check_this_repo"; git remote get-url origin)
+      (
+        echo "mkdir -p $spelling_config"
+        echo 'cp -R $('
+        echo 'cd $(mktemp -d)'
+        echo "git clone --depth 1 --no-tags $spell_check_this_repo_url $spell_check_this_repo_branch . > /dev/null 2> /dev/null"
+        echo "cd $spelling_config; pwd"
+        echo ')/*' "$bucket/$project/"
+        echo "git add '$bucket/$project/'"
+      ) > "$instructions_preamble"
+    fi
+  fi
   get_project_files word_expectations.words $expect_path
   get_project_files expect.txt $expect_path
   get_project_files_deprecated word_expectations.words whitelist.txt $expect_path
