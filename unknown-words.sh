@@ -129,8 +129,23 @@ load_env() {
   . "$input_variables"
 }
 
+who_am_i() {
+  who_am_i='query { viewer { databaseId } }'
+  who_am_i_json=$(echo '{}' | jq -r --arg query "$who_am_i" '.query=$query')
+  comment_author_id=$(
+    call_curl \
+    -H "Content-Type: application/json" \
+    --data-binary "$who_am_i_json" \
+    "$GITHUB_GRAPHQL_URL" |
+    jq -r '.data.viewer.databaseId // empty'
+  )
+}
+
 get_previous_comment() {
   comment_search_re="$(title="$report_header" perl -e 'my $title=quotemeta($ENV{title}); $title=~ s/\\././g; print "(?:^|\n)$title";')"
+  if [ -z "$comment_author_id" ]; then
+    who_am_i
+  fi
 
   # In English
   # we're composing a list
@@ -1817,6 +1832,12 @@ collapse_comment() {
 
 exit_if_no_unknown_words() {
   if [ ! -s "$run_output" ]; then
+    previous_comment_node_id=$(get_previous_comment)
+    if [ -n "$previous_comment_node_id" ]; then
+      echo "::set-output name=previous_comment::$previous_comment_node_id"
+      quit_without_error=1
+      quit collapse_comment
+    fi
     quit 0
   fi
 }
