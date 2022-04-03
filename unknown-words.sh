@@ -141,6 +141,19 @@ who_am_i() {
   )
 }
 
+is_comment_minimized() {
+  comment_is_collapsed_query="query { node(id:$Q$1$Q) { ... on IssueComment { minimizedReason } } }"
+  comment_is_collapsed_json=$(echo '{}' | jq -r --arg query "$comment_is_collapsed_query" '.query=$query')
+  comment_is_minimized=$(
+    call_curl \
+    -H "Content-Type: application/json" \
+    --data-binary "$comment_is_collapsed_json" \
+    "$GITHUB_GRAPHQL_URL" |
+    jq -r '.data.node.minimizedReason'
+  )
+  [ "$comment_is_minimized" != "null" ]
+}
+
 get_previous_comment() {
   comment_search_re="$(title="$report_header" perl -e 'my $title=quotemeta($ENV{title}); $title=~ s/\\././g; print "(?:^|\n)$title";')"
   if [ -z "$comment_author_id" ]; then
@@ -171,7 +184,9 @@ get_previous_comment() {
     fi
     node_id=$(jq -r "$jq_comment_query" "$pr_comments")
     if [ -n "$node_id" ]; then
-      echo "$node_id"
+      if ! is_comment_minimized "$node_id"; then
+        echo "$node_id"
+      fi
       return
     fi
     if [ -n "$link" ]; then
@@ -194,6 +209,16 @@ comment_task() {
     fi
     if [ -z "$STALE_TOKENS" ]; then
       STALE_TOKENS="$INPUT_INTERNAL_STATE_DIRECTORY/remove_words.txt"
+    fi
+    if [ -s "$INPUT_INTERNAL_STATE_DIRECTORY/followup" ]; then
+      followup=$(cat "$INPUT_INTERNAL_STATE_DIRECTORY/followup")
+      if [ "$followup" = "collapse_previous_comment" ]; then
+        previous_comment_node_id=$(cat "$data_dir/previous_comment.txt")
+        if [ -n "$previous_comment_node_id" ]; then
+          collapse_comment "$previous_comment_node_id"
+          quit 0
+        fi
+      fi
     fi
   else
     # This behavior was used internally and is not recommended.
@@ -1533,11 +1558,12 @@ quit() {
     0) followup='';;
     1) followup='comment';;
     2) followup='debug';;
+    3) followup='collapse_previous_comment';;
   esac
   echo "::set-output name=result_code::$1"
   echo "::set-output name=followup::$followup"
+  echo "$followup" > "$data_dir/followup"
   echo "result_code=$1" >> "$GITHUB_ENV"
-  echo "followup=$followup" >> "$GITHUB_ENV"
   cat $output_variables
   if to_boolean "$quit_without_error"; then
     exit
@@ -1837,14 +1863,22 @@ collapse_comment() {
   $GITHUB_GRAPHQL_URL
 }
 
+should_collapse_previous_and_not_comment() {
+  if [ -z "$COMMENTS_URL" ]; then
+    set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
+  fi
+  previous_comment_node_id=$(get_previous_comment)
+  if [ -n "$previous_comment_node_id" ]; then
+    echo "::set-output name=previous_comment::$previous_comment_node_id"
+    echo "$previous_comment_node_id" > "$data_dir/previous_comment.txt"
+    quit_without_error=1
+    quit 3
+  fi
+}
+
 exit_if_no_unknown_words() {
   if [ ! -s "$run_output" ]; then
-    previous_comment_node_id=$(get_previous_comment)
-    if [ -n "$previous_comment_node_id" ]; then
-      echo "::set-output name=previous_comment::$previous_comment_node_id"
-      quit_without_error=1
-      quit collapse_comment
-    fi
+    should_collapse_previous_and_not_comment
     quit 0
   fi
 }
@@ -1919,6 +1953,7 @@ set_patch_remove_add() {
       title="No new words with misspellings found"
         spelling_info "$title" "There are currently $(wc -l $expect_path|sed -e 's/ .*//') expected items." ""
       end_group
+      should_collapse_previous_and_not_comment
       quit 0
     fi
   end_group
@@ -1965,6 +2000,7 @@ fewer_misspellings() {
     spelling_info "$title" "" "$instructions"
   fi
   end_group
+  should_collapse_previous_and_not_comment
   quit
 }
 more_misspellings() {
