@@ -199,6 +199,7 @@ runs:
   using: 'composite'
   steps:
     - id: spelling
+      name: check-spelling
       env:
         INPUTS: ${{ toJSON(inputs) }}
         DEBUG: ${{ inputs.debug }}
