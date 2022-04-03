@@ -450,6 +450,36 @@ show_github_actions_push_disclaimer() {
   OUTPUT="### :hourglass: check-spelling changes applied
 
   As [configured](https://github.com/check-spelling/check-spelling/wiki/Feature:-Update-expect-list#github_token), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
+
+  <details><summary>Users with the Admin role can address this for future interactions :magic_wand:</summary>
+
+  #### Create a deploy key and secret
+  $B sh
+  (
+    set -e
+    brand=check-spelling; repo=$q$GITHUB_REPOSITORY$q; SECRET_NAME=CHECK_SPELLING"'
+    cd $(mktemp -d)
+    ssh-keygen -f "./$brand" -q -N "" -C "$brand key for $repo"
+    gh repo deploy-key add "./$brand.pub" -R "$repo" -w -t "$brand-talk-to-bot"
+    cat "./$brand" | gh secret -R "$repo" set "$SECRET_NAME"
+  )'"
+  $B
+
+  #### Configure update job in workflow to use secret
+
+  If the $b$(get_workflow_path)$b workflow ${b}update${b} job doesn't already have the "'`checkout`/`with`/`ssh-key`, then add them:
+
+  ``` diff
+   update:
+   ...
+   - name: checkout
+     uses: actions/checkout@v3
+  +  with:
+  +    ssh-key: "${{ secrets.CHECK_SPELLING }}"
+  ```'"
+
+  </details>
+
   <!--$n$report_header$n-->
   To trigger another validation round and hopefully a :white_check_mark:, please add a blank line, e.g. to [$expect_file]($GITHUB_SERVER_URL/$repository_edit_branch/$expect_file?pr=$pr_path_escaped) and commit the change."
   BODY=$(mktemp)
