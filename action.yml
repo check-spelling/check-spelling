@@ -191,8 +191,11 @@ outputs:
     description: 'Used for passing internal state from the (default) check mode to the comment module'
     value: ${{ steps.spelling.outputs.internal_state_directory }}
   result_code:
-    description: "Result code (indicates unrecognized words were found or comment needs to be collapsed)"
+    description: "Result (indicates unrecognized words were found or comment needs to be collapsed)"
     value: ${{ steps.spelling.outputs.result_code }}
+  followup:
+    description: "Next task"
+    value: ${{ steps.spelling.outputs.followup }}
 
 runs:
   using: 'composite'
