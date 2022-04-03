@@ -450,7 +450,7 @@ show_github_actions_push_disclaimer() {
   OUTPUT="### :hourglass: check-spelling changes applied
 
   As [configured](https://github.com/check-spelling/check-spelling/wiki/Feature:-Update-expect-list#github_token), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
-
+  <!--$n$report_header$n-->
   To trigger another validation round and hopefully a :white_check_mark:, please add a blank line, e.g. to [$expect_file]($GITHUB_SERVER_URL/$repository_edit_branch/$expect_file?pr=$pr_path_escaped) and commit the change."
   BODY=$(mktemp)
   echo "$OUTPUT" > "$BODY"
