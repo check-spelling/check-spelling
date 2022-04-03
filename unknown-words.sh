@@ -1529,8 +1529,15 @@ spelling_body() {
 
 quit() {
   echo "::remove-matcher owner=check-spelling::"
+  case "$1" in
+    0) followup='none';;
+    1) followup='comment';;
+    2) followup='debug';;
+  esac
   echo "::set-output name=result_code::$1"
+  echo "::set-output name=followup::$followup"
   echo "result_code=$1" >> "$GITHUB_ENV"
+  echo "followup=$followup" >> "$GITHUB_ENV"
   cat $output_variables
   if to_boolean "$quit_without_error"; then
     exit
