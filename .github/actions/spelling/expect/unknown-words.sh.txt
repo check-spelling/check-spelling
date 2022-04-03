@@ -21,6 +21,7 @@ html
 json
 jsoref
 junit
+keygen
 linux
 mailto
 metadata
