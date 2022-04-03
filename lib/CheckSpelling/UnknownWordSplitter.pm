@@ -20,6 +20,7 @@ our $VERSION='0.1.0';
 
 my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re);
 my ($shortest, $longest) = (255, 0);
+my @forbidden_re_list;
 my %dictionary = ();
 my %unique;
 my %unique_unrecognized;
@@ -104,7 +105,8 @@ sub init {
   my ($dirname) = @_;
   our ($word_match, %unique);
   our $patterns_re = file_to_re "$dirname/patterns.txt";
-  our $forbidden_re = file_to_re "$dirname/forbidden.txt";
+  our @forbidden_re_list = file_to_list "$dirname/forbidden.txt";
+  our $forbidden_re = list_to_re @forbidden_re_list;
   our $largest_file = CheckSpelling::Util::get_val_from_env('INPUT_LARGEST_FILE', 1024*1024);
 
   $word_match = valid_word();
@@ -116,7 +118,11 @@ sub init {
 
 sub split_file {
   my ($file) = @_;
-  our ($unrecognized, $longest_word, $shortest_word, $largest_file, $words, $word_match, %unique, %unique_unrecognized, $forbidden_re, $patterns_re, %dictionary);
+  our (
+    $unrecognized, $longest_word, $shortest_word, $largest_file, $words,
+    $word_match, %unique, %unique_unrecognized, $forbidden_re,
+    @forbidden_re_list, $patterns_re, %dictionary,
+  );
   my $temp_dir = tempdir();
   open(NAME, '>:utf8', "$temp_dir/name");
     print NAME $file;
@@ -142,9 +148,29 @@ sub split_file {
     my $raw_line = $_;
     # hook for custom line based text exclusions:
     s/($patterns_re)/" "x length($1)/ge;
-    while (s/($forbidden_re)/ /g) {
+    my $previous_line_state=$_;
+    while (s/($forbidden_re)/" "x length($1)/e) {
       my ($begin, $end, $match) = ($-[0] + 1, $+[0], $1);
-      print WARNINGS "line $., columns $begin-$end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
+      my $found_trigger_re;
+      for my $forbidden_re_singleton (@forbidden_re_list) {
+        my $test_line = $previous_line_state;
+        if ($test_line =~ s/($forbidden_re_singleton)/" "x length($1)/e) {
+          next unless $test_line eq $_;
+          my ($begin_test, $end_test, $match_test) = ($-[0] + 1, $+[0], $1);
+          next unless $begin == $begin_test;
+          next unless $end == $end_test;
+          next unless $match eq $match_test;
+          $found_trigger_re = $forbidden_re_singleton;
+          last;
+        }
+      }
+      if ($found_trigger_re) {
+        $found_trigger_re =~ s/^\(\?:(.*)\)$/$1/;
+        print WARNINGS "line $., columns $begin-$end, Warning - `$match` matches a line_forbidden.patterns entry: `$found_trigger_re`. (forbidden-pattern)\n";
+      } else {
+        print WARNINGS "line $., columns $begin-$end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
+      }
+      $previous_line_state = $_;
     }
     # This is to make it easier to deal w/ rules:
     s/^/ /;

@@ -10,7 +10,7 @@ use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
 
 use Test::More;
-plan tests => 27;
+plan tests => 31;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -69,10 +69,15 @@ print $fh 'bar
 foo
 ';
 close $fh;
-open $fh, '>:utf8', "$directory/patterns.txt";
-print $fh '# ignore-me
+my $output_dir;
+my $dirname = tempdir();
+open $fh, '>', "$dirname/forbidden.txt";
+print $fh '# forbidden
+# donut
+\bdonut\b
 
-random-inconsequential-string
+# Flag duplicated "words"
+\s([A-Z]{3,}|[A-Z][a-z]{2,}|[a-z]{3,})\s\g{-1}\s
 ';
 close $fh;
 %CheckSpelling::UnknownWordSplitter::dictionary = ();
@@ -142,3 +147,33 @@ exp
 ragel
 supercal');
 $CheckSpelling::UnknownWordSplitter::patterns_re = '$^';
+
+close $fh;
+open $fh, '>', "$dirname/words";
+print $fh 'apple
+banana
+cherry
+donut
+egg
+fruit
+grape
+';
+close $fh;
+CheckSpelling::UnknownWordSplitter::init($dirname);
+($fh, $filename) = tempfile();
+print $fh 'banana cherry
+cherry fruit fruit egg
+fruit donut grape donut banana
+egg ham
+grape
+';
+close $fh;
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+check_output_file("$output_dir/name", $filename);
+check_output_file("$output_dir/stats", '{words: 9, unrecognized: 1, unknown: 1, unique: 5}');
+check_output_file_sorted_lines("$output_dir/warnings", "line 2, columns 7-19, Warning - ` fruit fruit ` matches a line_forbidden.patterns entry: `\\s([A-Z]{3,}|[A-Z][a-z]{2,}|[a-z]{3,})\\s\\g{-1}\\s`. (forbidden-pattern)
+line 3, columns 19-23, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
+line 3, columns 7-11, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
+line 4 cols 5-7: 'ham'
+");
+check_output_file("$output_dir/unknown", 'ham');
