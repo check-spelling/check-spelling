@@ -1501,7 +1501,7 @@ spelling_body() {
         $(cat "$extra_dictionaries_cover_entries_limited")
 
         Consider adding them using$workflow_path_hint:
-        $B
+        $B yml
               with:
                 extra_dictionaries:$n$(
           cat "$extra_dictionaries_cover_entries_limited" |
@@ -1509,7 +1509,7 @@ spelling_body() {
         )
         $B
         To stop checking additional dictionaries, add:
-        $B
+        $B yml
               with:
                 check_extra_dictionaries: ''
         $B
@@ -1570,7 +1570,7 @@ spelling_body() {
         https://github.com/check-spelling/check-spelling/wiki/Accepting-Suggestions)):
         "$(relative_note)"
 
-        $B
+        $B sh
         $err
         $B
         </details>
