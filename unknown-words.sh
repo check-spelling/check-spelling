@@ -1813,68 +1813,76 @@ post_commit_comment() {
 
         res=0
         unlock_pr
-        comment "$COMMENTS_URL" "$PAYLOAD" > $response || res=$?
-        if [ $res -gt 0 ]; then
+        keep_headers=1 comment "$COMMENTS_URL" "$PAYLOAD" > "$response"
+        if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] 2> /dev/null; then
           if ! to_boolean "$DEBUG"; then
             echo "failed posting to $COMMENTS_URL"
             cat "$PAYLOAD"
+            echo " -- response -- "
+            echo "Response code: $response_code"
+            echo "Headers:"
+            cat "$response_headers"
+            rm -f "$response_headers"
+            echo "Body:"
+            cat "$response"
+            echo " //// "
           fi
           no_patch=1
-        fi
-
-        if to_boolean "$DEBUG"; then
-          cat $response
-        fi
-        COMMENT_URL=$(jq -r '.url // empty' $response)
-        if [ -z "$COMMENT_URL" ]; then
-          echo "Could not find comment url in:"
-          cat "$response"
-          no_patch=1
         else
-          perl -p -i.orig -e 's<COMMENT_URL><'"$COMMENT_URL"'>' $BODY
-          if diff -q "$BODY.orig" "$BODY" > /dev/null; then
+          if to_boolean "$DEBUG"; then
+            cat "$response"
+          fi
+          COMMENT_URL=$(jq -r '.url // empty' "$response")
+          if [ -z "$COMMENT_URL" ]; then
+            echo "Could not find comment url in:"
+            cat "$response"
             no_patch=1
-          fi
-          rm "$BODY.orig"
-        fi
-        if [ -n "$COMMENT_URL" ]; then
-          if [ -n "$INPUT_COMMENT_REF" ]; then
-            posted_comment_node_id="$(jq -r '.node_id // empty' "$response")"
-            if [ -n "$posted_comment_node_id" ]; then
-              echo "$posted_comment_node_id" > $INPUT_COMMENT_REF
+          else
+            perl -p -i.orig -e 's<COMMENT_URL><'"$COMMENT_URL"'>' "$BODY"
+            if diff -q "$BODY.orig" "$BODY" > /dev/null; then
+              no_patch=1
             fi
+            rm "$BODY.orig"
           fi
-          if offer_quote_reply; then
-            quote_reply_insertion=$(mktemp)
-            (
-              if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
-                apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
-              fi
-              echo
-              echo "To have the bot do this for you, reply quoting the following line:"
-              echo "@check-spelling-bot apply [changes]($(comment_url_to_html_url $COMMENT_URL))$apply_changes_suffix."
-            )> "$quote_reply_insertion"
-            perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$BODY"
-            no_patch=
-          fi
-          if [ -z "$no_patch" ]; then
-            body_to_payload $BODY
-            comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response || res=$?
-            if [ $res -gt 0 ]; then
-              if ! to_boolean "$DEBUG"; then
-                echo "Failed to patch $COMMENT_URL"
+          if [ -n "$COMMENT_URL" ]; then
+            if [ -n "$INPUT_COMMENT_REF" ]; then
+              posted_comment_node_id="$(jq -r '.node_id // empty' "$response")"
+              if [ -n "$posted_comment_node_id" ]; then
+                echo "$posted_comment_node_id" > $INPUT_COMMENT_REF
               fi
             fi
-            if to_boolean "$DEBUG"; then
-              cat $response
+            if offer_quote_reply; then
+              quote_reply_insertion=$(mktemp)
+              (
+                if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+                  apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
+                fi
+                echo
+                echo "To have the bot do this for you, reply quoting the following line:"
+                echo "@check-spelling-bot apply [changes]($(comment_url_to_html_url $COMMENT_URL))$apply_changes_suffix."
+              )> "$quote_reply_insertion"
+              perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$BODY"
+              no_patch=
             fi
+            if [ -z "$no_patch" ]; then
+              body_to_payload $BODY
+              comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response || res=$?
+              if [ $res -gt 0 ]; then
+                if ! to_boolean "$DEBUG"; then
+                  echo "Failed to patch $COMMENT_URL"
+                fi
+              fi
+              if to_boolean "$DEBUG"; then
+                cat $response
+              fi
+            fi
+            rm -f $BODY 2>/dev/null
+            track_comment "$response"
+          else
+            cat "$BODY"
           fi
-          rm -f $BODY 2>/dev/null
-          track_comment "$response"
-        else
-          cat "$BODY"
+          lock_pr
         fi
-        lock_pr
       else
         echo "$OUTPUT"
       fi
