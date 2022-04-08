@@ -136,6 +136,7 @@ inputs:
     default: ''
   custom_task:
     description: 'Run an internal task instead of responding to a GitHub event. Values: "comment"'
+    # This will be superseded by task
     required: false
     default: ''
   internal_state_directory:
@@ -174,6 +175,18 @@ inputs:
     description: 'Repository with default configuration to use if no configuration is found'
     required: false
     default: ''
+  ssh_key:
+    description: 'Key for checking out / pushing to updates (and trigger workflow cascades)'
+    required: false
+    default: ''
+  checkout:
+    description: 'Whether to check out a repository'
+    required: false
+    default: ''
+  task:
+    description: 'Task to perform (spelling, comment, ...)'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
@@ -204,8 +217,32 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - id: spelling
-      name: check-spelling
+    - name: checkout
+      if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task
+      uses: actions/checkout@v3
+      with:
+        path: ${{ inputs.experimental_path }}
+        ssh-key: ${{ inputs.ssh_key }}
+    - name: checkout-merge
+      if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task)
+      uses: check-spelling/checkout-merge@v0.0.0
+      with:
+        path: ${{ inputs.experimental_path }}
+    - name: prepare
+      if: inputs.task && inputs.task != 'spelling'
+      run: |
+        mkdir -p /tmp/data;
+        echo "INPUT_INTERNAL_STATE_DIRECTORY=/tmp/data" >> "$GITHUB_ENV"
+      shell: bash
+    - name: retrieve-comment
+      if: inputs.task && inputs.task != 'spelling'
+      uses: actions/download-artifact@v3
+      with:
+        name: "check-spelling-comment-${{ github.run_id }}"
+        path: /tmp/data
+    - name: check-spelling
+      id: spelling
+      if: env.MERGE_FAILED != '1'
       env:
         INPUTS: ${{ toJSON(inputs) }}
         DEBUG: ${{ inputs.debug }}
@@ -214,3 +251,15 @@ runs:
         spellchecker=$(echo $spellchecker| perl -pne 's{/$}{}')
         $spellchecker/unknown-words.sh
       shell: bash
+    - name: store-comment
+      if: (contains(github.event_name, 'pull_request') ||
+          github.event_name == 'push') &&
+        inputs.custom_task != 'comment' &&
+        (failure() || steps.spelling.outputs.followup) &&
+        steps.spelling.outputs.internal_state_directory
+      uses: actions/upload-artifact@v3
+      with:
+        retention-days: 1
+        name: "check-spelling-comment-${{ github.run_id }}"
+        path: |
+          ${{ steps.spelling.outputs.internal_state_directory }}

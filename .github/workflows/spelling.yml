@@ -1,26 +1,27 @@
-name: Spell checking
+name: Check Spelling
 on:
   push:
-    branches:
-      - "**"
-    tags-ignore:
-      - "**"
+    branches: ["**"]
+    tags-ignore: ["**"]
   pull_request_target:
   issue_comment:
     types: [created]
 
 jobs:
   spelling:
-    name: Spell checking
+    name: Check Spelling
     permissions:
-      actions: write
       contents: read
       pull-requests: read
+      actions: read
     outputs:
       followup: ${{ steps.spelling.outputs.followup }}
-      internal_state_directory: ${{ steps.spelling.outputs.internal_state_directory }}
     runs-on: ubuntu-latest
     if: "contains(github.event_name, 'pull_request') || github.event_name == 'push'"
+    concurrency:
+      group: spelling-${{ github.event.pull_request.number || github.ref }}
+      # note: If you use only_check_changed_files, you do not want cancel-in-progress
+      cancel-in-progress: true
     steps:
     - name: checkout
       uses: actions/checkout@v3
@@ -45,46 +46,31 @@ jobs:
         post_comment: 0
         experimental_path: introspected
         unknown_word_limit: 2
-
-    - name: store-comment
-      if: (failure() || steps.spelling.outputs.followup == 'collapse_previous_comment') && steps.spelling.outputs.internal_state_directory
-      uses: actions/upload-artifact@v3
-      with:
-        retention-days: 1
-        name: "check-spelling-comment-${{ github.run_id }}"
-        path: |
-          ${{ steps.spelling.outputs.internal_state_directory }}
+        spell_check_this: check-spelling/spell-check-this@prerelease
+        checkout: false
 
   comment:
-    name: Comment
+    name: Report
     runs-on: ubuntu-latest
     needs: spelling
     permissions:
       contents: write
       pull-requests: write
-    if: always() && (needs.spelling.result == 'failure' || needs.spelling.outputs.followup == 'collapse_previous_comment') && needs.spelling.outputs.internal_state_directory
+    if: (success() || failure()) && needs.spelling.outputs.followup
     steps:
     - name: checkout
       uses: actions/checkout@v3
-    - name: set up
-      run: |
-        mkdir /tmp/data
-    - name: retrieve-comment
-      uses: actions/download-artifact@v3
-      with:
-        name: "check-spelling-comment-${{ github.run_id }}"
-        path: /tmp/data
     - name: comment
       uses: ./
       with:
         experimental_apply_changes_via_bot: 1
-        custom_task: ${{ needs.spelling.outputs.result == 'collapse_previous_comment' && 'collapse_previous_comment' || 'comment' }}
-        internal_state_directory: /tmp/data
+        checkout: false
+        spell_check_this: check-spelling/spell-check-this@prerelease
+        task: ${{ needs.spelling.outputs.followup }}
 
   update:
     name: Update PR
     permissions:
-      actions: write
       contents: write
       pull-requests: write
     runs-on: ubuntu-latest
@@ -93,6 +79,9 @@ jobs:
         github.event.issue.pull_request &&
         contains(github.event.comment.body, '@check-spelling-bot apply')
       }}
+    concurrency:
+      group: spelling-update-${{ github.event.issue.number }}
+      cancel-in-progress: false
     steps:
     - name: checkout
       uses: actions/checkout@v3
@@ -100,3 +89,5 @@ jobs:
       uses: ./
       with:
         experimental_apply_changes_via_bot: 1
+        checkout: false
+        ssh_key: "${{ secrets.CHECK_SPELLING }}"

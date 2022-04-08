@@ -783,6 +783,9 @@ define_variables() {
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
     report_header="$report_header $INPUT_REPORT_TITLE_SUFFIX"
   fi
+  if [ -n "$INPUT_TASK" ] && [ "$INPUT_TASK" != 'spelling' ] && [ -z "$INPUT_CUSTOM_TASK" ]; then
+    INPUT_CUSTOM_TASK="$INPUT_TASK"
+  fi
 }
 
 sort_unique() {
