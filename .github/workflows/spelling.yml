@@ -45,6 +45,7 @@ jobs:
         post_comment: 0
         experimental_path: introspected
         unknown_word_limit: 2
+        checkout: false
 
     - name: store-comment
       if: (failure() || steps.spelling.outputs.followup == 'collapse_previous_comment') && steps.spelling.outputs.internal_state_directory
