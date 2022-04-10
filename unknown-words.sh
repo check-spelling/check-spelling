@@ -262,7 +262,8 @@ comment_task() {
   fi
   fewer_misspellings_canary=$(mktemp)
   quit_without_error=1
-  if [ -z "$patch_add" ]; then
+  get_has_errors
+  if [ -z "$has_errors" ] && [ -z "$patch_add" ]; then
     quit
   fi
   more_misspellings
@@ -776,6 +777,8 @@ define_variables() {
   output_variables=$(mktemp)
   instructions_preamble=$(mktemp)
 
+  warnings_list=$(echo "$INPUT_WARNINGS" | perl -pne 's/[^-a-z]+/|/g;s/^\||\|$//g')
+
   report_header="# @check-spelling-bot Report"
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
     report_header="$report_header $INPUT_REPORT_TITLE_SUFFIX"
@@ -966,7 +969,7 @@ get_project_files_deprecated() {
       else
         note=""
       fi
-      echo "::warning file=$example::deprecation: please rename '$2'$note to '$1' (deprecated-feature)" >> "$early_warnings"
+      echo "::error file=$example::deprecation: please rename '$2'$note to '$1' (deprecated-feature)" >> "$early_warnings"
     else
       append_to="$save_append_to"
     fi
@@ -1319,6 +1322,7 @@ run_spell_check() {
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
   cat "$more_warnings" >> "$warning_output"
   rm "$more_warnings"
+  WARNINGS_LIST="$warnings_list" perl -pi -e 'next if /\((?:$ENV{WARNINGS_LIST})\)$/; s{(^(?:.+):[\s]line\s(?:\d+),[\s]columns\s(?:\d+)-(?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}' "$warning_output"
   cat "$warning_output"
   echo "::set-output name=warnings::$warning_output" >> $output_variables
   end_group
@@ -1406,6 +1410,12 @@ get_action_log_overview() {
   echo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 }
 
+get_has_errors() {
+  if jq -r 'keys | .[]' "$counter_summary_file" | grep -E -v "$warnings_list" | grep -q .; then
+    has_errors=1
+  fi
+}
+
 get_action_log() {
   if [ -z "$action_log" ]; then
     if [ -s "$action_log_ref" ]; then
@@ -1444,7 +1454,7 @@ get_action_log() {
 spelling_warning() {
   OUTPUT="### :red_circle: $1
 "
-  spelling_body "$2" "$3"
+  spelling_body "$2" "$3" "$4"
   post_commit_comment
 }
 spelling_info() {
@@ -1455,7 +1465,7 @@ spelling_info() {
 
 $2"
   fi
-  spelling_body "$out" "$3"
+  spelling_body "$out" "" "$3"
   if [ -n "$VERBOSE" ]; then
     OUTPUT="#$report_header
 
@@ -1466,7 +1476,9 @@ $OUTPUT"
   fi
 }
 spelling_body() {
-  err="$2"
+  message="$1"
+  extra="$2"
+  err="$3"
   case "$GITHUB_EVENT_NAME" in
     pull_request|pull_request_target)
       details_note="See the [:open_file_folder: files]($(jq -r .pull_request.number "$GITHUB_EVENT_PATH")/files/) view or the [:scroll:action log]($(get_action_log)) for details.";;
@@ -1576,18 +1588,33 @@ spelling_body() {
       ' | strip_lead)"
     fi
     if [ -s "$counter_summary_file" ]; then
-      output_warnings="$(echo "
-        <details><summary>Warnings ($(grep -c ':' "$counter_summary_file"))</summary>
+      get_has_errors
+      if [ -n "$has_errors" ]; then
+        event_title='Errors'
+        event_icon=':x:'
+      else
+        event_title='Warnings'
+        event_icon=':information_source:'
+      fi
+      warnings_details="$(echo "
+        [$event_icon ${event_title}](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) | Count
+        -|-
+        $(jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file" | WARNINGS_LIST="$warnings_list" perl -pne 'next if /$ENV{WARNINGS_LIST}/; s/information_source/x/')
+
+        See [$event_icon Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) for more information.
+        " | strip_lead)"
+      if [ -n "$has_errors" ] && [ -z "$message" ]; then
+        message="$warnings_details"
+      else
+        output_warnings="$(echo "
+        <details><summary>$event_title ($(grep -c ':' "$counter_summary_file"))</summary>
 
         $details_note
 
-        [:information_source: Warnings](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) | Count
-        -|-
-        $(jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file")
-
-        See [:information_source: Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) for more information.
+        $warnings_details
         </details>
         " | strip_lead)"
+      fi
     fi
     if [ -n "$err" ]; then
       output_accept_script="$(echo "
@@ -1611,27 +1638,31 @@ spelling_body() {
     if offer_quote_reply; then
       output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
     fi
-    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$1$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_warnings$output_advice
+    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_warnings$output_advice
       " | perl -pne 's/^\s+$/\n/;'| uniq)
 }
 
 quit() {
   echo "::remove-matcher owner=check-spelling::"
-  case "$1" in
+  status="$1"
+  if ([ -z "$status" ] || [ "$status" -eq 0 ]) && [ -n "$has_errors" ]; then
+    status=1
+  fi
+  case "$status" in
     0) followup='';;
     1) followup='comment';;
     2) followup='debug';;
     3) followup='collapse_previous_comment';;
   esac
-  echo "::set-output name=result_code::$1"
+  echo "::set-output name=result_code::$status"
   echo "::set-output name=followup::$followup"
   echo "$followup" > "$data_dir/followup"
-  echo "result_code=$1" >> "$GITHUB_ENV"
+  echo "result_code=$status" >> "$GITHUB_ENV"
   cat $output_variables
   if to_boolean "$quit_without_error"; then
     exit
   fi
-  exit $1
+  exit $status
 }
 
 body_to_payload() {
@@ -2092,27 +2123,27 @@ more_misspellings() {
   instructions=$(
     make_instructions
   )
-  echo "$patch_add" | tr " " "\n" | grep . > "$tokens_file"
+  (echo "$patch_add" | tr " " "\n" | grep . || true) > "$tokens_file"
   unknown_count=$(cat "$tokens_file" | wc -l | strip_lead)
   title='Please review'
   begin_group "Unrecognized ($unknown_count)"
   echo "::set-output name=unknown_words::$tokens_file" >> $output_variables
-  unrecognized_words_title="Unrecognized words ($unknown_count)"
-  if [ "$unknown_count" -gt 10 ]; then
-    unknown_word_body="<details><summary>$unrecognized_words_title</summary>
+  if [ "$unknown_count" -eq 0 ]; then
+    unknown_word_body=''
+  else
+    unrecognized_words_title="Unrecognized words ($unknown_count)"
+    if [ "$unknown_count" -gt 10 ]; then
+      unknown_word_body="$n<details><summary>$unrecognized_words_title</summary>
 
 $B
 $(cat "$tokens_file")
 $B
 </details>"
-  else
-    unknown_word_body="#### $unrecognized_words_title$N$(cat "$tokens_file")"
+    else
+      unknown_word_body="$n#### $unrecognized_words_title$N$(cat "$tokens_file")"
+    fi
   fi
-  spelling_warning "$title" "
-$unknown_word_body
-
-$(remove_items)
-" "$instructions"
+  spelling_warning "$title" "$unknown_word_body" "$N$(remove_items)$n" "$instructions"
   end_group
   echo "$title"
   if [ -n "$comment_author_id" ]; then
