@@ -1241,7 +1241,7 @@ run_spell_check() {
   file_list=$(mktemp)
   (
     if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
-      COMPARE=$(cat "$GITHUB_EVENT_PATH" | jq -r '.compare // empty' 2>/dev/null)
+      COMPARE=$(jq -r '.compare // empty' "$GITHUB_EVENT_PATH" 2>/dev/null)
       if [ -n "$COMPARE" ]; then
         BEFORE=$(echo "$COMPARE" | perl -ne 'if (m{/compare/(.*)\.\.\.}) { print $1; } elsif (m{/commit/([0-9a-f]+)$}) { print "$1^"; };')
         BEFORE=$(call_curl \
@@ -1701,11 +1701,11 @@ set_comments_url() {
   sha="$3"
   case "$event" in
     issue_comment)
-      COMMENTS_URL=$(cat $file | jq -r '.issue.comments_url // empty');;
+      COMMENTS_URL=$(jq -r '.issue.comments_url // empty' "$file");;
     pull_request|pull_request_target|pull_request_review_comment)
-      COMMENTS_URL=$(cat $file | jq -r '.pull_request.comments_url // empty');;
+      COMMENTS_URL=$(jq -r '.pull_request.comments_url // empty' "$file");;
     push|commit_comment)
-      COMMENTS_URL=$(cat $file | jq -r '.repository.commits_url // empty' | perl -pne 's#\{/sha}#/'$sha'/comments#');;
+      COMMENTS_URL=$(jq -r '.repository.commits_url // empty' "$file" | perl -pne 's#\{/sha}#/'$sha'/comments#');;
   esac
 }
 
