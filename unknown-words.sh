@@ -125,7 +125,7 @@ load_env() {
   echo "$INPUTS" |
     grep -v "'" |
     jq -r 'keys[] as $k | "INPUT_\($k | ascii_upcase)='$q'\(.[$k])'$q$Q |
-    perl -pne 's{^}{export };s{\$}{\\\$}g' > "$input_variables"
+    perl -pne 'next unless m{^([^=]*)(=.*)}; my ($k, $v) = ($1, $2); $k = qq<export $k; [ -z "\$$k" ] && $k>; $v =~ s{\$}{\\\$}g;$_="$k$v;"' > "$input_variables"
   . "$input_variables"
 }
 
