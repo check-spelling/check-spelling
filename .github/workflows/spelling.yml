@@ -47,7 +47,7 @@ jobs:
 
     - name: store-comment
       if: failure() && steps.spelling.outputs.internal_state_directory
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         retention-days: 1
         name: "check-spelling-comment-${{ github.run_id }}"
@@ -69,7 +69,7 @@ jobs:
       run: |
         mkdir /tmp/data
     - name: retrieve-comment
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: "check-spelling-comment-${{ github.run_id }}"
         path: /tmp/data
