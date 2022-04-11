@@ -3,7 +3,6 @@ gsutil
 http
 jsoref
 png
-spellchecking
 ssh
 svg
 timeframe

@@ -19,7 +19,6 @@ metadata
 mktemp
 nektos
 perl
-pid
 PIPESTATUS
 pne
 rawfile
