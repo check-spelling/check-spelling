@@ -34,7 +34,7 @@ jobs:
         ./Build build
         cover -test
     - name: store-coverage
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         retention-days: 1
         name: "check-spelling-coverage-${{ github.run_id }}"
