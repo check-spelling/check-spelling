@@ -77,7 +77,6 @@ inputs:
       cspell:aws/aws.txt
       cspell:bash/bash-words.txt
       cspell:companies/companies.txt
-      cspell:cpp/cpp.txt
       cspell:csharp/csharp.txt
       cspell:css/css.txt
       cspell:django/django.txt
