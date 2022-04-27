@@ -64,7 +64,7 @@ inputs:
   dictionary_source_prefixes:
     description: 'JSON map of prefixes for dictionary urls'
     required: false
-    default: '{"cspell": "https://raw.githubusercontent.com/check-spelling/cspell-dicts/HEAD/dictionaries/"}'
+    default: '{"cspell": "https://raw.githubusercontent.com/check-spelling/cspell-dicts/v20220427/dictionaries/"}'
   extra_dictionaries:
     description: 'Space delimited list of URLs (or `prefix:`+path) to additional word lists'
     required: false
