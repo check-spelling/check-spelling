@@ -381,7 +381,7 @@ react_comment_and_die() {
     comment "$COMMENTS_URL" "$PAYLOAD" > /dev/null || res=$?
     if [ $res -gt 0 ]; then
       if ! to_boolean "$DEBUG"; then
-        echo "failed posting to $COMMENTS_URL"
+        echo "::error ::Failed posting to $COMMENTS_URL"
         cat "$PAYLOAD"
       fi
       return $res
@@ -1846,7 +1846,7 @@ post_commit_comment() {
         keep_headers=1 comment "$COMMENTS_URL" "$PAYLOAD" > "$response"
         if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] 2> /dev/null; then
           if ! to_boolean "$DEBUG"; then
-            echo "failed posting to $COMMENTS_URL"
+            echo "::error ::Failed posting to $COMMENTS_URL"
             cat "$PAYLOAD"
             echo " -- response -- "
             echo "Response code: $response_code"
