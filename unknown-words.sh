@@ -1983,7 +1983,10 @@ should_collapse_previous_and_not_comment() {
 }
 
 exit_if_no_unknown_words() {
-  if [ ! -s "$run_output" ]; then
+  if [ -s "$counter_summary_file" ]; then
+    get_has_errors
+  fi
+  if [ -z "$has_errors" ] && [ ! -s "$run_output" ]; then
     should_collapse_previous_and_not_comment
     quit 0
   fi
@@ -2009,6 +2012,7 @@ compare_new_output() {
 }
 
 generate_curl_instructions() {
+  has_instructions_canary=$(mktemp)
   instructions=$(mktemp)
   (
     echo 'update_files() {'
@@ -2024,25 +2028,34 @@ generate_curl_instructions() {
         should_exclude_patterns='$should_exclude_patterns'
       fi
       generated=$(generate_instructions)
-      cat $generated
-      rm $generated
+      if [ -s "$generated" ]; then
+        cat "$generated"
+      else
+        rm "$has_instructions_canary"
+      fi
+      rm "$generated"
     )
     echo '}'
-  ) >> $instructions
-  echo '
-    comment_json=$(mktemp)
-    curl -L -s -S \
-      -H "Content-Type: application/json" \
-      "COMMENT_URL" > "$comment_json"
-    comment_body=$(mktemp)
-    jq -r ".body // empty" "$comment_json" > $comment_body
-    rm $comment_json
-    '"$(patch_variables $Q'$comment_body'$Q)"'
-    update_files
-    rm $comment_body
-    git add -u
-    ' | sed -e 's/^    //' >> $instructions
-  echo $instructions
+  ) >> "$instructions"
+  if [ -e "$has_instructions_canary" ]; then
+    echo '
+      comment_json=$(mktemp)
+      curl -L -s -S \
+        -H "Content-Type: application/json" \
+        "COMMENT_URL" > "$comment_json"
+      comment_body=$(mktemp)
+      jq -r ".body // empty" "$comment_json" > $comment_body
+      rm $comment_json
+      '"$(patch_variables $Q'$comment_body'$Q)"'
+      update_files
+      rm $comment_body
+      git add -u
+      ' | sed -e 's/^    //' >> "$instructions"
+    echo "$instructions"
+    rm "$has_instructions_canary"
+  else
+    rm "$instructions"
+  fi
 }
 
 skip_curl() {
