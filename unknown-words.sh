@@ -2074,17 +2074,16 @@ make_instructions() {
   else
     instructions=$(generate_curl_instructions)
   fi
-  cat $instructions
-  rm $instructions
+  if [ -n "$instructions" ]; then
+    cat $instructions
+    rm $instructions
+  fi
 }
 
 fewer_misspellings() {
   begin_group 'Fewer misspellings'
   title='There are now fewer misspellings than before'
   SKIP_CURL=1
-  instructions=$(
-    make_instructions
-  )
   if [ -n "$INPUT_EXPERIMENTAL_COMMIT_NOTE" ]; then
     skip_push_and_pop=1
 
@@ -2103,6 +2102,9 @@ fewer_misspellings() {
     git push origin ${GITHUB_HEAD_REF:-$GITHUB_REF}
     spelling_info "$title" "" "Applied"
   else
+    instructions=$(
+      make_instructions
+    )
     spelling_info "$title" "" "$instructions"
   fi
   end_group
