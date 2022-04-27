@@ -1028,6 +1028,14 @@ set_up_tools() {
   curl_ua="check-spelling/$(cat $spellchecker/version); $(curl --version|perl -ne '$/=undef; <>; s/\n.*//;s{ }{/};s/ .*//;print')"
 }
 
+curl_auth() {
+  if [ -z "$no_curl_auth" ]; then
+    echo "$AUTHORIZATION_HEADER"
+  else
+    echo 'X-No-Authorization: Sorry About That'
+  fi
+}
+
 call_curl() {
   curl_attempt=0
   response_headers=$(mktemp)
@@ -1035,7 +1043,7 @@ call_curl() {
   until [ "$curl_attempt" -ge 3 ]
   do
     response_code=$(
-      curl -D "$response_headers" -w "%{http_code}" -A "$curl_ua" -s -H "$AUTHORIZATION_HEADER" "$@" -o "$response_body"
+      curl -D "$response_headers" -w "%{http_code}" -A "$curl_ua" -s -H "$(curl_auth)" "$@" -o "$response_body"
     )
     if [ "$response_code" -ne 429 ]; then
       cat "$response_body"
@@ -1079,18 +1087,35 @@ build_dictionary_alias_pattern() {
 
 get_extra_dictionaries() {
   extra_dictionaries="$(echo "$1" | words_to_lines)"
-  if [ -n "$extra_dictionaries" ]; then
-    extra_dictionaries="$(
-      echo "$extra_dictionaries" |
-      perl -pne "$dictionary_alias_pattern; s<(^https://(?:raw\.githubusercontent\.com)/)><-H '$AUTHORIZATION_HEADER' \$1>; s{^}{-O }"
-    )"
-  fi
+  extra_dictionaries_canary=$(mktemp)
   extra_dictionaries_dir=$(mktemp -d)
-  (
-    cd $extra_dictionaries_dir
-    echo "$extra_dictionaries" | xargs curl -A "$curl_ua" -s
-  )
-  echo "$extra_dictionaries_dir"
+  response_headers=$(mktemp)
+  if [ -n "$extra_dictionaries" ]; then
+    for extra_dictionary in $extra_dictionaries; do
+    (
+      url=$(echo "$extra_dictionary" | perl -pne "$dictionary_alias_pattern")
+      if [ "$url" = "${url#https://raw.githubusercontent.com/*}" ]; then
+        no_curl_auth=1
+      fi
+      dest=$(basename "$url")
+      keep_headers=1 call_curl $url > "$extra_dictionaries_dir/$dest"
+      if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] 2> /dev/null; then
+        (
+          echo "::error ::Failed to retrieve $extra_dictionary -- $url"
+          cat "$response_headers"
+        ) >&2
+        rm -f "$extra_dictionaries_canary"
+      fi
+    )
+    done
+  fi
+  rm -f "$response_headers"
+  if [ -e "$extra_dictionaries_canary" ]; then
+    rm "$extra_dictionaries_canary"
+    echo "$extra_dictionaries_dir"
+  else
+    echo 'fail'
+  fi
 }
 
 set_up_reporter() {
@@ -1188,9 +1213,13 @@ set_up_files() {
       eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
     fi
     if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
+      begin_group 'Extra dictionaries'
       build_dictionary_alias_pattern
       extra_dictionaries_dir=$(get_extra_dictionaries "$INPUT_EXTRA_DICTIONARIES")
       if [ -n "$extra_dictionaries_dir" ]; then
+        if [ "$extra_dictionaries_dir" = fail ]; then
+          quit 4
+        fi
         (
           cd "$extra_dictionaries_dir"
           # Items that aren't proper should be moved to patterns instead
@@ -1198,8 +1227,10 @@ set_up_files() {
         )
         rm -rf "$extra_dictionaries_dir"
       fi
+      end_group
     fi
     if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
+      begin_group 'Check extra dictionaries'
       build_dictionary_alias_pattern
       check_extra_dictionaries="$(
         echo "$INPUT_EXTRA_DICTIONARIES $INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" |
@@ -1209,7 +1240,11 @@ set_up_files() {
       )"
       if [ -n "$check_extra_dictionaries" ]; then
         export check_extra_dictionaries_dir=$(get_extra_dictionaries "$check_extra_dictionaries")
+        if [ "$check_extra_dictionaries_dir" = 'fail' ]; then
+          check_extra_dictionaries_dir=
+        fi
       fi
+      end_group
     fi
     get_project_files dictionary_additions.words $allow_path
     get_project_files allow.txt $allow_path
