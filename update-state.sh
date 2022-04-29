@@ -68,7 +68,7 @@ generate_instructions() {
   fi
   calculate_exclude_patterns
   if [ -n "$should_exclude_patterns" ]; then
-    echo "(cat $q$excludes_file$q - <<EOF
+    echo "(cat $q$excludes_file$q - 2> /dev/null <<EOF
     $should_exclude_patterns
     EOF
     ) |grep .|
