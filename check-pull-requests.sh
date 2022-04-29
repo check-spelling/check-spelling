@@ -114,7 +114,7 @@ end_group
 
 for a in $(cat "$escaped"); do
   echo "$a" | base64 --decode | jq -r . > $pull
-  url=$(cat $pull | jq -r .commits_url | perl -pne 's{://api.github.com/repos/(.*/pull)s}{://github.com/$1}')
+  url=$(cat $pull | jq -r .commits_url | perl -pe 's{://api.github.com/repos/(.*/pull)s}{://github.com/$1}')
   issue_url=$(cat $pull | jq -r .issue_url)
   begin_group "Considering $url"
   created_at=$(cat $pull | jq -r '.updated_at // .created_at')

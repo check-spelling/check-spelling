@@ -6,7 +6,6 @@ http
 json
 oid
 perl
-pne
 rsync
 spellchecker
 timeframe

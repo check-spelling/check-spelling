@@ -31,7 +31,6 @@ nektos
 noreply
 perl
 PIPESTATUS
-pne
 pwd
 quotemeta
 rawfile

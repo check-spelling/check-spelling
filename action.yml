@@ -248,7 +248,7 @@ runs:
         DEBUG: ${{ inputs.debug }}
         spellchecker: ${{ github.action_path }}
       run:
-        spellchecker=$(echo $spellchecker| perl -pne 's{/$}{}')
+        spellchecker=$(echo $spellchecker| perl -pe 's{/$}{}')
         $spellchecker/unknown-words.sh
       shell: bash
     - name: store-comment
