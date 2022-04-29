@@ -113,7 +113,7 @@ dispatcher() {
               event_aliases: {$Q$GITHUB_EVENT_NAME$Q:${Q}supported_event_name${Q}}
 
           Future versions may support this feature." \
-        | perl -pne 's/^ {10}//'
+        | perl -pe 's/^ {10}//'
       ) >&2
       exit 1
       ;;
@@ -125,7 +125,7 @@ load_env() {
   echo "$INPUTS" |
     grep -v "'" |
     jq -r 'keys[] as $k | "INPUT_\($k | ascii_upcase)='$q'\(.[$k])'$q$Q |
-    perl -pne 'next unless m{^([^=]*)(=.*)}; my ($k, $v) = ($1, $2); $k = qq<export $k; [ -z "\$$k" ] && $k>; $v =~ s{\$}{\\\$}g;$_="$k$v;"' > "$input_variables"
+    perl -pe 'next unless m{^([^=]*)(=.*)}; my ($k, $v) = ($1, $2); $k = qq<export $k; [ -z "\$$k" ] && $k>; $v =~ s{\$}{\\\$}g;$_="$k$v;"' > "$input_variables"
   . "$input_variables"
 }
 
@@ -437,7 +437,7 @@ mktemp_json() {
 
 show_github_actions_push_disclaimer() {
   pr_number=$(jq -r '.issue.number' "$GITHUB_EVENT_PATH")
-  pr_path_escaped=$(echo "$GITHUB_REPOSITORY/pull/$pr_number" | perl -pne 's{/}{\%2F}g')
+  pr_path_escaped=$(echo "$GITHUB_REPOSITORY/pull/$pr_number" | perl -pe 's{/}{\%2F}g')
   pr_query=$(echo '{
       repository(owner:"'${GITHUB_REPOSITORY%/*}'", name:"'${GITHUB_REPOSITORY#*/}'") {
         pullRequest(number:'$pr_number') {
@@ -550,7 +550,7 @@ handle_comment() {
   react_prefix="$react_prefix_base"
   if [ "$sender_login" != "$issue_user_login" ]; then
     collaborators_url=$(jq -r '.repository.collaborators_url // empty' "$GITHUB_EVENT_PATH")
-    collaborators_url=$(echo "$collaborators_url" | perl -pne "s<\{/collaborator\}></$sender_login/permission>")
+    collaborators_url=$(echo "$collaborators_url" | perl -pe "s<\{/collaborator\}></$sender_login/permission>")
     collaborator_permission=$(collaborator "$collaborators_url" | jq -r '.permission // empty')
     case $collaborator_permission in
       admin)
@@ -578,9 +578,9 @@ handle_comment() {
   git checkout "$pull_request_sha"
 
   number_filter() {
-    perl -pne 's<\{.*\}></(\\d+)>'
+    perl -pe 's<\{.*\}></(\\d+)>'
   }
-  export pull_request_base=$(jq -r '.comment.html_url' "$GITHUB_EVENT_PATH" | perl -pne 's/\d+$/(\\d+)/')
+  export pull_request_base=$(jq -r '.comment.html_url' "$GITHUB_EVENT_PATH" | perl -pe 's/\d+$/(\\d+)/')
   comments_base=$(jq -r '.repository.comments_url // empty' "$GITHUB_EVENT_PATH" | number_filter)
   export issue_comments_base=$(jq -r '.repository.issue_comment_url // empty' "$GITHUB_EVENT_PATH" | number_filter)
   export comments_url="$pull_request_base|$comments_base|$issue_comments_base"
@@ -741,7 +741,7 @@ define_variables() {
   if ! [ "$job_count" -eq "$job_count" ] 2>/dev/null || [ "$job_count" -lt 2 ]; then
     job_count=1
   fi
-  extra_dictionary_limit=$(echo "${INPUT_EXTRA_DICTIONARY_LIMIT}" | perl -pne 's/\D+//g')
+  extra_dictionary_limit=$(echo "${INPUT_EXTRA_DICTIONARY_LIMIT}" | perl -pe 's/\D+//g')
   if [ -z "$extra_dictionary_limit" ]; then
     extra_dictionary_limit=5
   fi
@@ -777,7 +777,7 @@ define_variables() {
   output_variables=$(mktemp)
   instructions_preamble=$(mktemp)
 
-  warnings_list=$(echo "$INPUT_WARNINGS" | perl -pne 's/[^-a-z]+/|/g;s/^\||\|$//g')
+  warnings_list=$(echo "$INPUT_WARNINGS" | perl -pe 's/[^-a-z]+/|/g;s/^\||\|$//g')
 
   report_header="# @check-spelling-bot Report"
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
@@ -942,7 +942,7 @@ get_project_files() {
         (
           echo "Retrieving $file from $from"
           cd $temp
-          repo=$(echo "$bucket" | perl -pne 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')
+          repo=$(echo "$bucket" | perl -pe 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')
           [ -d metadata ] || git clone --depth 1 $repo --single-branch --branch $project metadata
           cleanup_file "metadata/$file.txt" "$type"
           cp metadata/$file.txt $dest 2> /dev/null || touch $dest
@@ -1093,7 +1093,7 @@ get_extra_dictionaries() {
   if [ -n "$extra_dictionaries" ]; then
     for extra_dictionary in $extra_dictionaries; do
     (
-      url=$(echo "$extra_dictionary" | perl -pne "$dictionary_alias_pattern")
+      url=$(echo "$extra_dictionary" | perl -pe "$dictionary_alias_pattern")
       if [ "$url" = "${url#https://raw.githubusercontent.com/*}" ]; then
         no_curl_auth=1
       fi
@@ -1554,10 +1554,10 @@ spelling_body() {
       remote_url_ssh=$(git remote get-url --push origin 2>/dev/null || true)
     fi
     if [ -z "$remote_url_https" ]; then
-      remote_url_https=$(echo "$remote_url_ssh" | perl -pne 's{(?:git\@|^)github\.com:}{https://github.com/}')
+      remote_url_https=$(echo "$remote_url_ssh" | perl -pe 's{(?:git\@|^)github\.com:}{https://github.com/}')
     fi
     if [ -z "$remote_ref" ]; then
-      remote_ref=$(perl -pne 's{^ref: }{}' .git/HEAD)
+      remote_ref=$(perl -pe 's{^ref: }{}' .git/HEAD)
     fi
     remote_ref=${remote_ref#refs/heads/}
     if [ -s "$extra_dictionaries_cover_entries" ]; then
@@ -1584,7 +1584,7 @@ spelling_body() {
               with:
                 extra_dictionaries:$n$(
           cat "$extra_dictionaries_cover_entries_limited" |
-          perl -pne 's/\s.*//;s/^/                  /;s{\[(.*)\]\(.*}{$1}'
+          perl -pe 's/\s.*//;s/^/                  /;s{\[(.*)\]\(.*}{$1}'
         )
         $B
         To stop checking additional dictionaries, add:
@@ -1594,7 +1594,7 @@ spelling_body() {
         $B
 
         </details>
-        " | perl -pne 's/^ {8}//')"
+        " | perl -pe 's/^ {8}//')"
     fi
     if [ -s "$should_exclude_file" ]; then
       calculate_exclude_patterns
@@ -1606,7 +1606,7 @@ spelling_body() {
         $B
         $should_exclude_patterns
         $B"| strip_lead)"
-      if [ $(wc -l "$should_exclude_file" |perl -pne 's/(\d+)\s+.*/$1/') -gt 10 ]; then
+      if [ $(wc -l "$should_exclude_file" |perl -pe 's/(\d+)\s+.*/$1/') -gt 10 ]; then
         output_excludes_large="$(echo "
           "'You should consider excluding directory paths (e.g. `(?:^|/)vendor/`), filenames (e.g. `(?:^|/)yarn\.lock$`), or file extensions (e.g. `\.gz$`)
           '| strip_lead)"
@@ -1637,7 +1637,7 @@ spelling_body() {
       warnings_details="$(echo "
         [$event_icon ${event_title}](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) | Count
         -|-
-        $(jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file" | WARNINGS_LIST="$warnings_list" perl -pne 'next if /$ENV{WARNINGS_LIST}/; s/information_source/x/')
+        $(jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file" | WARNINGS_LIST="$warnings_list" perl -pe 'next if /$ENV{WARNINGS_LIST}/; s/information_source/x/')
 
         See [$event_icon Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) for more information.
         " | strip_lead)"
@@ -1677,7 +1677,7 @@ spelling_body() {
       output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
     fi
     OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_warnings$output_advice
-      " | perl -pne 's/^\s+$/\n/;'| uniq)
+      " | perl -pe 's/^\s+$/\n/;'| uniq)
 }
 
 quit() {
@@ -1804,7 +1804,7 @@ set_comments_url() {
     pull_request|pull_request_target|pull_request_review_comment)
       COMMENTS_URL=$(jq -r '.pull_request.comments_url // empty' "$file");;
     push|commit_comment)
-      COMMENTS_URL=$(jq -r '.repository.commits_url // empty' "$file" | perl -pne 's#\{/sha}#/'$sha'/comments#');;
+      COMMENTS_URL=$(jq -r '.repository.commits_url // empty' "$file" | perl -pe 's#\{/sha}#/'$sha'/comments#');;
   esac
 }
 
@@ -2152,7 +2152,7 @@ fewer_misspellings() {
 more_misspellings() {
   if [ -s "$extra_dictionaries_json" ]; then
     build_dictionary_alias_pattern
-    jq -r '.[]|keys[] as $k | "\($k)<\($k)> (\(.[$k][1])) covers \(.[$k][0]) of them"' $extra_dictionaries_json | perl -pne "$dictionary_alias_pattern"'s{^([^<]*)<([^>]*)>}{[$2]($1)};' > "$extra_dictionaries_cover_entries"
+    jq -r '.[]|keys[] as $k | "\($k)<\($k)> (\(.[$k][1])) covers \(.[$k][0]) of them"' $extra_dictionaries_json | perl -pe "$dictionary_alias_pattern"'s{^([^<]*)<([^>]*)>}{[$2]($1)};' > "$extra_dictionaries_cover_entries"
   elif [ -z "$INPUT_CUSTOM_TASK" ]; then
     if [ ! -s "$extra_dictionaries_json" ]; then
       if [ -n "$check_extra_dictionaries_dir" ]; then
@@ -2161,14 +2161,14 @@ more_misspellings() {
           cd "$check_extra_dictionaries_dir";
           aliases="$dictionary_alias_pattern" extra_dictionaries="$check_extra_dictionaries" $spellchecker/dictionary-coverage.pl "$run_output" |
           sort -nr |
-          perl -pne 's/^\d+ //' > "$extra_dictionaries_cover_entries"
+          perl -pe 's/^\d+ //' > "$extra_dictionaries_cover_entries"
         )
         end_group
       fi
     fi
   fi
   if [ -s "$extra_dictionaries_cover_entries" ]; then
-    perl -pne 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
+    perl -pe 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
     jq -s '.' > $extra_dictionaries_json
     echo "::set-output name=suggested_dictionaries::$extra_dictionaries_json" >> $output_variables
   fi
