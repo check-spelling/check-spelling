@@ -2079,7 +2079,7 @@ generate_curl_instructions() {
         -H "Content-Type: application/json" \
         "COMMENT_URL" > "$comment_json"
       comment_body=$(mktemp)
-      jq -r ".body // empty" "$comment_json" > $comment_body
+      jq -r ".body // empty" "$comment_json" | tr -d "\\r" > $comment_body
       rm $comment_json
       '"$(patch_variables $Q'$comment_body'$Q)"'
       update_files
