@@ -238,7 +238,7 @@ runs:
       if: inputs.task && inputs.task != 'spelling'
       uses: actions/download-artifact@v3
       with:
-        name: "check-spelling-comment-${{ github.run_id }}"
+        name: "check-spelling-comment"
         path: /tmp/data
     - name: check-spelling
       id: spelling
@@ -260,6 +260,6 @@ runs:
       uses: actions/upload-artifact@v3
       with:
         retention-days: 1
-        name: "check-spelling-comment-${{ github.run_id }}"
+        name: "check-spelling-comment"
         path: |
           ${{ steps.spelling.outputs.internal_state_directory }}
