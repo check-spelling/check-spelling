@@ -1080,7 +1080,7 @@ $header"
       remote_ref=$GITHUB_REF
     fi
     if [ -z "$remote_url_ssh" ]; then
-      remote_url_ssh=$(git remote get-url --push origin)
+      remote_url_ssh=$(git remote get-url --push origin 2>/dev/null || true)
     fi
     if [ -z "$remote_url_https" ]; then
       remote_url_https=$(echo "$remote_url_ssh" | perl -pne 's{(?:git\@|^)github\.com:}{https://github.com/}')
