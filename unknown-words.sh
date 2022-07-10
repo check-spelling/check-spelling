@@ -17,10 +17,8 @@ dispatcher() {
   if [ -n "$INPUT_EVENT_ALIASES" ]; then
     GITHUB_EVENT_NAME=$(echo "$INPUT_EVENT_ALIASES" | jq -r ".$GITHUB_EVENT_NAME // \"$GITHUB_EVENT_NAME\"")
   fi
-  if [ -n "$CUSTOM_TASK" ]; then
-    INPUT_CUSTOM_TASK=${INPUT_CUSTOM_TASK:-$CUSTOM_TASK}
-  fi
-  case "$INPUT_CUSTOM_TASK" in
+  INPUT_TASK=${INPUT_TASK:-$INPUT_CUSTOM_TASK}
+  case "$INPUT_TASK" in
     comment|collapse_previous_comment)
       comment_task
     ;;
@@ -76,8 +74,14 @@ dispatcher() {
           exit 0
         fi
       fi
+      if [ -z "$INPUT_TASK" ]; then
+        INPUT_TASK=spelling
+      fi
       ;;
     pull_request|pull_request_target)
+      if [ -z "$INPUT_TASK" ]; then
+        INPUT_TASK=spelling
+      fi
       ;;
     schedule)
       exec "$spellchecker/check-pull-requests.sh"
@@ -85,6 +89,9 @@ dispatcher() {
     issue_comment)
       if to_boolean "$DEBUG"; then
         set -x
+      fi
+      if [ -z "$INPUT_TASK" ]; then
+        INPUT_TASK=update
       fi
       handle_comment
       ;;
@@ -783,9 +790,7 @@ define_variables() {
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
     report_header="$report_header $INPUT_REPORT_TITLE_SUFFIX"
   fi
-  if [ -n "$INPUT_TASK" ] && [ "$INPUT_TASK" != 'spelling' ] && [ -z "$INPUT_CUSTOM_TASK" ]; then
-    INPUT_CUSTOM_TASK="$INPUT_TASK"
-  fi
+  INPUT_TASK="${INPUT_TASK:-$INPUT_CUSTOM_TASK}"
 }
 
 sort_unique() {
@@ -1176,7 +1181,7 @@ set_up_files() {
   fi
   should_exclude_file=$data_dir/should_exclude.txt
   counter_summary_file=$data_dir/counter_summary.json
-  if [ -z "$INPUT_CUSTOM_TASK" ]; then
+  if [ "$INPUT_TASK" = 'spelling' ]; then
     get_project_files dictionary.words $dictionary_path
     get_project_files dictionary.txt $dictionary_path
     if [ -s "$dictionary_path" ]; then
@@ -2153,7 +2158,7 @@ more_misspellings() {
   if [ -s "$extra_dictionaries_json" ]; then
     build_dictionary_alias_pattern
     jq -r '.[]|keys[] as $k | "\($k)<\($k)> (\(.[$k][1])) covers \(.[$k][0]) of them"' $extra_dictionaries_json | perl -pe "$dictionary_alias_pattern"'s{^([^<]*)<([^>]*)>}{[$2]($1)};' > "$extra_dictionaries_cover_entries"
-  elif [ -z "$INPUT_CUSTOM_TASK" ]; then
+  elif [ -z "$INPUT_TASK" ] || [ "$INPUT_TASK" = 'spelling' ]; then
     if [ ! -s "$extra_dictionaries_json" ]; then
       if [ -n "$check_extra_dictionaries_dir" ]; then
         begin_group 'Check for extra dictionaries'
