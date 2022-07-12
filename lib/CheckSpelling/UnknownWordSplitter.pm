@@ -156,14 +156,14 @@ sub split_file {
     next unless /./;
     my $raw_line = $_;
     # hook for custom line based text exclusions:
-    s/($patterns_re)/" "x length($1)/ge;
+    s/($patterns_re)/"="x length($1)/ge;
     my $previous_line_state = $_;
-    while (s/($forbidden_re)/" "x length($1)/e) {
+    while (s/($forbidden_re)/"="x length($1)/e) {
       my ($begin, $end, $match) = ($-[0] + 1, $+[0], $1);
       my $found_trigger_re;
       for my $forbidden_re_singleton (@forbidden_re_list) {
         my $test_line = $previous_line_state;
-        if ($test_line =~ s/($forbidden_re_singleton)/" "x length($1)/e) {
+        if ($test_line =~ s/($forbidden_re_singleton)/"="x length($1)/e) {
           next unless $test_line eq $_;
           my ($begin_test, $end_test, $match_test) = ($-[0] + 1, $+[0], $1);
           next unless $begin == $begin_test;
