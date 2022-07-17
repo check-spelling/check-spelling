@@ -1709,7 +1709,7 @@ quit() {
   echo "$followup" > "$data_dir/followup"
   echo "result_code=$status" >> "$GITHUB_ENV"
   cat $output_variables
-  if ls "$data_dir" | grep -q .; then
+  if ls "$data_dir" 2> /dev/null | grep -q .; then
     artifact=$(mktemp)
     (
       cd "$data_dir"
