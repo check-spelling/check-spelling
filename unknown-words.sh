@@ -732,6 +732,13 @@ define_variables() {
   export early_warnings=$(mktemp)
   if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ]; then
     data_dir="$INPUT_INTERNAL_STATE_DIRECTORY"
+    if [ -e "$data_dir/artifact.zip" ]; then
+      (
+        cd "$data_dir"
+        unzip -q 'artifact.zip'
+        rm artifact.zip
+      )
+    fi
   else
     data_dir=$(mktemp -d)
   fi
@@ -1702,6 +1709,15 @@ quit() {
   echo "$followup" > "$data_dir/followup"
   echo "result_code=$status" >> "$GITHUB_ENV"
   cat $output_variables
+  if ls "$data_dir" | grep -q .; then
+    artifact=$(mktemp)
+    (
+      cd "$data_dir"
+      zip -q "$artifact.zip" *
+      rm *
+      mv "$artifact.zip" 'artifact.zip'
+    )
+  fi
   if to_boolean "$quit_without_error"; then
     exit
   fi
