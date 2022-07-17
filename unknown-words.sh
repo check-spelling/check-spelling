@@ -2043,6 +2043,7 @@ compare_new_output() {
 
 generate_curl_instructions() {
   has_instructions_canary=$(mktemp)
+  calculate_exclude_patterns
   instructions=$(mktemp)
   (
     echo 'update_files() {'
@@ -2134,6 +2135,7 @@ fewer_misspellings() {
     (
       patch_add=1
       patch_remove=1
+      should_exclude_patterns=1
       patch_variables $comment_body > $instructions_head
     )
     . $instructions_head

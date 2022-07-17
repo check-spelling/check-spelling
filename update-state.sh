@@ -19,7 +19,7 @@ path_to_pattern() {
   perl -pe 's/^/^\\Q/;s/$/\\E\$/'
 }
 calculate_exclude_patterns() {
-  if [ -z "$should_exclude_patterns" ] && [ -s  "$should_exclude_file" ]; then
+  if [ -z "$should_exclude_patterns" ] && [ -s "$should_exclude_file" ]; then
     should_exclude_patterns=$(sort "$should_exclude_file" | path_to_pattern)
   fi
 }
@@ -66,7 +66,6 @@ generate_instructions() {
     '$q |
     strip_lead >> $instructions
   fi
-  calculate_exclude_patterns
   if [ -n "$should_exclude_patterns" ]; then
     echo "(cat $q$excludes_file$q - 2> /dev/null <<EOF
     $should_exclude_patterns
