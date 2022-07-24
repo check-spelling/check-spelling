@@ -1,5 +1,5 @@
 name: 'Check Spelling'
-description: 'Spell check commits'
+description: 'Spell check code and commits'
 author: 'jsoref'
 branding:
   icon: 'edit-3'
@@ -147,6 +147,10 @@ inputs:
     description: 'Spell check file paths'
     required: false
     default: ''
+  check_commit_messages:
+    description: 'List of extra text to check (latest `commit` message, messages for pending `commits`, PR `title`, PR `description`)'
+    required: false
+    default: ''
   anonymize_secpoll_source:
     description: 'Perform secpoll queries via a public dns server'
     required: false
@@ -227,6 +231,7 @@ runs:
       with:
         path: ${{ inputs.experimental_path }}
         ssh-key: ${{ inputs.ssh_key }}
+        fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
     - name: checkout-merge
       if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task)
       uses: check-spelling/checkout-merge@v0.0.0

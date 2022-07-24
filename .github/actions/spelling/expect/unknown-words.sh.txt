@@ -41,6 +41,7 @@ regex
 spellchecker
 ssh
 uname
+unshallow
 upcase
 url
 vnd
