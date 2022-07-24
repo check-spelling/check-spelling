@@ -1341,6 +1341,9 @@ run_spell_check() {
   echo "::set-output name=internal_state_directory::$data_dir" >> $output_variables
 
   begin_group 'Spell check files'
+  synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
+  mkdir -p "$synthetic_base"
+
   file_list=$(mktemp)
   (
     if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
@@ -1357,8 +1360,8 @@ run_spell_check() {
   ) |\
     "$spellchecker/exclude.pl" > "$file_list"
   if to_boolean "$INPUT_CHECK_FILE_NAMES"; then
-    check_file_names="$spellchecker/paths-of-checked-files.txt"
     if [ -s "$file_list" ]; then
+      check_file_names="$synthetic_base/paths-of-checked-files.txt"
       cat "$file_list" | tr "\0" "\n" > "$check_file_names"
       append_file_to_file_list "$check_file_names"
     fi
