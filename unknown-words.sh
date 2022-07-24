@@ -1320,6 +1320,19 @@ welcome() {
   fi
 }
 
+get_before() {
+  if [ -z "$BEFORE" ]; then
+    COMPARE=$(jq -r '.compare // empty' "$GITHUB_EVENT_PATH" 2>/dev/null)
+    if [ -n "$COMPARE" ]; then
+      BEFORE="$(echo "$COMPARE" | perl -ne 'if (m{/compare/(.*)\.\.\.}) { print $1; } elsif (m{/commit/([0-9a-f]+)$}) { print "$1^"; };')"
+      BEFORE="$(call_curl \
+        "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$BEFORE" | jq -r '.sha // empty')"
+    elif [ -n "$GITHUB_BASE_REF" ]; then
+      BEFORE="$GITHUB_BASE_REF"
+    fi
+  fi
+}
+
 run_spell_check() {
   echo "::set-output name=internal_state_directory::$data_dir" >> $output_variables
 
@@ -1327,14 +1340,7 @@ run_spell_check() {
   file_list=$(mktemp)
   (
     if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
-      COMPARE=$(jq -r '.compare // empty' "$GITHUB_EVENT_PATH" 2>/dev/null)
-      if [ -n "$COMPARE" ]; then
-        BEFORE=$(echo "$COMPARE" | perl -ne 'if (m{/compare/(.*)\.\.\.}) { print $1; } elsif (m{/commit/([0-9a-f]+)$}) { print "$1^"; };')
-        BEFORE=$(call_curl \
-          "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$BEFORE" | jq -r '.sha // empty')
-      elif [ -n "$GITHUB_BASE_REF" ]; then
-        BEFORE=$GITHUB_BASE_REF
-      fi
+      get_before
     fi
     if [ -n "$BEFORE" ]; then
       echo "Only checking files changed from $BEFORE" >&2
