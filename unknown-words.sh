@@ -1463,6 +1463,9 @@ run_spell_check() {
   fi
   count=$(perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print $count;' $file_list)
   echo "Checking $count files"
+  if [ -n "$DEBUG" ]; then
+    get_file_list
+  fi
   end_group
   queue_size=$(($count / $job_count / 4))
   if [ $queue_size -lt 4 ]; then
