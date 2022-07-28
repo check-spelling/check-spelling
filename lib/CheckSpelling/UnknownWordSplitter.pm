@@ -18,9 +18,10 @@ use File::Temp qw/ tempfile tempdir /;
 use CheckSpelling::Util;
 our $VERSION='0.1.0';
 
-my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re);
+my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re, $candidates_re);
 my ($shortest, $longest) = (255, 0);
 my @forbidden_re_list;
+my @candidates_re_list;
 my %dictionary = ();
 my %unique;
 my %unique_unrecognized;
@@ -46,7 +47,7 @@ sub file_to_list {
 sub list_to_re {
   my (@list) = @_;
   return '$^' unless scalar @list;
-  return join "|", @list;
+  return join "|", (grep { $_ ne '' } @list);
 }
 
 sub file_to_re {
@@ -104,9 +105,18 @@ sub load_dictionary {
 sub init {
   my ($dirname) = @_;
   our ($word_match, %unique);
-  our $patterns_re = file_to_re "$dirname/patterns.txt";
+
+  my @patterns_re_list = file_to_list "$dirname/patterns.txt";
+  our $patterns_re = list_to_re @patterns_re_list;
+  my %in_patterns_re_list = map {$_ => 1} @patterns_re_list;
+
   our @forbidden_re_list = file_to_list "$dirname/forbidden.txt";
   our $forbidden_re = list_to_re @forbidden_re_list;
+
+  our @candidates_re_list = file_to_list "$dirname/candidates.txt";
+  @candidates_re_list = map {$in_patterns_re_list{$_} ? '' : $_} @candidates_re_list;
+  our $candidates_re = list_to_re @candidates_re_list;
+
   our $largest_file = CheckSpelling::Util::get_val_from_env('INPUT_LARGEST_FILE', 1024*1024);
 
   $word_match = valid_word();
@@ -159,7 +169,10 @@ sub split_file {
     $unrecognized, $longest_word, $shortest_word, $largest_file, $words,
     $word_match, %unique, %unique_unrecognized, $forbidden_re,
     @forbidden_re_list, $patterns_re, %dictionary,
+    $candidates_re, @candidates_re_list,
   );
+  my @candidates_re_hits = (0) x scalar @candidates_re_list;
+  my @candidates_re_lines = (0) x scalar @candidates_re_list;
   my $temp_dir = tempdir();
   open(NAME, '>:utf8', "$temp_dir/name");
     print NAME $file;
@@ -195,7 +208,9 @@ sub split_file {
     # hook for custom line based text exclusions:
     s/($patterns_re)/"="x length($1)/ge;
     my $previous_line_state = $_;
+    my $line_flagged;
     while (s/($forbidden_re)/"="x length($1)/e) {
+      $line_flagged = 1;
       my ($begin, $end, $match) = ($-[0] + 1, $+[0], $1);
       my $found_trigger_re;
       for my $forbidden_re_singleton (@forbidden_re_list) {
@@ -238,9 +253,27 @@ sub split_file {
       }
       my $after = ($token =~ /[A-Z]$/) ? '(?=[^A-Za-z])|(?=[A-Z][a-z])' : '(?=[^a-z])';
       while ($raw_line =~ /(?:\b|$before)($token)(?:\b|$after)/g) {
+        $line_flagged = 1;
         my ($begin, $end, $match) = ($-[0] + 1, $+[0], $1);
         next unless $match =~ /./;
         print WARNINGS ":$.:$begin ... $end: '$match'\n";
+      }
+    }
+    if ($line_flagged) {
+      $_ = $previous_line_state;
+      s/($candidates_re)/"="x length($1)/ge;
+      if ($_ ne $previous_line_state) {
+        $_ = $previous_line_state;
+        for my $i (0 .. $#candidates_re_list) {
+          my $candidate_re = $candidates_re_list[$i];
+          next unless $candidate_re =~ /./;
+          my $replacements = ($_ =~ s/($candidate_re)/"="x length($1)/ge);
+          if ($replacements) {
+            $candidates_re_hits[$i] += $replacements;
+            $candidates_re_lines[$i] = $. unless $candidates_re_lines[$i];
+            $_ = $previous_line_state;
+          }
+        }
       }
     }
   }
@@ -248,7 +281,11 @@ sub split_file {
 
   if ($unrecognized) {
     open(STATS, '>:utf8', "$temp_dir/stats");
-      print STATS "{words: $words, unrecognized: $unrecognized, unknown: ".(keys %unique_unrecognized).", unique: ".(keys %unique)."}";
+      print STATS "{words: $words, unrecognized: $unrecognized, unknown: ".(keys %unique_unrecognized).
+      ", unique: ".(keys %unique).
+      (@candidates_re_hits ? ", candidates: [".(join ',', @candidates_re_hits)."]" : "").
+      (@candidates_re_lines ? ", candidate_lines: [".(join ',', @candidates_re_lines)."]" : "").
+      "}";
     close STATS;
     open(UNKNOWN, '>:utf8', "$temp_dir/unknown");
       print UNKNOWN join "\n", sort keys %unique_unrecognized;

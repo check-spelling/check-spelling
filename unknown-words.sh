@@ -792,6 +792,7 @@ define_variables() {
   dict="$spellchecker/words"
   patterns="$spellchecker/patterns.txt"
   forbidden_path="$spellchecker/forbidden.txt"
+  candidates_path="$spellchecker/candidates.txt"
   excludes="$spellchecker/excludes.txt"
   excludes_path="$temp/excludes.txt"
   only="$spellchecker/only.txt"
@@ -1213,6 +1214,7 @@ set_up_files() {
   fi
   should_exclude_file=$data_dir/should_exclude.txt
   counter_summary_file=$data_dir/counter_summary.json
+  candidate_summary="$data_dir/candidate_summary.txt"
   if [ "$INPUT_TASK" = 'spelling' ]; then
     get_project_files dictionary.words $dictionary_path
     get_project_files dictionary.txt $dictionary_path
@@ -1311,10 +1313,13 @@ set_up_files() {
       cp "$only_path" "$only"
     fi
     get_project_files line_forbidden.patterns $forbidden_path
+    get_project_files candidate.patterns "$candidates_path"
   fi
   extra_dictionaries_cover_entries=$(mktemp)
   get_project_files line_masks.patterns $patterns_path
   get_project_files patterns.txt $patterns_path
+  new_patterns_file="$append_to"
+  new_patterns_file_new="$append_to_generated"
   if [ -s "$patterns_path" ]; then
     cp "$patterns_path" "$patterns"
   fi
@@ -1480,8 +1485,24 @@ run_spell_check() {
   warning_output=$(mktemp -d)/warnings.txt
   more_warnings=$(mktemp)
   cat $file_list |\
-  env -i SHELL="$SHELL" PATH="$PATH" LC_ALL="C" HOME="$HOME" INPUT_LONGEST_WORD="$INPUT_LONGEST_WORD" INPUT_SHORTEST_WORD="$INPUT_SHORTEST_WORD" INPUT_LARGEST_FILE="$INPUT_LARGEST_FILE" xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
-  expect="$expect_path" warning_output="$warning_output" more_warnings="$more_warnings" should_exclude_file="$should_exclude_file" counter_summary="$counter_summary_file" unknown_word_limit="$INPUT_UNKNOWN_WORD_LIMIT" "$word_collator" |\
+  env -i \
+    SHELL="$SHELL" \
+    PATH="$PATH" \
+    LC_ALL="C" \
+    HOME="$HOME" \
+    INPUT_LONGEST_WORD="$INPUT_LONGEST_WORD" \
+    INPUT_SHORTEST_WORD="$INPUT_SHORTEST_WORD" \
+    INPUT_LARGEST_FILE="$INPUT_LARGEST_FILE" \
+  xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
+    expect="$expect_path" \
+    warning_output="$warning_output" \
+    more_warnings="$more_warnings" \
+    should_exclude_file="$should_exclude_file" \
+    counter_summary="$counter_summary_file" \
+    unknown_word_limit="$INPUT_UNKNOWN_WORD_LIMIT" \
+    candidates_path="$candidates_path" \
+    candidate_summary="$candidate_summary" \
+    "$word_collator" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
   cat "$more_warnings" >> "$warning_output"
@@ -1780,6 +1801,23 @@ spelling_body() {
         " | strip_lead)"
       fi
     fi
+    if [ -s "$candidate_summary" ]; then
+      pattern_suggestion_count=$(perl -ne 'next if /^#/;next unless /\S/;print' "$candidate_summary"|wc -l|strip_lead)
+      output_candidate_pattern_suggestions="$(echo "
+        <details><summary>Pattern suggestions :scissors: ($pattern_suggestion_count)</summary>
+
+        You could add these patterns to $new_patterns_file:
+        $B
+        # Automatically suggested patterns
+        $(
+        cat "$candidate_summary"
+        )
+
+        $B
+
+        </details>
+      " | strip_lead)"
+    fi
     if [ -n "$err" ]; then
       output_accept_script="$(echo "
         <details><summary>To accept :heavy_check_mark: these unrecognized words as correct$cleanup_text,
@@ -1802,7 +1840,7 @@ spelling_body() {
     if offer_quote_reply; then
       output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
     fi
-    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_warnings$output_advice
+    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_candidate_pattern_suggestions$output_warnings$output_advice
       " | perl -pe 's/^\s+$/\n/;'| uniq)
 }
 

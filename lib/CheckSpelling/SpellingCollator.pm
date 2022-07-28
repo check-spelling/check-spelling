@@ -15,6 +15,13 @@ sub get_field {
   return $1;
 }
 
+sub get_array {
+  my ($record, $field) = @_;
+  return () unless $record =~ (/\b$field: \[([^\]]+)\]/);
+  my $values = $1;
+  return split /\s*,\s*/, $values;
+}
+
 sub maybe {
   my ($next, $value) = @_;
   $next = $value unless $next && $next < $value;
@@ -103,11 +110,38 @@ sub main {
   my $counter_summary = CheckSpelling::Util::get_file_from_env('counter_summary', '/dev/stderr');
   my $should_exclude_file = CheckSpelling::Util::get_file_from_env('should_exclude_file', '/dev/null');
   my $unknown_word_limit = CheckSpelling::Util::get_val_from_env('unknown_word_limit', undef);
+  my $candidate_summary = CheckSpelling::Util::get_file_from_env('candidate_summary', '/dev/stderr');
 
   open WARNING_OUTPUT, '>:utf8', $warning_output;
   open MORE_WARNINGS, '>:utf8', $more_warnings;
   open COUNTER_SUMMARY, '>:utf8', $counter_summary;
   open SHOULD_EXCLUDE, '>:utf8', $should_exclude_file;
+  open CANDIDATE_SUMMARY, '>:utf8', $candidate_summary;
+
+  my @candidates;
+  if (defined $ENV{'candidates_path'}) {
+    $ENV{'candidates_path'} =~ /(.*)/;
+    if (open CANDIDATES, '<:utf8', $1) {
+      my $candidate_context = '';
+      while (<CANDIDATES>) {
+        my $candidate = $_;
+        if ($candidate =~ /^#/) {
+          $candidate_context .= $candidate;
+          next;
+        }
+        chomp $candidate;
+        unless ($candidate =~ /./) {
+          $candidate_context = '';
+          next;
+        }
+        push @candidates, $candidate_context.$candidate;
+        $candidate_context = '';
+      }
+      close CANDIDATES;
+    }
+  }
+  my @candidate_totals = (0) x scalar @candidates;
+  my @candidate_file_counts = (0) x scalar @candidates;
 
   my @delayed_warnings;
   %letter_map = ();
@@ -154,7 +188,24 @@ sub main {
       $unrecognized=get_field($stats, 'unrecognized');
       $unknown=get_field($stats, 'unknown');
       $unique=get_field($stats, 'unique');
-      #print STDERR "$file (unrecognized: $unrecognized; unique: $unique; unknown: $unknown, words: $words)\n";
+      my @candidate_list;
+      if (@candidate_totals) {
+        @candidate_list=get_array($stats, 'candidates');
+        my @lines=get_array($stats, 'candidate_lines');
+        if (@candidate_list) {
+          for (my $i=0; $i < scalar @candidate_list; $i++) {
+            my $hits = $candidate_list[$i];
+            if ($hits) {
+              $candidate_totals[$i] += $hits;
+              if ($candidate_file_counts[$i]++ < 3) {
+                my $pattern = (split /\n/,$candidates[$i])[-1];
+                push @delayed_warnings, "$file:$lines[$i]:1 ... 1, Notice - Line matches candidate pattern `$pattern` (candidate-pattern)\n";
+              }
+            }
+          }
+        }
+      }
+      #print STDERR "$file (unrecognized: $unrecognized; unique: $unique; unknown: $unknown, words: $words, candidates: [".join(", ", @candidate_list)."])\n";
     }
 
     # These heuristics are very new and need tuning/feedback
@@ -191,6 +242,18 @@ sub main {
     push @directories, $directory;
   }
   close SHOULD_EXCLUDE;
+
+  if (@candidate_totals) {
+    my @indices = sort {
+      $candidate_totals[$b] <=> $candidate_totals[$a] ||
+      $candidate_file_counts[$b] <=> $candidate_file_counts[$a]
+    } 0 .. $#candidate_totals;
+    for my $i (@indices) {
+      last unless $candidate_totals[$i] > 0;
+      print CANDIDATE_SUMMARY "# hit-count: $candidate_totals[$i] file-count: $candidate_file_counts[$i]\n$candidates[$i]\n\n";
+    }
+  }
+  close CANDIDATE_SUMMARY;
 
   if (defined $ENV{'expect'}) {
     $ENV{'expect'} =~ /(.*)/;
