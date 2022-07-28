@@ -174,7 +174,7 @@ inputs:
   notices:
     description: 'List of events that are notices (items that are neither warnings nor notices will result in an :x:)'
     required: false
-    default: ''
+    default: candidate-pattern
   quit_without_error:
     description: 'Suppress failure code exit code -- it will be available via outputs.result_code'
     required: false

@@ -10,7 +10,7 @@ use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
 
 use Test::More;
-plan tests => 31;
+plan tests => 37;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -177,3 +177,26 @@ check_output_file_sorted_lines("$output_dir/warnings", ":2:7 ... 19, Warning - `
 :4:5 ... 7: 'ham'
 ");
 check_output_file("$output_dir/unknown", 'ham');
+open $fh, '>', "$dirname/candidates.txt";
+print $fh '# grape
+grape
+
+# pig
+ham
+
+';
+close $fh;
+unlink("$dirname/forbidden.txt");
+CheckSpelling::UnknownWordSplitter::init($dirname);
+open($outputFH, '>', \$output_directory) or die; # This shouldn't fail
+$oldFH = select $outputFH;
+CheckSpelling::UnknownWordSplitter::main($directory, ($filename));
+select $oldFH;
+ok($output_directory =~ /.*\n/);
+chomp($output_directory);
+ok(-d $output_directory);
+check_output_file("$output_directory/name", $filename);
+check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4]}');
+check_output_file_sorted_lines("$output_directory/warnings", ":4:5 ... 7: 'ham'
+");
+check_output_file("$output_directory/unknown", 'ham');
