@@ -116,6 +116,43 @@ sub init {
   load_dictionary($dict);
 }
 
+sub split_line {
+  our (%dictionary, $word_match);
+  my ($words, $unrecognized) = (0, 0);
+  my ($line, $unique_ref, $unique_unrecognized_ref, $unrecognized_line_items_ref) = @_;
+    # https://www.fileformat.info/info/unicode/char/2019/
+    my $rsqm = "\xE2\x80\x99";
+    $line =~ s/$rsqm|&apos;|&#39;/'/g;
+    $line =~ s/[^a-zA-Z']+/ /g;
+    while ($line =~ s/([A-Z]{2,})([A-Z][a-z]{2,})/ $1 $2 /g) {}
+    while ($line =~ s/([a-z']+)([A-Z])/$1 $2/g) {}
+    for my $token (split /\s+/, $line) {
+      $token =~ s/^(?:'|$rsqm)+//g;
+      $token =~ s/(?:'|$rsqm)+s?$//g;
+      my $raw_token = $token;
+      $token =~ s/^[^Ii]?'+(.*)/$1/;
+      $token =~ s/(.*?)'+$/$1/;
+      next unless $token =~ $word_match;
+      if (defined $dictionary{$token}) {
+        ++$words;
+        $unique_ref->{$token}=1;
+        next;
+      }
+      my $key = lc $token;
+      $key =~ s/''+/'/g;
+      $key =~ s/'[sd]$//;
+      if (defined $dictionary{$key}) {
+        ++$words;
+        $unique_ref->{$key}=1;
+        next;
+      }
+      ++$unrecognized;
+      $unique_unrecognized_ref->{$raw_token}=1;
+      $unrecognized_line_items_ref->{$raw_token}=1;
+    }
+    return ($words, $unrecognized);
+}
+
 sub split_file {
   my ($file) = @_;
   our (
@@ -184,37 +221,11 @@ sub split_file {
     # This is to make it easier to deal w/ rules:
     s/^/ /;
     while (s/([^\\])\\[rtn]/$1 /g) {}
-    # https://www.fileformat.info/info/unicode/char/2019/
-    my $rsqm = "\xE2\x80\x99";
-    s/$rsqm|&apos;|&#39;/'/g;
-    s/[^a-zA-Z']+/ /g;
-    while (s/([A-Z]{2,})([A-Z][a-z]{2,})/ $1 $2 /g) {}
-    while (s/([a-z']+)([A-Z])/$1 $2/g) {}
     my %unrecognized_line_items = ();
-    for my $token (split /\s+/, $_) {
-      $token =~ s/^(?:'|$rsqm)+//g;
-      $token =~ s/(?:'|$rsqm)+s?$//g;
-      my $raw_token = $token;
-      $token =~ s/^[^Ii]?'+(.*)/$1/;
-      $token =~ s/(.*?)'+$/$1/;
-      next unless $token =~ $word_match;
-      if (defined $dictionary{$token}) {
-        ++$words;
-        $unique{$token}=1;
-        next;
-      }
-      my $key = lc $token;
-      $key =~ s/''+/'/g;
-      $key =~ s/'[sd]$//;
-      if (defined $dictionary{$key}) {
-        ++$words;
-        $unique{$key}=1;
-        next;
-      }
-      ++$unrecognized;
-      $unique_unrecognized{$raw_token}=1;
-      $unrecognized_line_items{$raw_token}=1;
-    }
+    my ($new_words, $new_unrecognized) = split_line($_, \%unique, \%unique_unrecognized, \%unrecognized_line_items);
+    $words += $new_words;
+    $unrecognized += $new_unrecognized;
+    my $rsqm = "\xE2\x80\x99";
     for my $token (keys %unrecognized_line_items) {
       $token =~ s/'/(?:'|$rsqm)+/g;
       my $before;
