@@ -100,7 +100,7 @@ FooBarBar
 ";
 close $fh;
 $CheckSpelling::UnknownWordSplitter::forbidden_re='FooBarBar';
-my $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 $CheckSpelling::UnknownWordSplitter::forbidden_re='$^';
 check_output_file("$output_dir/name", $filename);
 check_output_file("$output_dir/stats", '{words: 4, unrecognized: 3, unknown: 2, unique: 2}');
