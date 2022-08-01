@@ -555,20 +555,29 @@ handle_comment() {
   set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$pull_request_sha"
   react_prefix_base="Could not perform [request]($(comment_url_to_html_url $trigger_comment_url)).$N"
   react_prefix="$react_prefix_base"
-  if [ "$sender_login" != "$issue_user_login" ]; then
-    collaborators_url=$(jq -r '.repository.collaborators_url // empty' "$GITHUB_EVENT_PATH")
-    collaborators_url=$(echo "$collaborators_url" | perl -pe "s<\{/collaborator\}></$sender_login/permission>")
-    collaborator_permission=$(collaborator "$collaborators_url" | jq -r '.permission // empty')
-    case $collaborator_permission in
-      admin)
-        ;;
-      write)
-        ;;
-      *)
-        confused_comment "$trigger_comment_url" "Commenter (@$sender_login) isn't author (@$issue_user_login) / collaborator."
-        ;;
-    esac
-  fi
+
+  # Ideally we'd be able to consider `.repository.collaborators_url`` and honor
+  # `Allow edits from maintainers`:
+  # https://docs.github.com/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork
+  # However, at this time, that doesn't work.
+  #
+  # Note that the PR author doesn't have to have any ownership stake in the head
+  # repo branch, so we don't special case that account.
+  collaborators_url="$(jq -r '.head.repo.collaborators_url // empty' "$pull_request_info")"
+  collaborators_url="$(echo "$collaborators_url" | perl -pe "s<\{/collaborator\}></$sender_login/permission>")"
+  collaborator_permission="$(collaborator "$collaborators_url" | jq -r '.permission // empty')"
+
+  case "$collaborator_permission" in
+    admin)
+      ;;
+    write)
+      ;;
+    *)
+      collaborator_suffix="$(jq -r '(if .pull_request.head.repo.full_name then " to " + .pull_request.head.repo.full_name else "" end)' "$pull_request_info")"
+      confused_comment "$trigger_comment_url" "Commenter (@$sender_login) isn't a collaborator$collaborator_suffix."
+      ;;
+  esac
+
   number=$(jq -r '.number // empty' "$issue")
   created_at=$(jq -r '.created_at // empty' "$comment")
   issue_url=$(jq -r '.url // empty' "$issue")
