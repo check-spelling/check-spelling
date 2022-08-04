@@ -791,7 +791,7 @@ define_variables() {
   output_variables=$(mktemp)
   instructions_preamble=$(mktemp)
 
-  warnings_list=$(echo "$INPUT_WARNINGS" | perl -pe 's/[^-a-z]+/|/g;s/^\||\|$//g')
+  warnings_list=$(echo "$INPUT_WARNINGS,$INPUT_NOTICES" | perl -pe 's/[^-a-z]+/|/g;s/^\||\|$//g')
 
   report_header="# @check-spelling-bot Report"
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
