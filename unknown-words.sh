@@ -1061,7 +1061,8 @@ set_up_tools() {
     fi
   fi
   set_up_jq
-  curl_ua="check-spelling/$(cat $spellchecker/version); $(curl --version|perl -ne '$/=undef; <>; s/\n.*//;s{ }{/};s/ .*//;print')"
+  CHECK_SPELLING_VERSION="$(cat "$spellchecker/version")"
+  curl_ua="check-spelling/$CHECK_SPELLING_VERSION; $(curl --version|perl -ne '$/=undef; <>; s/\n.*//;s{ }{/};s/ .*//;print')"
 }
 
 curl_auth() {
