@@ -1669,7 +1669,7 @@ spelling_body() {
     output_remove_items="$N$(remove_items)"
   fi
     if [ -n "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
-      cleanup_text=" (and remove the previously acknowledged and now absent words)"
+      cleanup_text=" and remove the previously acknowledged and now absent words"
     fi
     if [ "$GITHUB_EVENT_NAME" = "pull_request_target" ] || [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
       if [ -z "$GITHUB_HEAD_REF" ]; then
@@ -1811,8 +1811,9 @@ spelling_body() {
       " | strip_lead)"
     fi
     if [ -n "$err" ]; then
+      accept_heading="To accept :heavy_check_mark: these unrecognized words as correct$cleanup_text"
       output_accept_script="$(echo "
-        <details><summary>To accept :heavy_check_mark: these unrecognized words as correct$cleanup_text,
+        <details><summary>$accept_heading,
         run the following commands</summary>
 
         ... in a clone of the [$remote_url_ssh]($remote_url_https) repository
