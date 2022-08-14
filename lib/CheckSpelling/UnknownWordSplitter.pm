@@ -18,7 +18,7 @@ use File::Temp qw/ tempfile tempdir /;
 use CheckSpelling::Util;
 our $VERSION='0.1.0';
 
-my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re, $candidates_re);
+my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re, $candidates_re, $disable_word_collating);
 my ($shortest, $longest) = (255, 0);
 my @forbidden_re_list;
 my @candidates_re_list;
@@ -119,6 +119,9 @@ sub init {
 
   our $largest_file = CheckSpelling::Util::get_val_from_env('INPUT_LARGEST_FILE', 1024*1024);
 
+  my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
+  our $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
+
   $word_match = valid_word();
 
   my $dict = "$dirname/words";
@@ -127,7 +130,7 @@ sub init {
 }
 
 sub split_line {
-  our (%dictionary, $word_match);
+  our (%dictionary, $word_match, $disable_word_collating);
   my ($words, $unrecognized) = (0, 0);
   my ($line, $unique_ref, $unique_unrecognized_ref, $unrecognized_line_items_ref) = @_;
     # https://www.fileformat.info/info/unicode/char/2019/
@@ -149,8 +152,10 @@ sub split_line {
         next;
       }
       my $key = lc $token;
-      $key =~ s/''+/'/g;
-      $key =~ s/'[sd]$//;
+      unless ($disable_word_collating) {
+        $key =~ s/''+/'/g;
+        $key =~ s/'[sd]$//;
+      }
       if (defined $dictionary{$key}) {
         ++$words;
         $unique_ref->{$key}=1;
