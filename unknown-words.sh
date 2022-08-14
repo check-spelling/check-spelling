@@ -421,7 +421,7 @@ github_user_and_email() {
 }
 
 git_commit() {
-  reason="$1"
+  commit_reason="$1"
   git add -u
   git config user.email "check-spelling-bot@users.noreply.github.com"
   git config user.name "check-spelling-bot"
@@ -430,7 +430,7 @@ git_commit() {
     --date="$created_at" \
     -m "$(echo "[check-spelling] Applying automated metadata updates
 
-                $reason
+                $commit_reason
 
                 Signed-off-by: check-spelling-bot <check-spelling-bot@users.noreply.github.com>
                 " | strip_lead)"
