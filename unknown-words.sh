@@ -466,6 +466,30 @@ show_github_actions_push_disclaimer() {
     jq -r '(.data.repository.pullRequest.headRepository.nameWithOwner + "/edit/" + .data.repository.pullRequest.headRefName)'
   )
 
+  if to_boolean "$INPUT_CHECKOUT"; then
+    workflow_ssh_key_hint='`check-spelling`/`with`/`ssh_key`, then add them:
+
+  ``` diff
+    update:
+    ...
+    - name: apply spelling updates
+      uses: check-spelling/check-spelling@...
+      with:
+        checkout: '"$INPUT_CHECKOUT"'
+  +     ssh_key: "${{ secrets.CHECK_SPELLING }}"
+  ```'
+  else
+    workflow_ssh_key_hint='`checkout`/`with`/`ssh-key`, then add them:
+
+  ``` diff
+    update:
+    ...
+    - name: checkout
+      uses: actions/checkout@...
+  +   with:
+  +     ssh-key: "${{ secrets.CHECK_SPELLING }}"
+  ```'
+  fi
   OUTPUT="### :hourglass: check-spelling changes applied
 
   As [configured](https://github.com/check-spelling/check-spelling/wiki/Feature:-Update-expect-list#github_token), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
@@ -486,16 +510,7 @@ show_github_actions_push_disclaimer() {
 
   #### Configure update job in workflow to use secret
 
-  If the $b$(get_workflow_path)$b workflow ${b}update${b} job doesn't already have the "'`checkout`/`with`/`ssh-key`, then add them:
-
-  ``` diff
-   update:
-   ...
-   - name: checkout
-     uses: actions/checkout@v3
-  +  with:
-  +    ssh-key: "${{ secrets.CHECK_SPELLING }}"
-  ```'"
+  If the $b$(get_workflow_path)$b workflow ${b}update${b} job doesn't already have the $workflow_ssh_key_hint
 
   </details>
 
