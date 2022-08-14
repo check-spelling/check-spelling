@@ -11,3 +11,8 @@ catching 'templatesz'
  \+no
 # META.json
 "author"  : ".*"
+# cspell action.yml entries
+^\s*cspell:.*\.txt$
+
+# Refresh cspell dictionaries commit message
+^\* [a-z/.]+$

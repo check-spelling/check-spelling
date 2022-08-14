@@ -64,7 +64,7 @@ inputs:
   dictionary_source_prefixes:
     description: 'JSON map of prefixes for dictionary urls'
     required: false
-    default: '{"cspell": "https://raw.githubusercontent.com/check-spelling/cspell-dicts/v20220427/dictionaries/"}'
+    default: '{"cspell": "https://raw.githubusercontent.com/check-spelling/cspell-dicts/v20220816/dictionaries/"}'
   extra_dictionaries:
     description: 'Space delimited list of URLs (or `prefix:`+path) to additional word lists'
     required: false
@@ -76,10 +76,12 @@ inputs:
       cspell:ada/ada.txt
       cspell:aws/aws.txt
       cspell:bash/bash-words.txt
-      cspell:companies/companies.txt
+      cspell:clojure/src/clojure.txt
+      cspell:companies/src/companies.txt
       cspell:csharp/csharp.txt
       cspell:css/css.txt
       cspell:django/django.txt
+      cspell:docker/src/docker-words.txt
       cspell:dotnet/dotnet.txt
       cspell:elixir/elixir.txt
       cspell:en_GB/src/wordsEnGb.txt
@@ -88,6 +90,7 @@ inputs:
       cspell:fullstack/fullstack.txt
       cspell:golang/go.txt
       cspell:haskell/haskell.txt
+      cspell:html-symbol-entities/entities.txt
       cspell:html/html.txt
       cspell:java/java.txt
       cspell:latex/latex.txt
@@ -95,10 +98,16 @@ inputs:
       cspell:node/node.txt
       cspell:npm/npm.txt
       cspell:php/php.txt
-      cspell:python/python.txt
+      cspell:public-licenses/src/generated/public-licenses.txt
+      cspell:python/src/python/python-lib.txt
+      cspell:python/src/python/python.txt
+      cspell:r/src/r.txt
       cspell:ruby/ruby.txt
       cspell:rust/rust.txt
       cspell:scala/scala.txt
+      cspell:sql/src/sql.txt
+      cspell:swift/src/swift.txt
+      cspell:win32/src/win32.txt
   extra_dictionary_limit:
     description: 'Limit the number of suggested extra dictionaries.'
     required: false
