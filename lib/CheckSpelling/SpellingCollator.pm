@@ -111,6 +111,8 @@ sub main {
   my $should_exclude_file = CheckSpelling::Util::get_file_from_env('should_exclude_file', '/dev/null');
   my $unknown_word_limit = CheckSpelling::Util::get_val_from_env('unknown_word_limit', undef);
   my $candidate_summary = CheckSpelling::Util::get_file_from_env('candidate_summary', '/dev/stderr');
+  my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
+  my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
 
   open WARNING_OUTPUT, '>:utf8', $warning_output;
   open MORE_WARNINGS, '>:utf8', $more_warnings;
@@ -213,10 +215,12 @@ sub main {
         ($unknown > $unique)
         # || ($unrecognized > $words / 2)
     ) {
-      push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because there seems to be more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). (noisy-file)\n";
-      print SHOULD_EXCLUDE "$file\n";
-      push @cleanup_directories, $directory;
-      next;
+      unless ($disable_noisy_file) {
+        push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because there seems to be more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). (noisy-file)\n";
+        print SHOULD_EXCLUDE "$file\n";
+        push @cleanup_directories, $directory;
+        next;
+      }
     }
     unless (-s "$directory/unknown") {
       push @cleanup_directories, $directory;
