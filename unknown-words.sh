@@ -1366,7 +1366,7 @@ run_spell_check() {
   warning_output=$(mktemp -d)/warnings.txt
   more_warnings=$(mktemp)
   cat $file_list |\
-  env -i SHELL="$SHELL" PATH="$PATH" LC_ALL="C" HOME="$HOME" xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
+  env -i SHELL="$SHELL" PATH="$PATH" LC_ALL="C" HOME="$HOME" INPUT_LONGEST_WORD="$INPUT_LONGEST_WORD" INPUT_SHORTEST_WORD="$INPUT_SHORTEST_WORD" INPUT_LARGEST_FILE="$INPUT_LARGEST_FILE" xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
   expect="$expect_path" warning_output="$warning_output" more_warnings="$more_warnings" should_exclude_file="$should_exclude_file" counter_summary="$counter_summary_file" unknown_word_limit="$INPUT_UNKNOWN_WORD_LIMIT" "$word_collator" |\
   perl -p -n -e 's/ \(.*//' > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
