@@ -195,6 +195,10 @@ inputs:
     description: 'Task to perform (spelling, comment, ...)'
     required: false
     default: ''
+  disable_checks:
+    description: 'Some heuristics might not do what you want, it may be possible to suppress them'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
