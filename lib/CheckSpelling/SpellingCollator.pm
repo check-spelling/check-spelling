@@ -113,6 +113,7 @@ sub main {
   my $candidate_summary = CheckSpelling::Util::get_file_from_env('candidate_summary', '/dev/stderr');
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
   my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
+  my $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
 
   open WARNING_OUTPUT, '>:utf8', $warning_output;
   open MORE_WARNINGS, '>:utf8', $more_warnings;
@@ -234,10 +235,17 @@ sub main {
       $token =~ s/^[^Ii]?'+(.*)/$1/;
       $token =~ s/(.*?)'+$/$1/;
       next unless $token =~ /./;
-      my $key = lc $token;
-      $key =~ s/''+/'/g;
-      $key =~ s/'[sd]$//;
-      my $char = substr $key, 0, 1;
+      my $key;
+      my $char;
+      if ($disable_word_collating) {
+        $key = $token;
+        $char = lc substr $key, 0, 1;
+      } else {
+        $key = lc $token;
+        $key =~ s/''+/'/g;
+        $key =~ s/'[sd]$//;
+        $char = substr $key, 0, 1;
+      }
       $letter_map{$char} = () unless defined $letter_map{$char};
       my %word_map = ();
       %word_map = %{$letter_map{$char}{$key}} if defined $letter_map{$char}{$key};
@@ -339,34 +347,36 @@ sub main {
   }
   close COUNTER_SUMMARY;
 
-  # group related words
-  for my $char (sort keys %letter_map) {
-    for my $plural_key (sort keys(%{$letter_map{$char}})) {
-      my $key = $plural_key;
-      if ($key =~ /.s$/) {
-        if ($key =~ /ies$/) {
-          $key =~ s/ies$/y/;
+  unless ($disable_word_collating) {
+    # group related words
+    for my $char (sort keys %letter_map) {
+      for my $plural_key (sort keys(%{$letter_map{$char}})) {
+        my $key = $plural_key;
+        if ($key =~ /.s$/) {
+          if ($key =~ /ies$/) {
+            $key =~ s/ies$/y/;
+          } else {
+            $key =~ s/s$//;
+          }
+        } elsif ($key =~ /.[^aeiou]ed$/) {
+          $key =~ s/ed$//;
         } else {
-          $key =~ s/s$//;
+          next;
         }
-      } elsif ($key =~ /.[^aeiou]ed$/) {
-        $key =~ s/ed$//;
-      } else {
-        next;
+        next unless defined $letter_map{$char}{$key};
+        my %word_map = %{$letter_map{$char}{$key}};
+        for $word (keys(%{$letter_map{$char}{$plural_key}})) {
+          $word_map{$word} = 1;
+        }
+        $letter_map{$char}{$key} = \%word_map;
+        delete $letter_map{$char}{$plural_key};
       }
-      next unless defined $letter_map{$char}{$key};
-      my %word_map = %{$letter_map{$char}{$key}};
-      for $word (keys(%{$letter_map{$char}{$plural_key}})) {
-        $word_map{$word} = 1;
-      }
-      $letter_map{$char}{$key} = \%word_map;
-      delete $letter_map{$char}{$plural_key};
     }
   }
 
   # display the current unknown
   for my $char (sort keys %letter_map) {
-    for $key (sort keys(%{$letter_map{$char}})) {
+    for $key (sort { lc $a cmp lc $b || $a cmp $b } keys(%{$letter_map{$char}})) {
       my %word_map = %{$letter_map{$char}{$key}};
       my @words = keys(%word_map);
       if (scalar(@words) > 1) {
