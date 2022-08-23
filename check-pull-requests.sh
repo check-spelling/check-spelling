@@ -1,7 +1,7 @@
 #!/bin/bash
 
 . "$spellchecker/common.sh"
-if [ $(uname) = "Linux" ]; then
+if [ "$(uname)" = "Linux" ]; then
   date_to_epoch() {
     date -u -d "$1" +'%s'
   }
@@ -11,19 +11,19 @@ else
   }
 fi
 timeframe=${timeframe:-60}
-time_limit=$(( $timeframe * 60 ))
+time_limit="$(( $timeframe * 60 ))"
 strip_quotes() {
   tr '"' ' '
 }
 
 begin_group 'Retrieving open pull requests'
-pulls=$temp/pulls.json
-escaped=$temp/escaped.b64
-pull=$temp/pull.json
-fake_event=$temp/fake_event.json
+pulls="$temp/pulls.json"
+escaped="$temp/escaped.b64"
+pull="$temp/pull.json"
+fake_event="$temp/fake_event.json"
 tree_config="$bucket/$project/"
-stored_config=$temp/config/
-headers=$temp/headers
+stored_config="$temp/config/"
+headers="$temp/headers"
 
 Q='"'
 
@@ -72,7 +72,7 @@ echo '{}' | jq --arg query "$query" '.query = $query'
 }
 
 if [ -e "$pulls.nodes" ]; then
-  echo using cached $pulls.nodes
+  echo "using cached $pulls.nodes"
 else
   rm -f "$pulls.nodes"
   touch "$pulls.nodes"
@@ -112,32 +112,32 @@ if [ -s "$escaped" ]; then
 fi
 end_group
 
-for a in $(cat "$escaped"); do
-  echo "$a" | base64 --decode | jq -r . > $pull
-  url=$(cat $pull | jq -r .commits_url | perl -pe 's{://api.github.com/repos/(.*/pull)s}{://github.com/$1}')
-  issue_url=$(cat $pull | jq -r .issue_url)
+for a in "$(cat "$escaped")"; do
+  echo "$a" | base64 --decode | jq -r . > "$pull"
+  url="$(jq -r .commits_url "$pull" | perl -pe 's{://api.github.com/repos/(.*/pull)s}{://github.com/$1}')"
+  issue_url="$(jq -r .issue_url "$pull")"
   begin_group "Considering $url"
-  created_at=$(cat $pull | jq -r '.updated_at // .created_at')
-  created_at=$(date_to_epoch $created_at)
-  age=$(( $start / 1000000000 - $created_at ))
-  if [ $age -gt $time_limit ]; then
+  created_at="$(jq -r '.updated_at // .created_at' "$pull")"
+  created_at="$(date_to_epoch "$created_at")"
+  age="$(( $start / 1000000000 - $created_at ))"
+  if [ "$age" -gt "$time_limit" ]; then
     end_group
     continue
   fi
-  head_repo=$(cat $pull | jq -r .head_repo)
-  base_repo=$(cat $pull | jq -r .base_repo)
+  head_repo="$(jq -r .head_repo "$pull")"
+  base_repo="$(jq -r .base_repo "$pull")"
   if [ "$head_repo" = "$base_repo" ]; then
     end_group
     continue
   fi
-  head_sha=$(cat $pull | jq -r .head_sha)
-  base_sha=$(cat $pull | jq -r .base_sha)
-  merge_commit_sha=$(cat $pull | jq -r .merge_commit_sha)
-  comments_url=$(cat $pull | jq -r .comments_url)
-  commits_url=$(cat $pull | jq -r .commits_url)
-  clone_url=$(cat $pull | jq -r .clone_url)
-  clone_url=$(echo "$clone_url" | sed -e 's/https/http/')
-  head_ref=$(cat $pull | jq -r .head_ref)
+  head_sha="$(jq -r .head_sha "$pull")"
+  base_sha="$(jq -r .base_sha "$pull")"
+  merge_commit_sha="$(jq -r .merge_commit_sha "$pull")"
+  comments_url="$(jq -r .comments_url "$pull")"
+  commits_url="$(jq -r .commits_url "$pull")"
+  clone_url="$(jq -r .clone_url "$pull")"
+  clone_url="$(echo "$clone_url" | sed -e 's/https/http/')"
+  head_ref="$(jq -r .head_ref "$pull")"
   echo "do work for $head_repo -> $base_repo: $head_sha as $merge_commit_sha"
   export GITHUB_SHA="$head_sha"
   export GITHUB_EVENT_NAME=pull_request
@@ -150,14 +150,14 @@ for a in $(cat "$escaped"); do
     > "$fake_event"
   export GITHUB_EVENT_PATH="$fake_event"
   git remote rm pr 2>/dev/null || true
-  git remote add pr $clone_url
+  git remote add pr "$clone_url"
   cat .git/config
-  git fetch pr $head_ref
-  git checkout $head_sha
+  git fetch pr "$head_ref"
+  git checkout "$head_sha"
   git remote rm pr 2>/dev/null || true
   end_group
   (
-    temp=$(mktemp -d)
+    temp="$(mktemp -d)"
     if [ -d "$stored_config" ] && [ ! -d "$tree_config" ]; then
       mkdir -p "$tree_config"
       rsync -a "$stored_config" "$tree_config"
