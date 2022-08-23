@@ -164,9 +164,17 @@ load_env() {
   . "$input_variables"
 }
 
+wrap_in_json() {
+  echo '{}' | jq -r --arg arg "$2" ".$1="'$arg'
+}
+
+wrap_file_in_json() {
+  echo '{}' | jq -r --rawfile arg "$2" ".$1="'$arg'
+}
+
 who_am_i() {
   who_am_i='query { viewer { databaseId } }'
-  who_am_i_json="$(echo '{}' | jq -r --arg query "$who_am_i" '.query=$query')"
+  who_am_i_json="$(wrap_in_json 'query' "$who_am_i")"
   comment_author_id=$(
     call_curl \
     -H "Content-Type: application/json" \
@@ -178,7 +186,7 @@ who_am_i() {
 
 get_is_comment_minimized() {
   comment_is_collapsed_query="query { node(id:$Q$1$Q) { ... on IssueComment { minimizedReason } } }"
-  comment_is_collapsed_json="$(echo '{}' | jq -r --arg query "$comment_is_collapsed_query" '.query=$query')"
+  comment_is_collapsed_json="$(wrap_in_json 'query' "$comment_is_collapsed_query")"
   call_curl \
   -H "Content-Type: application/json" \
   --data-binary "$comment_is_collapsed_json" \
@@ -245,7 +253,7 @@ get_a_comment() {
 get_comment_url_from_id() {
   id="$1"
   comment_url_from_id_query="query { node(id:$Q$id$Q) { ... on IssueComment { url } } }"
-  comment_url_from_id_json="$(echo '{}' | jq -r --arg query "$comment_url_from_id_query" '.query=$query')"
+  comment_url_from_id_json="$(wrap_in_json 'query' "$comment_url_from_id_query")"
   call_curl \
     -H "Content-Type: application/json" \
     --data-binary "$comment_url_from_id_json" \
@@ -437,7 +445,7 @@ react_comment_and_die() {
   react "$trigger_comment_url" "$react" > /dev/null
   if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
     PAYLOAD="$(mktemp_json)"
-    echo '{}' | jq --arg body "@check-spelling-bot: ${react_prefix}$message${N}See [log]($(get_action_log)) for details." '.body = $body' > "$PAYLOAD"
+    wrap_in_json 'body' "@check-spelling-bot: ${react_prefix}$message${N}See [log]($(get_action_log)) for details." > "$PAYLOAD"
 
     res=0
     comment "$COMMENTS_URL" "$PAYLOAD" > /dev/null || res=$?
@@ -512,7 +520,7 @@ show_github_actions_push_disclaimer() {
     }' |
     strip_lead_and_blanks
   )
-  pr_query_json="$(echo '{}' | jq -r --arg query "$pr_query" '.query=$query')"
+  pr_query_json="$(wrap_in_json 'query' "$pr_query")"
   repository_edit_branch=$(
     call_curl \
     -H "Content-Type: application/json" \
@@ -2264,7 +2272,7 @@ quit() {
 
 body_to_payload() {
   PAYLOAD="$(mktemp)"
-  echo '{}' | jq --rawfile body "$BODY" '.body = $body' > "$PAYLOAD"
+  wrap_file_in_json 'body' "$BODY" > "$PAYLOAD"
   if to_boolean "$DEBUG"; then
     cat "$PAYLOAD" >&2
   fi
@@ -2578,7 +2586,7 @@ collapse_comment_mutation() {
     shift
   done
   query="$query_head$query_body$query_tail"
-  echo '{}' | jq --arg query "$query" '.query = $query'
+  wrap_in_json 'query' "$query"
 }
 
 collapse_comment() {
