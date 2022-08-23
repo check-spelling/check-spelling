@@ -44,10 +44,36 @@ sub file_to_list {
   return @file;
 }
 
+sub quote_re {
+  my ($expression) = @_;
+  return $expression if $expression =~ /\?\{/;
+  $expression =~ s/
+   \G
+   (
+      (?:[^\\]|\\[^Q])*
+   )
+   (?:
+      \\Q
+      (?:[^\\]|\\[^E])*
+      (?:\\E)?
+   )?
+/
+   $1 . (defined($2) ? quotemeta($2) : '')
+/xge;
+  return $expression;
+}
+
+sub test_re {
+  my ($expression) = @_;
+  return eval { qr /$expression/ };
+}
+
 sub list_to_re {
   my (@list) = @_;
+  @list = map { my $quoted = quote_re($_); test_re($quoted) ? $quoted : '' } @list;
+  @list = grep { $_ ne '' } @list;
   return '$^' unless scalar @list;
-  return join "|", (grep { $_ ne '' } @list);
+  return join "|", (@list);
 }
 
 sub file_to_re {
@@ -114,7 +140,7 @@ sub init {
   our $forbidden_re = list_to_re @forbidden_re_list;
 
   our @candidates_re_list = file_to_list "$dirname/candidates.txt";
-  @candidates_re_list = map {$in_patterns_re_list{$_} ? '' : $_} @candidates_re_list;
+  @candidates_re_list = map { my $quoted = quote_re($_); $in_patterns_re_list{$_} || !test_re($quoted) ? '' : $quoted } @candidates_re_list;
   our $candidates_re = list_to_re @candidates_re_list;
 
   our $largest_file = CheckSpelling::Util::get_val_from_env('INPUT_LARGEST_FILE', 1024*1024);
