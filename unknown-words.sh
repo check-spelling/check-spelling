@@ -63,7 +63,17 @@ dispatcher() {
             echo "Found [open PR #$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number) - check-spelling should run there."
             echo
             echo '::warning title=WARNING::This workflow is intentionally terminating early with a success code -- it has not checked for misspellings.'
-            echo '::notice title=Workflow skipped::See `check-spelling` `pull_request_target` workflow in '"PR #$open_pr_number. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number"
+            workflow_path=$(get_workflow_path)
+            pull_request_event_name=pull_request_target
+            if [ -n "$workflow_path" ]; then
+              if ! grep -q pull_request_target "$workflow_path" && grep -q pull_request "$workflow_path"; then
+                pull_request_event_name=pull_request
+              fi
+              workflow="workflow (${b}$workflow_path${b})"
+            else
+              workflow='workflow'
+            fi
+            echo "::notice title=Workflow skipped::See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR #$open_pr_number. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number"
             if [ -n "$ACT" ]; then
               echo
               echo 'You appear to be running nektos/act, you should probably comment out:'

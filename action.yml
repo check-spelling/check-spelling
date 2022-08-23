@@ -239,6 +239,14 @@ inputs:
     description: 'Some heuristics might not do what you want, it may be possible to suppress them'
     required: false
     default: ''
+  alternate_engine:
+    description: 'Alternate engine to use'
+    required: false
+    default: ''
+  alternate_engine_key:
+    description: 'ssh key to retrieve alternate engine'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:
@@ -269,6 +277,28 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: parse alternate engine
+      id: parse-alternate-engine
+      if: inputs.alternate_engine
+      shell: bash
+      run: |
+        echo "::set-output name=repo::$(echo '${{ inputs.alternate_engine }}' | perl -pe 's/\@.*//')"
+        echo "::set-output name=branch::$(echo '${{ inputs.alternate_engine }}' | perl -ne 'next unless s/.*\@//; print')"
+    - name: alternate-engine
+      if: inputs.alternate_engine
+      uses: actions/checkout@v3
+      with:
+        path: alternate-engine
+        repository: ${{ steps.parse-alternate-engine.outputs.repo }}
+        ref: ${{ steps.parse-alternate-engine.outputs.branch }}
+        ssh-key: ${{ inputs.alternate_engine_key }}
+        persist-credentials: false
+    - name: install-alternate-engine
+      if: inputs.alternate_engine
+      shell: bash
+      run: |
+        rsync --delete --exclude=.git -a alternate-engine/ "${{ github.action_path }}"
+        rm -rf alternate-engine/
     - name: checkout
       if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task
       uses: actions/checkout@v3
