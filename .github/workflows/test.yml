@@ -36,7 +36,6 @@ jobs:
     - name: store-coverage
       uses: actions/upload-artifact@v3
       with:
-        retention-days: 1
         name: "check-spelling-coverage-${{ github.run_id }}"
         path: |
           cover_db
