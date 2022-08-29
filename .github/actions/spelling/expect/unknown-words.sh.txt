@@ -16,6 +16,8 @@ gsutil
 jsoref
 keygen
 keyring
+maxdepth
+mindepth
 mkdir
 mktemp
 nektos

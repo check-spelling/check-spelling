@@ -1139,17 +1139,17 @@ get_project_files() {
             from="$(echo "$from" | sed -e "s/\.$ext$//")"
           fi
           if [ -d "$from" ]; then
-            from_expanded="$(ls "$from"/*"$ext" |sort)"
+            from_expanded="$(find "$from" -mindepth 1 -maxdepth 1 -name "*$ext" ! -name "*$n*" |sort)"
             append_to="$from"/"$(git rev-parse --revs-only HEAD || date '+%Y%M%d%H%m%S')"."$ext"
             append_to_generated=new
             touch "$dest"
             echo "Retrieving $file from $from_expanded"
-            for item in $from_expanded; do
+            while IFS= read -r item; do
               if [ -s "$item" ]; then
                 cleanup_file "$item" "$type"
                 cat "$item" >> "$dest"
               fi
-            done
+            done <<< "$from_expanded"
             from="$from"/"$(basename "$from")"."$ext"
           else
             from_expanded="$from"."$ext"
@@ -1184,7 +1184,7 @@ get_project_files_deprecated() {
     save_append_to="$append_to"
     get_project_files "$2" "$3"
     if [ -s "$3" ]; then
-      example="$(for file in $from_expanded; do echo "$file"; done|head -1)"
+      example="$(echo "$from_expanded"|head -1)"
       if [ "$(basename $(dirname "$example"))" = "$2" ]; then
         note=" directory"
       else
