@@ -116,7 +116,7 @@ is($error_lines, 'Not a directory: /dev/null
 Could not find: /dev/no-such-dev
 ');
 check_output_file($warning_output, 'goose (animal)
-hello.txt: line 1, columns 1-1, Warning - Skipping `hello.txt` because blah (skipped)
+hello.txt:1:1 ... 1, Warning - Skipping `hello.txt` because blah (skipped)
 ');
 check_output_file($counter_summary, '{
 "animal": 1
@@ -126,13 +126,13 @@ check_output_file($counter_summary, '{
 check_output_file($more_warnings, '');
 
 my $file_name='test.txt';
-$directory = stage_test($file_name, '{words: 3, unrecognized: 2, unknown: 2, unique: 2}', '', "line 2 cols 3-8: 'something'
-line 3 cols 3-5: 'Foo'
-line 4 cols 3-6: 'foos'
-line 5 cols 7-9: 'foo'
-line 6 cols 3-9: 'fooies'
-line 6 cols 3-9: 'fozed'
-line 10 cols 4-10: 'something'", "xxxpaz
+$directory = stage_test($file_name, '{words: 3, unrecognized: 2, unknown: 2, unique: 2}', '', ":2:3 ... 8: 'something'
+:3:3 ... 5: 'Foo'
+:4:3 ... 6: 'foos'
+:5:7 ... 9: 'foo'
+:6:3 ... 9: 'fooies'
+:6:3 ... 9: 'fozed'
+:10:4 ... 10: 'something'", "xxxpaz
 xxxpazs
 jjjjjy
 jjjjjies
@@ -147,10 +147,10 @@ nnnnnnnnns
 xxxpaz (xxxpaz, xxxpazs)
 ");
 is($error_lines, '');
-check_output_file($warning_output, "$file_name: line 2, columns 3-8, Warning - `something` is not a recognized word. (unrecognized-spelling)
+check_output_file($warning_output, "$file_name:2:3 ... 8, Warning - `something` is not a recognized word. (unrecognized-spelling)
 ");
 check_output_file($counter_summary, '');
-check_output_file($more_warnings, 'test.txt: line 10, columns 4-10, Warning - `something` is not a recognized word. (unrecognized-spelling)
+check_output_file($more_warnings, 'test.txt:10:4 ... 10, Warning - `something` is not a recognized word. (unrecognized-spelling)
 ');
 fill_file($expect, "
 AAA
@@ -186,7 +186,7 @@ III
 Iii
 );
 $directory = stage_test('case.txt', '{words: 1000, unique: 1000}', '',
-(join "\n", map { "line 1 cols 1-1: '$_'" } @word_variants),
+(join "\n", map { ":1:1 ... 1: '$_'" } @word_variants),
 (join "\n", @word_variants));
 ($output, $error_lines) = run_test($directory);
 is($output, "aaa (AAA, Aaa, aaa)
@@ -200,13 +200,13 @@ hhh (HHH, Hhh)
 iii (III, Iii)
 ");
 is($error_lines, '');
-check_output_file($warning_output, q<case.txt: line 1, columns 1-1, Warning - `Aaa` is not a recognized word. (unrecognized-spelling)
-case.txt: line 1, columns 1-1, Warning - `aaa` is not a recognized word. (unrecognized-spelling)
-case.txt: line 1, columns 1-1, Warning - `bbb` is not a recognized word. (unrecognized-spelling)
-case.txt: line 1, columns 1-1, Warning - `Ddd` is not a recognized word. (unrecognized-spelling)
-case.txt: line 1, columns 1-1, Warning - `ddd` is not a recognized word. (unrecognized-spelling)
-case.txt: line 1, columns 1-1, Warning - `eee` is not a recognized word. (unrecognized-spelling)
-case.txt: line 1, columns 1-1, Warning - `Ggg` is not a recognized word. (unrecognized-spelling)
+check_output_file($warning_output, q<case.txt:1:1 ... 1, Warning - `Aaa` is not a recognized word. (unrecognized-spelling)
+case.txt:1:1 ... 1, Warning - `aaa` is not a recognized word. (unrecognized-spelling)
+case.txt:1:1 ... 1, Warning - `bbb` is not a recognized word. (unrecognized-spelling)
+case.txt:1:1 ... 1, Warning - `Ddd` is not a recognized word. (unrecognized-spelling)
+case.txt:1:1 ... 1, Warning - `ddd` is not a recognized word. (unrecognized-spelling)
+case.txt:1:1 ... 1, Warning - `eee` is not a recognized word. (unrecognized-spelling)
+case.txt:1:1 ... 1, Warning - `Ggg` is not a recognized word. (unrecognized-spelling)
 >);
 check_output_file($counter_summary, '');
 check_output_file($more_warnings, '');
@@ -216,11 +216,11 @@ alloc
 malloc
 >);
 
-$directory = stage_test('punctuation.txt', '{words: 1000, unique: 1000}', '', "line 1 cols 1-1: 'calloc'
-line 1 cols 1-1: 'calloc'd'
-line 1 cols 1-1: 'a'calloc'
-line 1 cols 1-1: 'malloc'
-line 1 cols 1-1: 'malloc'd'
+$directory = stage_test('punctuation.txt', '{words: 1000, unique: 1000}', '', ":1:1 ... 1: 'calloc'
+:1:1 ... 1: 'calloc'd'
+:1:1 ... 1: 'a'calloc'
+:1:1 ... 1: 'malloc'
+:1:1 ... 1: 'malloc'd'
 ", q<
 calloc
 calloc'd
@@ -233,7 +233,7 @@ is($output, "calloc (calloc, calloc'd)
 malloc (malloc, malloc'd)
 ");
 is($error_lines, '');
-check_output_file($warning_output, q<punctuation.txt: line 1, columns 1-1, Warning - `a'calloc` is not a recognized word. (unrecognized-spelling)
+check_output_file($warning_output, q<punctuation.txt:1:1 ... 1, Warning - `a'calloc` is not a recognized word. (unrecognized-spelling)
 >);
 check_output_file($counter_summary, '');
 check_output_file($more_warnings, '');
