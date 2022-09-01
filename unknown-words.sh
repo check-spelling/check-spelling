@@ -786,7 +786,7 @@ define_variables() {
   if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
     ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.a-z0-9]+/[-_.a-z0-9]+(?:|\@[-_.a-z0-9]+)$};'; then
     INPUT_SPELL_CHECK_THIS=''
-    echo "$(get_workflow_path): line 0, columns 1-1, Warning - unsupported repository (unsupported-repo-notation)" >> "$early_warnings"
+    echo "$(get_workflow_path):0:1, Warning - unsupported repository (unsupported-repo-notation)" >> "$early_warnings"
   fi
 
   dict="$spellchecker/words"
@@ -844,7 +844,7 @@ check_pattern_file() {
       chomp $@;
       my $err = $@;
       $err =~ s{^.*? in regex; marked by <-- HERE in m/(.*) <-- HERE.*$}{$1};
-      print WARNINGS "$ARGV: line $., columns $-[0]-$-[0], Warning - bad regex (bad-regex)\n$@\n";
+      print WARNINGS "$ARGV:$.:$-[0] ... $-[0], Warning - bad regex (bad-regex)\n$@\n";
       print "^\$\n";
     }
   }
@@ -858,7 +858,7 @@ check_for_newline_at_eof() {
     line=$(( $(cat "$maybe_missing_eol" | wc -l) + 1 ))
     start=$(tail -1 "$maybe_missing_eol" | wc -c)
     stop=$(( $start + 1 ))
-    echo "$maybe_missing_eol: line $line, columns $start-$stop, Warning - no newline at eof (no-newline-at-eof)" >> "$early_warnings"
+    echo "$maybe_missing_eol:$line:$start ... $stop, Warning - no newline at eof (no-newline-at-eof)" >> "$early_warnings"
     echo >> "$maybe_missing_eol"
   fi
 }
@@ -885,12 +885,12 @@ check_dictionary() {
     unless (defined $first_end) {
       $first_end = $end;
     } elsif ($end ne $first_end) {
-      print WARNINGS "$file: line $., columns $-[0]-$+[0], Warning - entry has inconsistent line ending (unexpected-line-ending)\n";
+      print WARNINGS "$file:$.:$-[0] ... $+[0], Warning - entry has inconsistent line ending (unexpected-line-ending)\n";
     }
     if ($line =~ '"/^[${expected_chars}]*([^${expected_chars}]+)/"') {
-      $column_range="$-[1]-$+[1]";
+      $column_range="$-[1] ... $+[1]";
       unless ($line =~ '"/^${comment_char}/"') {
-        print WARNINGS "$file: line $., columns $column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
+        print WARNINGS "$file:$.:$column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
       }
       $line = "";
     }
@@ -1486,7 +1486,7 @@ run_spell_check() {
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
   cat "$more_warnings" >> "$warning_output"
   rm "$more_warnings"
-  WARNINGS_LIST="$warnings_list" perl -pi -e 'next if /\((?:$ENV{WARNINGS_LIST})\)$/; s{(^(?:.+):[\s]line\s(?:\d+),[\s]columns\s(?:\d+)-(?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}' "$warning_output"
+  WARNINGS_LIST="$warnings_list" perl -pi -e 'next if /\((?:$ENV{WARNINGS_LIST})\)$/; s{(^(?:.+?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}' "$warning_output"
   cat "$warning_output"
   echo "::set-output name=warnings::$warning_output" >> $output_variables
   end_group

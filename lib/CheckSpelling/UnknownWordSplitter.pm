@@ -212,9 +212,9 @@ sub split_file {
       }
       if ($found_trigger_re) {
         $found_trigger_re =~ s/^\(\?:(.*)\)$/$1/;
-        print WARNINGS "line $., columns $begin-$end, Warning - `$match` matches a line_forbidden.patterns entry: `$found_trigger_re`. (forbidden-pattern)\n";
+        print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry: `$found_trigger_re`. (forbidden-pattern)\n";
       } else {
-        print WARNINGS "line $., columns $begin-$end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
+        print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
       }
       $previous_line_state = $_;
     }
@@ -240,7 +240,7 @@ sub split_file {
       while ($raw_line =~ /(?:\b|$before)($token)(?:\b|$after)/g) {
         my ($begin, $end, $match) = ($-[0] + 1, $+[0], $1);
         next unless $match =~ /./;
-        print WARNINGS "line $. cols $begin-$end: '$match'\n";
+        print WARNINGS ":$.:$begin ... $end: '$match'\n";
       }
     }
   }

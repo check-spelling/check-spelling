@@ -4,7 +4,7 @@
             "owner": "check-spelling",
             "pattern": [
                 {
-                    "regexp": "^(.+):[\\s]line\\s(\\d+),[\\s]columns\\s(\\d+)-(\\d+),\\s(Error|Warning|Notice)\\s-\\s(.+\\s\\((.+)\\))$",
+                    "regexp": "^(.+):(\\d+):(\\d+) \\.{3} (\\d+),\\s(Error|Warning|Notice)\\s-\\s(.+\\s\\((.+)\\))$",
                     "file": 1,
                     "line": 2,
                     "column": 3,
