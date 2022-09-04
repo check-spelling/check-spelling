@@ -828,6 +828,7 @@ define_variables() {
   diff_output="$temp/output.diff"
   tokens_file="$data_dir/tokens.txt"
   action_log_ref="$data_dir/action_log_ref.txt"
+  action_log_file_name="$data_dir/action_log_file_name.txt"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   output_variables=$(mktemp)
   instructions_preamble=$(mktemp)
@@ -1574,34 +1575,58 @@ get_has_errors() {
   fi
 }
 
+get_job_info_and_step_info() {
+  if [ -z "$step_number" ] && [ -z "$job_log" ]; then
+    run_info=$(mktemp)
+    if call_curl "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_info" 2>/dev/null; then
+      jobs_url=$(jq -r '.jobs_url // empty' "$run_info")
+      if [ -n "$jobs_url" ]; then
+        jobs_info=$(mktemp)
+        if call_curl "$jobs_url" > "$jobs_info" 2>/dev/null; then
+          job=$(mktemp)
+          jq -r '.jobs[] | select(.status=="in_progress" and .runner_name=="'"$RUNNER_NAME"'" and .run_attempt=='"${GITHUB_RUN_ATTEMPT:-1}"')' "$jobs_info" > "$job" 2>/dev/null
+          job_log=$(jq -r .html_url "$job")
+          job_name=$(jq -r .name "$job")
+          if [ -n "$job_log" ]; then
+            step_info=$(mktemp)
+            jq -r '[.steps[] | select(.status=="pending") // empty]' "$job" > "$step_info" 2>/dev/null
+            if [ -s "$step_info" ]; then
+              step_name=$(jq -r '.[0].name // empty' "$step_info")
+            else
+              step_name='check-spelling'
+              jq -r '[.steps[] | select(.status=="queued" and .name=="'"$step_name"'")]' "$job" > "$step_info" 2>/dev/null
+            fi
+            step_number=$(jq -r .[0].number "$step_info")
+          fi
+        fi
+      fi
+    fi
+  fi
+  if [ -n "$step_number" ] && [ -n "$job_log" ] && [ -n "$step_number" ] && [ -n "$step_name" ]; then
+    echo "$job_log"
+    echo "$job_name"
+    echo "$step_number"
+    echo "$step_name"
+  fi
+}
+
 get_action_log() {
   if [ -z "$action_log" ]; then
     if [ -s "$action_log_ref" ]; then
-      action_log="$(cat $action_log_ref)"
+      action_log="$(cat "$action_log_ref")"
     else
       action_log=$(get_action_log_overview)
 
-      run_info=$(mktemp)
-      if call_curl "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_info" 2>/dev/null; then
-        jobs_url=$(jq -r '.jobs_url // empty' "$run_info")
-        if [ -n "$jobs_url" ]; then
-          jobs_info=$(mktemp)
-          if call_curl "$jobs_url" > "$jobs_info" 2>/dev/null; then
-            job=$(mktemp)
-            jq -r '.jobs[] | select(.status=="in_progress" and .runner_name=="'"$RUNNER_NAME"'" and .run_attempt=='"${GITHUB_RUN_ATTEMPT:-1}"')' "$jobs_info" > "$job" 2>/dev/null
-            job_log=$(jq -r .html_url "$job")
-            if [ -n "$job_log" ]; then
-              step_info=$(mktemp)
-              jq -r '.steps[] | select(.status=="pending") // empty' "$job" > "$step_info" 2>/dev/null
-              if [ ! -s "$step_info" ]; then
-                jq -r '.steps[] | select(.status=="queued" and .name=="check-spelling")' "$job" > "$step_info" 2>/dev/null
-              fi
-              step_number=$(jq -s -r .[0].number "$step_info")
-              action_log="$job_log#step:$step_number:1"
-            fi
-          fi
+      job_info_and_step_info="$(get_job_info_and_step_info)"
+      if [ $(echo "$job_info_and_step_info" | wc -l) -eq 4 ]; then
+        job_log=$(echo "$job_info_and_step_info" | head -1)
+        job_name=$(echo "$job_info_and_step_info" | head -2 | tail -1)
+        step_number=$(echo "$job_info_and_step_info" | head -3 | tail -1)
+        step_name=$(echo "$job_info_and_step_info" | head -4 | tail -1)
+        if [ -n "$job_log" ] && [ -n "$step_number" ] && [ -n "$job_name" ]; then
+          action_log="$job_log#step:$step_number:1"
+          echo "$job_name/${step_number}_${step_name}.txt" > "$action_log_file_name"
         fi
-
       fi
       echo "$action_log" > "$action_log_ref"
     fi
@@ -1613,6 +1638,7 @@ spelling_warning() {
   OUTPUT="### :red_circle: $1
 "
   spelling_body "$2" "$3" "$4"
+  post_summary
   post_commit_comment
 }
 spelling_info() {
@@ -1624,10 +1650,8 @@ spelling_info() {
 $2"
   fi
   spelling_body "$out" "" "$3"
+  post_summary
   if [ -n "$VERBOSE" ]; then
-    OUTPUT="#$report_header
-
-$OUTPUT"
     post_commit_comment
   else
     echo "$OUTPUT"
@@ -2005,6 +2029,64 @@ minimize_comment_body() {
   echo "::warning ::Truncated comment payload ($payload_size) is likely to exceed GitHub size limit ($github_comment_size_limit)"
 }
 
+post_summary() {
+  if [ -z "$GITHUB_STEP_SUMMARY" ]; then
+    echo 'The $GITHUB_STEP_SUMMARY environment variable is unavailable'
+    echo 'This feature is available in:'
+    echo 'github.com - https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#environment-files'
+    echo 'GitHub Enterprise Server 3.6+ - https://docs.github.com/en/enterprise-server@3.6/actions/using-workflows/workflow-commands-for-github-actions#environment-files'
+    echo 'GitHub Enterprise Cloud - https://docs.github.com/en/enterprise-cloud@latest/actions/using-workflows/workflow-commands-for-github-actions#environment-files'
+    echo
+    if [ -n "$ACT" ]; then
+      echo 'For `act`, you can pass `--env GITHUB_STEP_SUMMARY=/dev/stdout`, however much of the logic has been reworked to rely on it.'
+    fi
+    return
+  fi
+
+  if [ -n "$OUTPUT" ]; then
+    if true; then
+      jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
+      step_summary_draft=$(mktemp)
+      echo "$OUTPUT" >> "$step_summary_draft"
+      retrieve_step="$(echo '
+      (
+      artifact_dir=$(mktemp -d)
+      gh_err=$(mktemp)
+      if gh run download -D "$artifact_dir" -R '"$GITHUB_REPOSITORY $GITHUB_RUN_ID"' -n check-spelling-comment 2> "$gh_err"; then
+        patch_remove=$(unzip -p "$artifact_dir/artifact.zip" remove_words.txt 2>/dev/null)
+        patch_add=$(unzip -p "$artifact_dir/artifact.zip" tokens.txt 2>/dev/null)
+        should_exclude_patterns=$(unzip -p "$artifact_dir/artifact.zip" should_exclude.txt 2>/dev/null | perl -pe '"'s{^(.*)}{^\\\\Q\$1\\\\E\\\$}'"')
+        update_files
+      elif grep -q "no valid artifacts found to download" "$gh_err"; then
+        if [ "$('"gh api /repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts -q '.artifacts.[]|select(.name==${Q}check-spelling-comment${Q})|.expired'"')" = "true" ]; then
+          echo "Run artifact expired. You will need to trigger a new run."
+        else
+          echo "Run may not have completed. If so, please wait for it to finish and try again."
+        fi
+      elif grep -q "no artifact matches any of the names or patterns provided" "$gh_err"; then
+        echo "unexpected error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
+        cat "$gh_err"
+      else
+        echo "unknown error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
+        cat "$gh_err"
+      fi
+      )' | perl -pe 's/^      //')"
+      RETRIEVE_STEP="$retrieve_step" perl -i -e '$/=undef; $_=<>; s!^comment_json=.*^update_files!$ENV{RETRIEVE_STEP}!ms; s!^rm \S*comment_body\S*!!m; print' "$step_summary_draft"
+      if offer_quote_reply; then
+        quote_reply_insertion=$(mktemp)
+        (
+          if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+            apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
+          fi
+          echo
+          echo "To have the bot do this for you, comment with the following line:"
+          echo "@check-spelling-bot apply [changes]($jobs_summary_link)$apply_changes_suffix."
+        )>> "$step_summary_draft"
+      fi
+      cat "$step_summary_draft" >> "$GITHUB_STEP_SUMMARY"
+    fi
+  fi
+}
 post_commit_comment() {
   if [ -n "$OUTPUT" ]; then
     if to_boolean "$INPUT_POST_COMMENT"; then

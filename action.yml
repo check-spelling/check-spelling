@@ -345,7 +345,6 @@ runs:
         steps.spelling.outputs.internal_state_directory
       uses: actions/upload-artifact@v3
       with:
-        retention-days: 1
         name: "check-spelling-comment"
         path: |
           ${{ steps.spelling.outputs.internal_state_directory }}
