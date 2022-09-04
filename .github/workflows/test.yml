@@ -35,6 +35,7 @@ jobs:
         cover -test
     - name: store-coverage
       uses: actions/upload-artifact@v3
+      timeout-minutes: 5
       with:
         name: "check-spelling-coverage-${{ github.run_id }}"
         path: |
