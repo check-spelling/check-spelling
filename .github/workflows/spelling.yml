@@ -48,6 +48,8 @@ jobs:
         unknown_word_limit: 2
         spell_check_this: check-spelling/spell-check-this@prerelease
         checkout: false
+        extra_dictionaries:
+          cspell:software-terms/src/software-terms.txt
 
   comment:
     name: Report

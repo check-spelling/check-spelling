@@ -1,4 +1,3 @@
-anonymize
 dns
 NXDOMAIN
 secpoll

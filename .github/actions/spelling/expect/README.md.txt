@@ -1,12 +1,6 @@
-github
 gsutil
-http
 jsoref
-png
 ssh
 svg
 timeframe
-url
-wiki
-workflow
-www
+workflows
