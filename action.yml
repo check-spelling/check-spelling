@@ -332,7 +332,7 @@ runs:
         spellchecker: ${{ github.action_path }}
       run:
         spellchecker=$(echo $spellchecker| perl -pe 's{/$}{}')
-        $spellchecker/unknown-words.sh
+        stdbuf -i0 -o0 -e0 $spellchecker/unknown-words.sh
       shell: bash
     - name: store-comment
       if: (contains(github.event_name, 'pull_request') ||
