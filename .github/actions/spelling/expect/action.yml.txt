@@ -3,4 +3,5 @@ dicts
 github
 jsoref
 src
+stdbuf
 sudo
