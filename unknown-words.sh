@@ -1349,6 +1349,7 @@ get_before() {
     fi
     if [ -e .git/shallow ]; then
       UNSHALLOW=--unshallow
+      echo "Unshallowing (this may take a while)" >&2
     fi
     git_fetch_log="$(mktemp)"
     git_fetch_err="$(mktemp)"
