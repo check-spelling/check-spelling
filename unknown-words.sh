@@ -1344,6 +1344,7 @@ get_before() {
     fi
     if [ -e .git/shallow ]; then
       UNSHALLOW=--unshallow
+      echo "Unshallowing (this may take a while)" >&2
     fi
     git fetch origin $UNSHALLOW "$BEFORE":refs/private/before "${GITHUB_HEAD_REF:-$GITHUB_SHA}:refs/private/after" >/dev/null 2>/dev/null
   fi

@@ -23,5 +23,6 @@ rfc
 spellchecker
 ssh
 unshallow
+Unshallowing
 vnd
 yml
