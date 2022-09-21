@@ -1161,7 +1161,7 @@ set_up_files() {
       spell_check_this_repo_url=$(cd "$spell_check_this_repo"; git remote get-url origin)
       (
         echo "mkdir -p $spelling_config"
-        echo 'cp -R $('
+        echo 'cp -i -R $('
         echo 'cd $(mktemp -d)'
         echo "git clone --depth 1 --no-tags $spell_check_this_repo_url $spell_check_this_repo_branch . > /dev/null 2> /dev/null"
         echo "cd $spelling_config; pwd"
