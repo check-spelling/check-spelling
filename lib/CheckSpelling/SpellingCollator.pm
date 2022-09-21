@@ -201,7 +201,9 @@ sub main {
               $candidate_totals[$i] += $hits;
               if ($candidate_file_counts[$i]++ < 3) {
                 my $pattern = (split /\n/,$candidates[$i])[-1];
-                push @delayed_warnings, "$file:$lines[$i]:1 ... 1, Notice - Line matches candidate pattern `$pattern` (candidate-pattern)\n";
+                my $position = $lines[$i];
+                $position =~ s/:(\d+)$/ ... $1/;
+                push @delayed_warnings, "$file:$position, Notice - `Line` matches candidate pattern `$pattern` (candidate-pattern)\n";
               }
             }
           }
