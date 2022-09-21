@@ -63,7 +63,6 @@ dispatcher() {
             echo "Found [open PR #$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number) - check-spelling should run there."
             echo
             echo '::warning title=WARNING::This workflow is intentionally terminating early with a success code -- it has not checked for misspellings.'
-            workflow_path=$(get_workflow_path)
             pull_request_event_name=pull_request_target
             if [ -n "$workflow_path" ]; then
               if ! grep -q pull_request_target "$workflow_path" && grep -q pull_request "$workflow_path"; then
@@ -305,15 +304,19 @@ pr_head_sha_task() {
 }
 
 get_workflow_path() {
-  action_run=$(mktemp_json)
-  if call_curl \
-    "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$action_run"; then
-    workflow_url=$(jq -r '.workflow_url // empty' "$action_run")
-    if [ -n "$workflow_url" ]; then
-      workflow_json=$(mktemp_json)
-      if call_curl \
-        "$workflow_url" > "$workflow_json"; then
-        jq -r .path "$workflow_json"
+  if [ -s "$action_workflow_path_file" ]; then
+    cat "$action_workflow_path_file"
+  else
+    action_run=$(mktemp_json)
+    if call_curl \
+      "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$action_run"; then
+      workflow_url=$(jq -r '.workflow_url // empty' "$action_run")
+      if [ -n "$workflow_url" ]; then
+        workflow_json=$(mktemp_json)
+        if call_curl \
+          "$workflow_url" > "$workflow_json"; then
+          jq -r .path "$workflow_json" | tee "$action_workflow_path_file"
+        fi
       fi
     fi
   fi
@@ -520,7 +523,7 @@ show_github_actions_push_disclaimer() {
 
   #### Configure update job in workflow to use secret
 
-  If the $b$(get_workflow_path)$b workflow ${b}update${b} job doesn't already have the $workflow_ssh_key_hint
+  If the $b$workflow_path$b workflow ${b}update${b} job doesn't already have the $workflow_ssh_key_hint
 
   </details>
 
@@ -793,10 +796,18 @@ define_variables() {
   if [ -z "$extra_dictionary_limit" ]; then
     extra_dictionary_limit=5
   fi
+  action_workflow_path_file="$data_dir/workflow-path.txt"
+  workflow_path=$(get_workflow_path)
   if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
     ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.a-z0-9]+/[-_.a-z0-9]+(?:|\@[-_.a-z0-9]+)$};'; then
+    (
+      if [ -n "$workflow_path" ]; then
+        perl -e '$pattern=quotemeta($ENV{INPUT_SPELL_CHECK_THIS}); while (<>) { next unless /$pattern/; $start=$-[0]+1; print "$ARGV:$.:$start ... $+[0] Warning - spell_check_this - unsupported repository (unsupported-repo-notation)" }' "$workflow_path"
+      else
+        echo "?:0:1, Warning - spell_check_this - unsupported repository (unsupported-repo-notation)"
+      fi
+    ) >> "$early_warnings"
     INPUT_SPELL_CHECK_THIS=''
-    echo "$(get_workflow_path):0:1, Warning - unsupported repository (unsupported-repo-notation)" >> "$early_warnings"
   fi
 
   dict="$spellchecker/words"
@@ -1698,9 +1709,8 @@ spelling_body() {
 
       extra_dictionaries_cover_entries_limited=$(mktemp)
       head -$extra_dictionary_limit "$extra_dictionaries_cover_entries" > "$extra_dictionaries_cover_entries_limited"
-      workflow_path=$(get_workflow_path)
       if [ -n "$workflow_path" ]; then
-        workflow_path_hint=" (in $b$(get_workflow_path)$b)"
+        workflow_path_hint=" (in $b$workflow_path$b)"
       fi
       output_dictionaries="$(echo "
         <details><summary>Available :books: dictionaries could cover words not in the :blue_book: dictionary</summary>
