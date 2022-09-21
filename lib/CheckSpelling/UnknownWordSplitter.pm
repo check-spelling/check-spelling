@@ -267,10 +267,12 @@ sub split_file {
         for my $i (0 .. $#candidates_re_list) {
           my $candidate_re = $candidates_re_list[$i];
           next unless $candidate_re =~ /./;
-          my $replacements = ($_ =~ s/($candidate_re)/"="x length($1)/ge);
-          if ($replacements) {
+          if (($_ =~ s/($candidate_re)/"="x length($1)/e)) {
+            my $hit = "$.:$-[0]:$+[0]";
+            $_ = $previous_line_state;
+            my $replacements = ($_ =~ s/($candidate_re)/"="x length($1)/ge);
             $candidates_re_hits[$i] += $replacements;
-            $candidates_re_lines[$i] = $. unless $candidates_re_lines[$i];
+            $candidates_re_lines[$i] = $hit unless $candidates_re_lines[$i];
             $_ = $previous_line_state;
           }
         }

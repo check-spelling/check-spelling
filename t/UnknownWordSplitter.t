@@ -196,7 +196,7 @@ ok($output_directory =~ /.*\n/);
 chomp($output_directory);
 ok(-d $output_directory);
 check_output_file("$output_directory/name", $filename);
-check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4]}');
+check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4:4:7]}');
 check_output_file_sorted_lines("$output_directory/warnings", ":4:5 ... 7: 'ham'
 ");
 check_output_file("$output_directory/unknown", 'ham');
