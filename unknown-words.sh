@@ -799,7 +799,7 @@ define_variables() {
   action_workflow_path_file="$data_dir/workflow-path.txt"
   workflow_path=$(get_workflow_path)
   if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
-    ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.a-z0-9]+/[-_.a-z0-9]+(?:|\@[-_.a-z0-9]+)$};'; then
+    ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.A-Za-z0-9]+/[-_.A-Za-z0-9]+(?:|\@[-_./A-Za-z0-9]+)$};'; then
     (
       if [ -n "$workflow_path" ]; then
         perl -e '$pattern=quotemeta($ENV{INPUT_SPELL_CHECK_THIS}); while (<>) { next unless /$pattern/; $start=$-[0]+1; print "$ARGV:$.:$start ... $+[0] Warning - spell_check_this - unsupported repository (unsupported-repo-notation)" }' "$workflow_path"
