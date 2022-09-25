@@ -1700,7 +1700,7 @@ spelling_body() {
         workflow_path_hint=" (in $b$(get_workflow_path)$b)"
       fi
       output_dictionaries="$(echo "
-        <details><summary>Available dictionaries could cover words not in the dictionary</summary>
+        <details><summary>Available :books: dictionaries could cover words not in the :blue_book: dictionary</summary>
 
         $expect_details
         $(cat "$extra_dictionaries_cover_entries_limited")
