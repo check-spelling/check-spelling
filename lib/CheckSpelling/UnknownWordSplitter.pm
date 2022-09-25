@@ -242,13 +242,13 @@ sub split_file {
     my $line_flagged;
     while (s/($forbidden_re)/"="x length($1)/e) {
       $line_flagged = 1;
-      my ($begin, $end, $match) = ($-[0] + 1, $+[0], $1);
+      my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
       my $found_trigger_re;
       for my $forbidden_re_singleton (@forbidden_re_list) {
         my $test_line = $previous_line_state;
         if ($test_line =~ s/($forbidden_re_singleton)/"="x length($1)/e) {
           next unless $test_line eq $_;
-          my ($begin_test, $end_test, $match_test) = ($-[0] + 1, $+[0], $1);
+          my ($begin_test, $end_test, $match_test) = ($-[0] + 1, $+[0] + 1, $1);
           next unless $begin == $begin_test;
           next unless $end == $end_test;
           next unless $match eq $match_test;
@@ -285,7 +285,7 @@ sub split_file {
       my $after = ($token =~ /[A-Z]$/) ? '(?=[^A-Za-z])|(?=[A-Z][a-z])' : '(?=[^a-z])';
       while ($raw_line =~ /(?:\b|$before)($token)(?:\b|$after)/g) {
         $line_flagged = 1;
-        my ($begin, $end, $match) = ($-[0] + 1, $+[0], $1);
+        my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
         next unless $match =~ /./;
         print WARNINGS ":$.:$begin ... $end: '$match'\n";
       }
@@ -299,7 +299,8 @@ sub split_file {
           my $candidate_re = $candidates_re_list[$i];
           next unless $candidate_re =~ /./;
           if (($_ =~ s/($candidate_re)/"="x length($1)/e)) {
-            my $hit = "$.:$-[0]:$+[0]";
+            my ($begin, $end) = ($-[0] + 1, $+[0] + 1);
+            my $hit = "$.:$begin:$end";
             $_ = $previous_line_state;
             my $replacements = ($_ =~ s/($candidate_re)/"="x length($1)/ge);
             $candidates_re_hits[$i] += $replacements;

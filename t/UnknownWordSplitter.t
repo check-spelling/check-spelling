@@ -92,7 +92,7 @@ ok(-d $output_directory);
 check_output_file("$output_directory/name", $filename);
 check_output_file("$output_directory/stats", '{words: 2, unrecognized: 1, unknown: 1, unique: 2}');
 check_output_file("$output_directory/unknown", 'Play');
-check_output_file("$output_directory/warnings", ":3:8 ... 11: 'Play'
+check_output_file("$output_directory/warnings", ":3:8 ... 12: 'Play'
 ");
 open $fh, '>:utf8', $filename;
 print $fh "FooBar baz Bar elf baz bar supercalifragelisticexpialidocious
@@ -104,10 +104,10 @@ $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 $CheckSpelling::UnknownWordSplitter::forbidden_re='$^';
 check_output_file("$output_dir/name", $filename);
 check_output_file("$output_dir/stats", '{words: 4, unrecognized: 3, unknown: 2, unique: 2}');
-check_output_file_sorted_lines("$output_dir/warnings", ":1:8 ... 10: 'baz'
-:1:20 ... 22: 'baz'
-:1:16 ... 18: 'elf'
-:2:1 ... 9, Warning - `FooBarBar` matches a line_forbidden.patterns entry. (forbidden-pattern)
+check_output_file_sorted_lines("$output_dir/warnings", ":1:8 ... 11: 'baz'
+:1:20 ... 23: 'baz'
+:1:16 ... 19: 'elf'
+:2:1 ... 10, Warning - `FooBarBar` matches a line_forbidden.patterns entry. (forbidden-pattern)
 ");
 check_output_file("$output_dir/unknown", 'baz
 elf');
@@ -127,16 +127,16 @@ is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 1);
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/name", $filename);
 check_output_file("$output_dir/stats", '{words: 0, unrecognized: 13, unknown: 8, unique: 0}');
-check_output_file_sorted_lines("$output_dir/warnings", ":1:1 ... 3: 'Foo'
-:1:12 ... 14: 'Bar'
-:1:16 ... 18: 'elf'
-:1:20 ... 22: 'baz'
-:1:24 ... 26: 'bar'
-:1:4 ... 6: 'Bar'
-:1:8 ... 10: 'baz'
-:2:1 ... 3: 'Foo'
-:2:4 ... 6: 'Bar'
-:2:7 ... 9: 'Bar'
+check_output_file_sorted_lines("$output_dir/warnings", ":1:1 ... 4: 'Foo'
+:1:12 ... 15: 'Bar'
+:1:16 ... 19: 'elf'
+:1:20 ... 23: 'baz'
+:1:24 ... 27: 'bar'
+:1:4 ... 7: 'Bar'
+:1:8 ... 11: 'baz'
+:2:1 ... 4: 'Foo'
+:2:4 ... 7: 'Bar'
+:2:7 ... 10: 'Bar'
 ");
 check_output_file("$output_dir/unknown", 'Bar
 Foo
@@ -171,10 +171,10 @@ close $fh;
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/name", $filename);
 check_output_file("$output_dir/stats", '{words: 9, unrecognized: 1, unknown: 1, unique: 5}');
-check_output_file_sorted_lines("$output_dir/warnings", ":2:7 ... 19, Warning - ` fruit fruit ` matches a line_forbidden.patterns entry: `\\s([A-Z]{3,}|[A-Z][a-z]{2,}|[a-z]{3,})\\s\\g{-1}\\s`. (forbidden-pattern)
-:3:19 ... 23, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
-:3:7 ... 11, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
-:4:5 ... 7: 'ham'
+check_output_file_sorted_lines("$output_dir/warnings", ":2:7 ... 20, Warning - ` fruit fruit ` matches a line_forbidden.patterns entry: `\\s([A-Z]{3,}|[A-Z][a-z]{2,}|[a-z]{3,})\\s\\g{-1}\\s`. (forbidden-pattern)
+:3:19 ... 24, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
+:3:7 ... 12, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
+:4:5 ... 8: 'ham'
 ");
 check_output_file("$output_dir/unknown", 'ham');
 open $fh, '>', "$dirname/candidates.txt";
@@ -196,7 +196,7 @@ ok($output_directory =~ /.*\n/);
 chomp($output_directory);
 ok(-d $output_directory);
 check_output_file("$output_directory/name", $filename);
-check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4:4:7]}');
-check_output_file_sorted_lines("$output_directory/warnings", ":4:5 ... 7: 'ham'
+check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4:5:8]}');
+check_output_file_sorted_lines("$output_directory/warnings", ":4:5 ... 8: 'ham'
 ");
 check_output_file("$output_directory/unknown", 'ham');
