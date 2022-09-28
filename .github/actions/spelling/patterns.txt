@@ -13,6 +13,8 @@ catching 'templatesz'
 "author"  : ".*"
 # cspell action.yml entries
 ^\s*cspell:.*\.txt$
+# githubusercontent
+/[-a-z0-9]+\.githubusercontent\.com/[-a-zA-Z0-9?&=_\/.]*
 
 # Refresh cspell dictionaries commit message
 ^\* [a-z/.]+$
