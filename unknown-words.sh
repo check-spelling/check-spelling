@@ -1025,6 +1025,11 @@ download_or_quit_with_error() {
   fi
 }
 
+set_up_ua() {
+  CHECK_SPELLING_VERSION=$(cat $spellchecker/version)
+  curl_ua="check-spelling/$CHECK_SPELLING_VERSION; $(curl --version|perl -ne '$/=undef; <>; s/\n.*//;s{ }{/};s/ .*//;print')"
+}
+
 set_up_tools() {
   apps=""
   add_app() {
@@ -1047,8 +1052,6 @@ set_up_tools() {
     fi
   fi
   set_up_jq
-  CHECK_SPELLING_VERSION=$(cat $spellchecker/version)
-  curl_ua="check-spelling/$CHECK_SPELLING_VERSION; $(curl --version|perl -ne '$/=undef; <>; s/\n.*//;s{ }{/};s/ .*//;print')"
 }
 
 curl_auth() {
@@ -2419,9 +2422,10 @@ $B
   quit 1
 }
 
+set_up_ua
+define_variables
 set_up_reporter
 set_up_tools
-define_variables
 dispatcher
 set_up_files
 welcome
