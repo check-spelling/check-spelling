@@ -798,17 +798,6 @@ define_variables() {
   fi
   action_workflow_path_file="$data_dir/workflow-path.txt"
   workflow_path=$(get_workflow_path)
-  if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
-    ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.A-Za-z0-9]+/[-_.A-Za-z0-9]+(?:|\@[-_./A-Za-z0-9]+)$};'; then
-    (
-      if [ -n "$workflow_path" ]; then
-        perl -e '$pattern=quotemeta($ENV{INPUT_SPELL_CHECK_THIS}); while (<>) { next unless /$pattern/; $start=$-[0]+1; print "$ARGV:$.:$start ... $+[0] Warning - spell_check_this - unsupported repository (unsupported-repo-notation)" }' "$workflow_path"
-      else
-        echo "?:0:1, Warning - spell_check_this - unsupported repository (unsupported-repo-notation)"
-      fi
-    ) >> "$early_warnings"
-    INPUT_SPELL_CHECK_THIS=''
-  fi
 
   dict="$spellchecker/words"
   patterns="$spellchecker/patterns.txt"
@@ -852,6 +841,20 @@ define_variables() {
     report_header="$report_header $INPUT_REPORT_TITLE_SUFFIX"
   fi
   INPUT_TASK="${INPUT_TASK:-$INPUT_CUSTOM_TASK}"
+}
+
+check_inputs() {
+  if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
+    ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.A-Za-z0-9]+/[-_.A-Za-z0-9]+(?:|\@[-_./A-Za-z0-9]+)$};'; then
+    (
+      if [ -n "$workflow_path" ]; then
+        perl -e '$pattern=quotemeta($ENV{INPUT_SPELL_CHECK_THIS}); while (<>) { next unless /$pattern/; $start=$-[0]+1; print "$ARGV:$.:$start ... $+[0], Warning - spell_check_this - unsupported repository (unsupported-repo-notation)\n" }' "$workflow_path"
+      else
+        echo "?:0:1, Warning - spell_check_this - unsupported repository (unsupported-repo-notation)"
+      fi
+    ) >> "$early_warnings"
+    INPUT_SPELL_CHECK_THIS=''
+  fi
 }
 
 sort_unique() {
@@ -2425,6 +2428,7 @@ $B
 set_up_ua
 define_variables
 set_up_reporter
+check_inputs
 set_up_tools
 dispatcher
 set_up_files
