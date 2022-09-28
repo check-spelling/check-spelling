@@ -96,6 +96,10 @@ dispatcher() {
         api_error=$(mktemp)
         GH_TOKEN="$GITHUB_TOKEN" gh api --method POST -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/branches/$GITHUB_BASE_REF/rename" > "$api_output" 2> "$api_error" || true
         if ! grep -Eq 'not authorized|not accessible' "$api_output"; then
+          if to_boolean "$INPUT_USE_SARIF"; then
+            INPUT_USE_SARIF=
+            set_up_reporter
+          fi
           echo '::error title=Unsafe-Permissions::This workflow configuration is unsafe. Please see https://github.com/check-spelling/check-spelling/wiki/Feature:-Restricted-Permissions'
           quit 5
         fi
@@ -832,6 +836,7 @@ define_variables() {
   cleanup_file="$spellchecker/cleanup-file.pl"
   file_size="$spellchecker/file-size.pl"
   check_dictionary="$spellchecker/check-dictionary.pl"
+  check_yaml_key_value="$spellchecker/check-yaml-key-value.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
@@ -853,16 +858,44 @@ define_variables() {
   INPUT_TASK="${INPUT_TASK:-$INPUT_CUSTOM_TASK}"
 }
 
+check_yaml_key_value() {
+  (
+  if [ -n "$1" ]; then
+    KEY="$KEY" \
+    VALUE="$VALUE" \
+    MESSAGE="$MESSAGE" \
+    "$check_yaml_key_value" "$1"
+  else
+    echo "?:0:1, $MESSAGE"
+  fi
+  ) >> "$early_warnings"
+}
+
 check_inputs() {
+  if to_boolean "$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE"; then
+    KEY=use_sarif \
+    VALUE="$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE" \
+    MESSAGE='Warning - use_sarif needs security-events: write - unsupported configuration (unsupported-configuration)' \
+    check_yaml_key_value "$workflow_path"
+  fi
+  if to_boolean "$WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY"; then
+    KEY=use_sarif \
+    VALUE="$WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY" \
+    MESSAGE='Warning - use_sarif needs GitHub Advanced Security to be enabled - see https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security (unsupported-configuration)' \
+    check_yaml_key_value "$workflow_path"
+  fi
+  if to_boolean "$WARN_USE_SARIF_ONLY_CHANGED_FILES"; then
+    KEY=use_sarif \
+    VALUE="$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE" \
+    MESSAGE='Warning - use_sarif is incompatible with only_check_changed_files - unsupported configuration (unsupported-configuration)' \
+    check_yaml_key_value "$workflow_path"
+  fi
   if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
     ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.A-Za-z0-9]+/[-_.A-Za-z0-9]+(?:|\@[-_./A-Za-z0-9]+)$};'; then
-    (
-      if [ -n "$workflow_path" ]; then
-        perl -e '$pattern=quotemeta($ENV{INPUT_SPELL_CHECK_THIS}); while (<>) { next unless /$pattern/; $start=$-[0]+1; print "$ARGV:$.:$start ... $+[0], Warning - spell_check_this - unsupported repository (unsupported-repo-notation)\n" }' "$workflow_path"
-      else
-        echo "?:0:1, Warning - spell_check_this - unsupported repository (unsupported-repo-notation)"
-      fi
-    ) >> "$early_warnings"
+    KEY=spell_check_this \
+    VALUE="$INPUT_SPELL_CHECK_THIS" \
+    MESSAGE='Warning - spell_check_this - unsupported repository (unsupported-repo-notation)' \
+    check_yaml_key_value "$workflow_path"
     INPUT_SPELL_CHECK_THIS=''
   fi
 }
@@ -1158,7 +1191,6 @@ get_extra_dictionaries() {
 }
 
 set_up_reporter() {
-  echo "::add-matcher::$spellchecker/reporter.json"
   if to_boolean "$DEBUG"; then
     echo 'env:'
     env|sort
@@ -1169,6 +1201,37 @@ set_up_reporter() {
   if to_boolean "$DEBUG"; then
     echo 'GITHUB_EVENT_PATH:'
     cat $GITHUB_EVENT_PATH
+  fi
+  if to_boolean "$INPUT_USE_SARIF"; then
+    sarif_error=$(mktemp)
+    sarif_output=$(mktemp_json)
+    GH_TOKEN="$GITHUB_TOKEN" gh api "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/code-scanning/alerts/0" > "$sarif_output" 2> "$sarif_error" || true
+    if grep -q 403 "$sarif_error"; then
+      if true || to_boolean "$DEBUG"; then
+        cat "$sarif_error"
+        cat "$sarif_output"
+        echo
+      fi
+      WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY="$INPUT_USE_SARIF"
+    fi
+    GH_TOKEN="$GITHUB_TOKEN" gh api --method POST -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/code-scanning/sarifs" > "$sarif_output" 2> "$sarif_error" || true
+    if grep -Eq 'not authorized|not accessible' "$sarif_output"; then
+      if true || to_boolean "$DEBUG"; then
+        cat "$sarif_error"
+        cat "$sarif_output"
+        echo
+      fi
+      WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE="$INPUT_USE_SARIF"
+    fi
+    if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
+      WARN_USE_SARIF_ONLY_CHANGED_FILES="$INPUT_USE_SARIF"
+    fi
+    if to_boolean "$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE" || to_boolean "$WARN_USE_SARIF_ONLY_CHANGED_FILES" || to_boolean "$WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY"; then
+      INPUT_USE_SARIF=
+    fi
+  fi
+  if ! to_boolean "$INPUT_USE_SARIF"; then
+    echo "::add-matcher::$spellchecker/reporter.json"
   fi
 }
 
@@ -1503,6 +1566,16 @@ run_spell_check() {
   WARNINGS_LIST="$warnings_list" perl -pi -e 'next if /\((?:$ENV{WARNINGS_LIST})\)$/; s{(^(?:.+?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}' "$warning_output"
   cat "$warning_output"
   echo "::set-output name=warnings::$warning_output" >> $output_variables
+  if to_boolean "$INPUT_USE_SARIF"; then
+    SARIF_FILE="$(mktemp).sarif.json"
+    echo UPLOAD_SARIF="$SARIF_FILE" >> "$GITHUB_ENV"
+    sarif_results="$(mktemp_json)"
+    perl -ne 'next unless m{^(.+):(\d+):(\d+) \.\.\. (\d+),\s(Error|Warning|Notice)\s-\s(.+\s\((.+)\))$}; my ($file, $line, $column, $endColumn, $severity, $message, $code) = ($1, $2, $3, $4, $5, $6, $7); sub encode_low_ascii { $_ = shift; s/([\x{0}-\x{9}\x{0b}\x{1f}#])/"\\u".sprintf("%04x",ord($1))/eg; return $_; } $message =~ s/(["\\])/\\$1/g; $message =~ s/(["()\]])/\\\\$1/g; $message = encode_low_ascii $message; $file = encode_low_ascii $file; $message =~ s/(^|[^\\])\`([^`]+[^`\\])\`/${1}[${2}](#security-tab)/; $message =~ s/\`/\\"/g; print qq<{"ruleId": "$code", "ruleIndex": 0,"message": { "text": "$message" }, "locations": [ { "physicalLocation": { "artifactLocation": { "uri": "$file", "uriBaseId": "%SRCROOT%" }, "region": { "startLine": $line, "startColumn": $column, "endColumn": $endColumn } } } ] }>;' "$warning_output" > "$sarif_results"
+    jq --slurpfile results "$sarif_results" '.runs[0].tool.driver.version="'"$CHECK_SPELLING_VERSION"'" | .runs[0].results = $results' $spellchecker/sarif.json > "$SARIF_FILE" || (
+      echo "::error title=Sarif generation failed::Returning rejected json as sarif file for review -- please file a bug (sarif-generation-failed)"
+      cp "$sarif_results" "$SARIF_FILE"
+    )
+  fi
   end_group
   if [ "$word_splitter_status" != '0 0' ]; then
     echo "$word_splitter failed ($word_splitter_status)"

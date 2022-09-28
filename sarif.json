@@ -1,0 +1,306 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "properties": {
+    "comment": "check-spelling test"
+  },
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "check-spelling",
+          "informationUri": "https://github.com/check-spelling/check-spelling",
+          "rules": [
+            {
+              "id": "unrecognized-spelling",
+              "name": "UnrecognizedSpelling",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#unrecognized-spelling",
+              "shortDescription": {
+                "text": "Unrecognized Spelling"
+              },
+              "fullDescription": {
+                "text": "Token is neither in the dictionary nor expected"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct spelling\n- Add to [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n- Mask using [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "error",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "forbidden-pattern",
+              "name": "ForbiddenPattern",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#forbidden-pattern",
+              "shortDescription": {
+                "text": "Forbidden Pattern"
+              },
+              "fullDescription": {
+                "text": "Forbidden pattern matched this text"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Alter text so the pattern does not match\n- Add a [pattern](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns) to patterns.txt that matches (a portion of) the flagged content to accept it\n- Delete, edit, or comment out the pattern\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "error",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "noisy-file",
+              "name": "NoisyFile",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#noisy-file",
+              "shortDescription": {
+                "text": "Noisy File"
+              },
+              "fullDescription": {
+                "text": "There were more non-words than dictionary words in the file"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Add more words to the dictionary\n- Use patterns to mask tokens.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "recommendation",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "large-file",
+              "name": "LargeFile",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#large-file",
+              "shortDescription": {
+                "text": "Large File"
+              },
+              "fullDescription": {
+                "text": "File is very large"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Adjust 'largest_file' in action configuration if you want to check the file."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "medium",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "limited-references",
+              "name": "LimitedReferences",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#limited-references",
+              "shortDescription": {
+                "text": "Limited References"
+              },
+              "fullDescription": {
+                "text": "There were an excessive number of uses of this token. Not all instances are identified."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add word to the [dictionary](https://github.com/check-spelling/check-spelling/wiki/Configuration#allow)\n- Correct the spelling\n- To see more instances, increase action configuration \"unknown_word_limit\".\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "candidate-pattern",
+              "name": "CandidatePattern",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#candidate-pattern",
+              "shortDescription": {
+                "text": "Candidate Pattern"
+              },
+              "fullDescription": {
+                "text": "A line with unrecognized tokens matches a pattern. Patterns enable the tool to ignore content."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the pattern to [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- Remove the pattern from candidates.patterns\n\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "medium",
+                "problem.severity": "recommendation",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "bad-regex",
+              "name": "BadRegex",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#bad-regex",
+              "shortDescription": {
+                "text": "Bad Regex"
+              },
+              "fullDescription": {
+                "text": "Perl did not like the regular expression pattern."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- See [bad-regex](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#bad-regex)\n- Remove the pattern.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "medium",
+                "problem.severity": "error",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "dictionary-not-found",
+              "name": "DictionaryNotFound",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#dictionary-not-found",
+              "shortDescription": {
+                "text": "Dictionary not found"
+              },
+              "fullDescription": {
+                "text": "The specified dictionary could not be found."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://github.com/check-spelling/check-spelling/wiki/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "no-newline-at-eof",
+              "name": "NoNewlineAtEOF",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#no-newline-at-eof",
+              "shortDescription": {
+                "text": "No newline at EOF"
+              },
+              "fullDescription": {
+                "text": "The specified file is missing a newline at the end of the file."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add a blank line to the end of the file.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "recommendation",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "check-file-path",
+              "name": "CheckFilePath",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#check-file-path",
+              "shortDescription": {
+                "text": "Check File Path"
+              },
+              "fullDescription": {
+                "text": "Token in file path is neither in the dictionary nor expected"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\nNote that this check is against the file path not the displayed line.\n- Rename file/directory to correct spelling\n- Add to [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n- Mask using [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "error",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "minified-file",
+              "name": "MinifiedFile",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#minified-file",
+              "shortDescription": {
+                "text": "Minified File"
+              },
+              "fullDescription": {
+                "text": "File has incredibly long lines, perhaps it's minified?"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Add 'minified-file' to 'disable_checks' in the configuration.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "medium",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": []
+    }
+  ]
+}

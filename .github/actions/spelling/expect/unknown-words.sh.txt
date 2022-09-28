@@ -1,6 +1,7 @@
 apps
 bdc
 cbeaff
+codeql
 Cwd
 DEBIAN
 elif
@@ -20,7 +21,11 @@ quotemeta
 rawfile
 realpath
 rfc
+sarifs
+slurpfile
 spellchecker
+sprintf
+SRCROOT
 ssh
 unshallow
 Unshallowing
