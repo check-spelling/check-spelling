@@ -838,6 +838,7 @@ define_variables() {
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
   tokens_file="$data_dir/tokens.txt"
+  remove_words="$data_dir/remove_words.txt"
   action_log_ref="$data_dir/action_log_ref.txt"
   action_log_file_name="$data_dir/action_log_file_name.txt"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
@@ -1544,16 +1545,14 @@ remove_items() {
   if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
     echo "<!-- Because only_check_changed_files is active, checking for obsolete items cannot be performed-->"
   else
-    if [ -z "$patch_remove" ]; then
-      patch_remove=$(perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output")
+    if [ ! -s "$remove_words" ]; then
+      perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output" > "$remove_words"
     fi
-    if [ -n "$patch_remove" ]; then
+    if [ -s "$remove_words" ]; then
       echo "
         <details><summary>Previously acknowledged words that are now absent
-        </summary>$patch_remove</details>
+        </summary>$(cat "$remove_words")</details>
       " | strip_lead_and_blanks
-      remove_words=$data_dir/remove_words.txt
-      echo "$patch_remove" > $remove_words
       echo "::set-output name=stale_words::$remove_words" >> $output_variables
     else
       rm "$fewer_misspellings_canary"
