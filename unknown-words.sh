@@ -1643,7 +1643,7 @@ spelling_body() {
     push)
       details_note="See the [:scroll:action log]($(get_action_log)) for details.";;
     *)
-      details_note=$(echo "<!-- If you can see this, please [file a bug](https://github.com/$GITHUB_ACTION_REPOSITORY/issues/new)
+      details_note=$(echo "<!-- If you can see this, please [file a bug](https://github.com/$GH_ACTION_REPOSITORY/issues/new)
         referencing this comment url, as the code does not expect this to happen. -->" | strip_lead);;
   esac
   if [ -z "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
