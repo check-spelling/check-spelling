@@ -330,6 +330,8 @@ runs:
         INPUTS: ${{ toJSON(inputs) }}
         DEBUG: ${{ inputs.debug }}
         spellchecker: ${{ github.action_path }}
+        GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
+        GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
       run:
         spellchecker=$(echo $spellchecker| perl -pe 's{/$}{}')
         stdbuf -i0 -o0 -e0 $spellchecker/unknown-words.sh
