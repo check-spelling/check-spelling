@@ -831,6 +831,7 @@ define_variables() {
   action_log_ref="$data_dir/action_log_ref.txt"
   action_log_file_name="$data_dir/action_log_file_name.txt"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
+  file_list="$data_dir/checked_files.lst"
   output_variables=$(mktemp)
   instructions_preamble=$(mktemp)
 
@@ -1390,7 +1391,6 @@ run_spell_check() {
   echo "^\Q$synthetic_base/\E" >> "$patterns"
   mkdir -p "$synthetic_base"
 
-  file_list=$(mktemp)
   (
     if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
       get_before
@@ -1492,7 +1492,6 @@ run_spell_check() {
     echo "$word_splitter failed ($word_splitter_status)"
     quit 2
   fi
-  rm $file_list
 }
 
 printDetails() {
