@@ -1832,11 +1832,13 @@ spelling_body() {
   message="$1"
   extra="$2"
   err="$3"
+  action_log_markdown="the [:scroll:action log]($(get_action_log))"
+
   case "$GITHUB_EVENT_NAME" in
     pull_request|pull_request_target)
-      details_note="See the [:open_file_folder: files]($(jq -r .pull_request.number "$GITHUB_EVENT_PATH")/files/) view or the [:scroll:action log]($(get_action_log)) for details.";;
+      details_note="See the [:open_file_folder: files]($(jq -r .pull_request.number "$GITHUB_EVENT_PATH")/files/) view or $action_log_markdown for details.";;
     push)
-      details_note="See the [:scroll:action log]($(get_action_log)) for details.";;
+      details_note="See $action_log_markdown for details.";;
     *)
       details_note=$(echo "<!-- If you can see this, please [file a bug](https://github.com/$GH_ACTION_REPOSITORY/issues/new)
         referencing this comment url, as the code does not expect this to happen. -->" | strip_lead);;
