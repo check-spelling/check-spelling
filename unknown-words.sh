@@ -1184,6 +1184,11 @@ set_up_reporter() {
 }
 
 set_up_files() {
+  if [ "$GITHUB_EVENT_NAME" = "pull_request_target" ] || [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+    if [ -z "$GITHUB_HEAD_REF" ]; then
+      GITHUB_HEAD_REF=$(jq -r '.pull_request.head.ref // empty' $GITHUB_EVENT_PATH)
+    fi
+  fi
   if [ ! -d "$bucket/$project/" ] && [ -n "$INPUT_SPELL_CHECK_THIS" ]; then
     spell_check_this_repo=$(mktemp -d)
     spelling_config=.github/actions/spelling/
@@ -1713,11 +1718,6 @@ spelling_body() {
   fi
     if [ -n "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
       cleanup_text=" and remove the previously acknowledged and now absent words"
-    fi
-    if [ "$GITHUB_EVENT_NAME" = "pull_request_target" ] || [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-      if [ -z "$GITHUB_HEAD_REF" ]; then
-        GITHUB_HEAD_REF=$(jq -r '.pull_request.head.ref // empty' $GITHUB_EVENT_PATH)
-      fi
     fi
     if [ -n "$GITHUB_HEAD_REF" ]; then
       remote_url_ssh=$(jq -r '.pull_request.head.repo.ssh_url // empty' $GITHUB_EVENT_PATH)
