@@ -1786,12 +1786,24 @@ spelling_body() {
   extra="$2"
   err="$3"
   action_log_markdown="the [:scroll:action log]($(get_action_log))"
+  if to_boolean "$INPUT_USE_SARIF"; then
+    pr_number=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
+    if [ -n "$pr_number" ]; then
+      sarif_report_query="pr:$pr_number"
+    else
+      sarif_report_query="branch:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+    fi
+    sarif_report="or [:angel: SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+$sarif_report_query)"
+    or_markdown=','
+  else
+    or_markdown=' or'
+  fi
 
   case "$GITHUB_EVENT_NAME" in
     pull_request|pull_request_target)
-      details_note="See the [:open_file_folder: files]($(jq -r .pull_request.number "$GITHUB_EVENT_PATH")/files/) view or $action_log_markdown for details.";;
+      details_note="See the [:open_file_folder: files]($(jq -r .pull_request.number "$GITHUB_EVENT_PATH")/files/) view$or_markdown $action_log_markdown $sarif_report for details.";;
     push)
-      details_note="See $action_log_markdown for details.";;
+      details_note="See $action_log_markdown $sarif_report for details.";;
     *)
       details_note=$(echo "<!-- If you can see this, please [file a bug](https://github.com/$GH_ACTION_REPOSITORY/issues/new)
         referencing this comment url, as the code does not expect this to happen. -->" | strip_lead);;
