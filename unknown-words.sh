@@ -867,6 +867,11 @@ define_variables() {
     report_header="$report_header $INPUT_REPORT_TITLE_SUFFIX"
   fi
   INPUT_TASK="${INPUT_TASK:-$INPUT_CUSTOM_TASK}"
+  if [ -z "$GITHUB_OUTPUT" ]; then
+    echo 'Warning - $GITHUB_OUTPUT is required for this workflow to work' >&2
+    GITHUB_OUTPUT=$(mktemp)
+    GH_OUTPUT_STUB=1
+  fi
 }
 
 check_yaml_key_value() {
@@ -1509,7 +1514,7 @@ get_file_list() {
 }
 
 run_spell_check() {
-  echo "::set-output name=internal_state_directory::$data_dir" >> $output_variables
+  echo "internal_state_directory=$data_dir" >> "$output_variables"
 
   begin_group 'Spell check files'
   synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
@@ -1631,7 +1636,7 @@ run_spell_check() {
     s{(^(?:.+?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}
     ' "$warning_output"
   cat "$warning_output"
-  echo "::set-output name=warnings::$warning_output" >> $output_variables
+  echo "warnings=$warning_output" >> "$output_variables"
   if to_boolean "$INPUT_USE_SARIF"; then
     SARIF_FILE="$(mktemp).sarif.json"
     echo UPLOAD_SARIF="$SARIF_FILE" >> "$GITHUB_ENV"
@@ -1729,7 +1734,7 @@ remove_items() {
         <details><summary>Previously acknowledged words that are now absent
         </summary>$(cat "$remove_words")</details>
       " | strip_lead_and_blanks
-      echo "::set-output name=stale_words::$remove_words" >> $output_variables
+      echo "stale_words=$remove_words" >> "$output_variables"
     else
       rm "$fewer_misspellings_canary"
     fi
@@ -1924,7 +1929,7 @@ spelling_body() {
     fi
     if [ -s "$should_exclude_file" ]; then
       calculate_exclude_patterns
-      echo "::set-output name=skipped_files::$should_exclude_file" >> $output_variables
+      echo "skipped_files=$should_exclude_file" >> "$output_variables"
       output_excludes="$(echo "
         <details><summary>Some files were automatically ignored</summary>
 
@@ -2037,11 +2042,14 @@ quit() {
     2) followup='debug';;
     3) followup='collapse_previous_comment';;
   esac
-  echo "::set-output name=result_code::$status"
-  echo "::set-output name=followup::$followup"
+  echo "result_code=$status" >> "$GITHUB_OUTPUT"
+  echo "followup=$followup" >> "$GITHUB_OUTPUT"
   echo "$followup" > "$data_dir/followup"
   echo "result_code=$status" >> "$GITHUB_ENV"
-  cat $output_variables
+  cat "$output_variables" >> "$GITHUB_OUTPUT"
+  if [ -n "$GH_OUTPUT_STUB" ]; then
+    perl -pe 's/^(\S+)=(.*)/::set-output name=$1::$2/' "$GITHUB_OUTPUT"
+  fi
   if ls "$data_dir" 2> /dev/null | grep -q .; then
     artifact=$(mktemp)
     (
@@ -2408,7 +2416,7 @@ should_collapse_previous_and_not_comment() {
   fi
   previous_comment_node_id=$(get_previous_comment)
   if [ -n "$previous_comment_node_id" ]; then
-    echo "::set-output name=previous_comment::$previous_comment_node_id"
+    echo "previous_comment=$previous_comment_node_id" >> "$GITHUB_OUTPUT"
     echo "$previous_comment_node_id" > "$data_dir/previous_comment.txt"
     quit_without_error=1
     quit 3
@@ -2579,7 +2587,7 @@ more_misspellings() {
   if [ -s "$extra_dictionaries_cover_entries" ]; then
     perl -pe 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
     jq -s '.' > $extra_dictionaries_json
-    echo "::set-output name=suggested_dictionaries::$extra_dictionaries_json" >> $output_variables
+    echo "suggested_dictionaries=$extra_dictionaries_json" >> "$output_variables"
   fi
 
   instructions=$(
@@ -2589,7 +2597,7 @@ more_misspellings() {
   unknown_count=$(cat "$tokens_file" | wc -l | strip_lead)
   title='Please review'
   begin_group "Unrecognized ($unknown_count)"
-  echo "::set-output name=unknown_words::$tokens_file" >> $output_variables
+  echo "unknown_words=$tokens_file" >> "$output_variables"
   if [ "$unknown_count" -eq 0 ]; then
     unknown_word_body=''
   else
@@ -2635,4 +2643,4 @@ if [ -z "$patch_add" ]; then
   fewer_misspellings
 fi
 more_misspellings
-cat $output_variables
+cat "$output_variables" >> "$GITHUB_OUTPUT"
