@@ -286,8 +286,8 @@ runs:
       if: inputs.alternate_engine
       shell: bash
       run: |
-        echo "::set-output name=repo::$(echo '${{ inputs.alternate_engine }}' | perl -pe 's/\@.*//')"
-        echo "::set-output name=branch::$(echo '${{ inputs.alternate_engine }}' | perl -ne 'next unless s/.*\@//; print')"
+        echo "repo=$(echo '${{ inputs.alternate_engine }}' | perl -pe 's/\@.*//')" >> "$GITHUB_OUTPUT"
+        echo "branch=$(echo '${{ inputs.alternate_engine }}' | perl -ne 'next unless s/.*\@//; print')" >> "$GITHUB_OUTPUT"
     - name: alternate-engine
       if: inputs.alternate_engine
       uses: actions/checkout@v3
