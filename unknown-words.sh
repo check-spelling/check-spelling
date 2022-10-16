@@ -1277,7 +1277,7 @@ set_up_files() {
   fi
   if [ ! -d "$bucket/$project/" ] && [ -n "$INPUT_SPELL_CHECK_THIS" ]; then
     spell_check_this_repo=$(mktemp -d)
-    spelling_config=.github/actions/spelling/
+    spell_check_this_config=.github/actions/spelling/
     spell_check_this_repo_name=${INPUT_SPELL_CHECK_THIS%%@*}
     if [ "$spell_check_this_repo_name" != "$INPUT_SPELL_CHECK_THIS" ]; then
       spell_check_this_repo_branch=${INPUT_SPELL_CHECK_THIS##*@}
@@ -1286,18 +1286,29 @@ set_up_files() {
       fi
     fi
     if git clone --depth 1 "https://github.com/$spell_check_this_repo_name" $spell_check_this_repo_branch "$spell_check_this_repo" > /dev/null 2> /dev/null; then
-      mkdir -p "$spelling_config"
-      cp -R "$spell_check_this_repo/$spelling_config"/* "$bucket/$project/"
-      spell_check_this_repo_url=$(cd "$spell_check_this_repo"; git remote get-url origin)
-      (
-        echo "mkdir -p $spelling_config"
-        echo 'cp -i -R $('
-        echo 'cd $(mktemp -d)'
-        echo "git clone --depth 1 --no-tags $spell_check_this_repo_url $spell_check_this_repo_branch . > /dev/null 2> /dev/null"
-        echo "cd $spelling_config; pwd"
-        echo ')/*' "$bucket/$project/"
-        echo "git add '$bucket/$project/'"
-      ) > "$instructions_preamble"
+      if [ ! -d "$spell_check_this_repo/$spell_check_this_config" ]; then
+        (
+          if [ -n "$workflow_path" ]; then
+            spell_check_this_config="$spell_check_this_config" perl -e '$pattern=quotemeta($ENV{INPUT_SPELL_CHECK_THIS}); while (<>) { next unless /$pattern/; $start=$-[0]+1; print "$ARGV:$.:$start ... $+[0], Warning - spell_check_this - could not find $ENV{spell_check_this_config} (spell-check-this-error)\n" }' "$workflow_path"
+          else
+            echo "?:0:1, Warning - spell_check_this - could not find $spell_check_this_config (spell-check-this-error)"
+          fi
+        ) >> "$early_warnings"
+      else
+        spelling_config="$bucket/$project/"
+        mkdir -p "$spelling_config"
+        cp -R "$spell_check_this_repo/$spell_check_this_config"/* "$spelling_config"
+        spell_check_this_repo_url=$(cd "$spell_check_this_repo"; git remote get-url origin)
+        (
+          echo "mkdir -p '$spelling_config'"
+          echo 'cp -i -R $('
+          echo 'cd $(mktemp -d)'
+          echo "git clone --depth 1 --no-tags $spell_check_this_repo_url $spell_check_this_repo_branch . > /dev/null 2> /dev/null"
+          echo "cd '$spell_check_this_config'; pwd"
+          echo ")/* '$spelling_config'"
+          echo "git add '$spelling_config'"
+        ) > "$instructions_preamble"
+      fi
     fi
   fi
   get_project_files word_expectations.words $expect_path

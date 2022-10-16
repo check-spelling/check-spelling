@@ -220,7 +220,7 @@ inputs:
     required: false
     default: ''
   spell_check_this:
-    description: 'Repository with default configuration to use if no configuration is found'
+    description: 'Repository with default configuration to use if no configuration is found in a .github/actions/spelling directory'
     required: false
     default: ''
   ssh_key:
