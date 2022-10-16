@@ -10,7 +10,7 @@ use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
 
 use Test::More;
-plan tests => 37;
+plan tests => 39;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -94,6 +94,13 @@ check_output_file("$output_directory/stats", '{words: 2, unrecognized: 1, unknow
 check_output_file("$output_directory/unknown", 'Play');
 check_output_file("$output_directory/warnings", ":3:8 ... 12: 'Play'
 ");
+open $fh, '>:utf8', $filename;
+print $fh ("bar "x1000)."\n";
+close $fh;
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+check_output_file("$output_dir/name", $filename);
+check_output_file("$output_dir/skipped", 'average line width (4001) exceeds the threshold (1000). (minified-file)
+');
 open $fh, '>:utf8', $filename;
 print $fh "FooBar baz Bar elf baz bar supercalifragelisticexpialidocious
 FooBarBar
