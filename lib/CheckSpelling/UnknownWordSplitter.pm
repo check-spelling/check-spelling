@@ -27,6 +27,9 @@ my %unique;
 my %unique_unrecognized;
 my ($last_file, $words, $unrecognized) = ('', 0, 0);
 
+my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
+my $disable_minified_file = $disable_flags =~ /(?:^|,|\s)minified-file(?:,|\s|$)/;
+
 sub file_to_list {
   my ($re) = @_;
   my @file;
@@ -308,6 +311,16 @@ sub split_file {
             $_ = $previous_line_state;
           }
         }
+      }
+    }
+    unless ($disable_minified_file) {
+      my $offset = tell FILE;
+      my $ratio = $offset / $.;
+      my $ratio_threshold = 1000;
+      if ($ratio > $ratio_threshold) {
+        open SKIPPED, '>:utf8', "$temp_dir/skipped";
+        print SKIPPED "lines seem to average line width ($ratio) exceeds the threshold ($ratio_threshold). (minified-file)\n";
+        close SKIPPED;
       }
     }
   }

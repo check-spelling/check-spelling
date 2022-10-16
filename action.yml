@@ -210,7 +210,7 @@ inputs:
   warnings:
     description: 'List of events that are warnings (items that are neither warnings nor notices will result in an :x:)'
     required: false
-    default: bad-regex,deprecated-feature,large-file,limited-references,no-newline-at-eof,noisy-file,non-alpha-in-dictionary,unexpected-line-ending,whitespace-in-dictionary
+    default: bad-regex,deprecated-feature,large-file,limited-references,no-newline-at-eof,noisy-file,non-alpha-in-dictionary,unexpected-line-ending,whitespace-in-dictionary,minified-file
   notices:
     description: 'List of events that are notices (items that are neither warnings nor notices will result in an :x:)'
     required: false
