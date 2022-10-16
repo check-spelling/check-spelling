@@ -151,10 +151,7 @@ dispatcher() {
 
 load_env() {
   input_variables=$(mktemp)
-  echo "$INPUTS" |
-    grep -v "'" |
-    jq -r 'keys[] as $k | "INPUT_\($k | ascii_upcase)='$q'\(.[$k])'$q$Q |
-    perl -pe 'next unless m{^([^=]*)(=.*)}; my ($k, $v) = ($1, $2); $k = qq<export $k; [ -z "\$$k" ] && $k>; $v =~ s{\$}{\\\$}g;$_="$k$v;"' > "$input_variables"
+  "$spellchecker/load-env.pl" > "$input_variables"
   . "$input_variables"
 }
 
