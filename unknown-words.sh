@@ -1488,6 +1488,7 @@ run_spell_check() {
     unknown_word_limit="$INPUT_UNKNOWN_WORD_LIMIT" \
     candidates_path="$candidates_path" \
     candidate_summary="$candidate_summary" \
+    check_file_names="$check_file_names" \
     "$word_collator" |\
   "$strip_word_collator_suffix" > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
