@@ -76,6 +76,23 @@ sub skip_item {
   return 0;
 }
 
+sub log_skip_item {
+  my ($item, $file, $warning, $unknown_word_limit) = @_;
+  return 1 if skip_item($item);
+  my $seen_count = $seen{$item};
+  if (defined $seen_count) {
+    if (!defined $unknown_word_limit || ($seen_count++ < $unknown_word_limit)) {
+      print MORE_WARNINGS "$file$warning\n"
+    } else {
+      $last_seen{$item} = "$file$warning";
+    }
+    $seen{$item} = $seen_count;
+    return 1;
+  }
+  $seen{$item} = 1;
+  return 0;
+}
+
 sub load_expect {
   my ($expect) = @_;
   our %expected;
@@ -101,6 +118,7 @@ sub count_warning {
 sub main {
   my @directories;
   my @cleanup_directories;
+  my @check_file_paths;
 
   my %unknown;
 
@@ -114,6 +132,7 @@ sub main {
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
   my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
   my $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
+  my $file_list = CheckSpelling::Util::get_file_from_env('check_file_names', '');
 
   open WARNING_OUTPUT, '>:utf8', $warning_output;
   open MORE_WARNINGS, '>:utf8', $more_warnings;
@@ -180,6 +199,16 @@ sub main {
 
     # stats isn't written if all words in the file are in the dictionary
     next unless (-s "$directory/stats");
+
+    if ($file eq $file_list) {
+      open FILE_LIST, '<:utf8', $file_list;
+      push @check_file_paths, '0 placeholder';
+      for my $check_file_path (<FILE_LIST>) {
+        chomp $check_file_path;
+        push @check_file_paths, $check_file_path;
+      }
+      close FILE_LIST;
+    }
 
     my ($words, $unrecognized, $unknown, $unique);
 
@@ -294,27 +323,28 @@ sub main {
     next unless open(NAME, '<:utf8', "$directory/name");
     my $file=<NAME>;
     close NAME;
+    my $is_file_list = $file eq $file_list;
     open WARNINGS, '<:utf8', "$directory/warnings";
     for $warning (<WARNINGS>) {
       chomp $warning;
-      if ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:$1:$2, Warning - `$3` is not a recognized word. (unrecognized-spelling)/) {
-        my ($line, $range, $item) = ($1, $2, $3);
-        next if skip_item($item);
-        my $seen_count = $seen{$item};
-        if (defined $seen_count) {
-          if (!defined $unknown_word_limit || ($seen_count++ < $unknown_word_limit)) {
-            print MORE_WARNINGS "$file$warning\n"
-          } else {
-            $last_seen{$item} = "$file$warning";
-          }
-          $seen{$item} = $seen_count;
-          next;
+      if (!$is_file_list) {
+        if ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:$1:$2, Warning - `$3` is not a recognized word. (unrecognized-spelling)/) {
+          my ($line, $range, $item) = ($1, $2, $3);
+          next if log_skip_item($item, $file, $warning, $unknown_word_limit);
+        } else {
+          count_warning $warning;
         }
-        $seen{$item} = 1;
+        print WARNING_OUTPUT "$file$warning\n";
+      } elsif ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:1:$2, Warning - `$3` is not a recognized word. (check-file-path)/) {
+        my ($line, $range, $item) = ($1, $2, $3);
+        $file = $check_file_paths[$line];
+        next if log_skip_item($item, $file, $warning, $unknown_word_limit);
+        print WARNING_OUTPUT "$file$warning\n";
+        count_warning $warning;
       } else {
+        print WARNING_OUTPUT "$file$warning\n";
         count_warning $warning;
       }
-      print WARNING_OUTPUT "$file$warning\n";
     }
     close WARNINGS;
   }
