@@ -2181,30 +2181,6 @@ post_summary() {
   jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
   step_summary_draft=$(mktemp)
   echo "$OUTPUT" >> "$step_summary_draft"
-  retrieve_step="$(echo '
-  (
-  artifact_dir=$(mktemp -d)
-  gh_err=$(mktemp)
-  if gh run download -D "$artifact_dir" -R '"$GITHUB_REPOSITORY $GITHUB_RUN_ID"' -n check-spelling-comment 2> "$gh_err"; then
-    patch_remove=$(unzip -p "$artifact_dir/artifact.zip" remove_words.txt 2>/dev/null)
-    patch_add=$(unzip -p "$artifact_dir/artifact.zip" tokens.txt 2>/dev/null)
-    should_exclude_patterns=$(unzip -p "$artifact_dir/artifact.zip" should_exclude.txt 2>/dev/null | perl -pe '"'s{^(.*)}{^\\\\Q\$1\\\\E\\\$}'"')
-    update_files
-  elif grep -q "no valid artifacts found to download" "$gh_err"; then
-    if [ "$('"gh api /repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts -q '.artifacts.[]|select(.name==${Q}check-spelling-comment${Q})|.expired'"')" = "true" ]; then
-      echo "Run artifact expired. You will need to trigger a new run."
-    else
-      echo "Run may not have completed. If so, please wait for it to finish and try again."
-    fi
-  elif grep -q "no artifact matches any of the names or patterns provided" "$gh_err"; then
-    echo "unexpected error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
-    cat "$gh_err"
-  else
-    echo "unknown error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
-    cat "$gh_err"
-  fi
-  )' | perl -pe 's/^      //')"
-  RETRIEVE_STEP="$retrieve_step" perl -i -e '$/=undef; $_=<>; s!^comment_json=.*^update_files!$ENV{RETRIEVE_STEP}!ms; s!^rm \S*comment_body\S*!!m; print' "$step_summary_draft"
   if offer_quote_reply; then
     quote_reply_insertion=$(mktemp)
     (
@@ -2393,6 +2369,7 @@ compare_new_output() {
 }
 
 generate_curl_instructions() {
+  jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
   has_instructions_canary=$(mktemp)
   calculate_exclude_patterns
   instructions=$(mktemp)
@@ -2421,16 +2398,28 @@ generate_curl_instructions() {
   ) >> "$instructions"
   if [ -e "$has_instructions_canary" ]; then
     echo '
-      comment_json=$(mktemp)
-      curl -L -s -S \
-        -H "Content-Type: application/json" \
-        "COMMENT_URL" > "$comment_json"
-      comment_body=$(mktemp)
-      jq -r ".body // empty" "$comment_json" | tr -d "\\r" > $comment_body
-      rm $comment_json
-      '"$(patch_variables $Q'$comment_body'$Q)"'
-      update_files
-      rm $comment_body
+      (
+      artifact_dir=$(mktemp -d)
+      gh_err=$(mktemp)
+      if gh run download -D "$artifact_dir" -R '"$GITHUB_REPOSITORY $GITHUB_RUN_ID"' -n check-spelling-comment 2> "$gh_err"; then
+        patch_remove=$(unzip -p "$artifact_dir/artifact.zip" remove_words.txt 2>/dev/null)
+        patch_add=$(unzip -p "$artifact_dir/artifact.zip" tokens.txt 2>/dev/null)
+        should_exclude_patterns=$(unzip -p "$artifact_dir/artifact.zip" should_exclude.txt 2>/dev/null | perl -pe '"'s{^(.*)}{^\\\\Q\$1\\\\E\\\$}'"')
+        update_files
+      elif grep -q "no valid artifacts found to download" "$gh_err"; then
+        if [ "$('"gh api /repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts -q '.artifacts.[]|select(.name==${Q}check-spelling-comment${Q})|.expired'"')" = "true" ]; then
+          echo "Run artifact expired. You will need to trigger a new run."
+        else
+          echo "Run may not have completed. If so, please wait for it to finish and try again."
+        fi
+      elif grep -q "no artifact matches any of the names or patterns provided" "$gh_err"; then
+        echo "unexpected error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
+        cat "$gh_err"
+      else
+        echo "unknown error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
+        cat "$gh_err"
+      fi
+      )
       git add -u
       ' | sed -e 's/^    //' >> "$instructions"
     echo "$instructions"
@@ -2461,14 +2450,7 @@ set_patch_remove_add() {
 }
 
 make_instructions() {
-  if skip_curl; then
-    instructions=$(generate_instructions)
-    if [ -n "$patch_add" ]; then
-      to_publish_expect "$new_expect_file" $new_expect_file_new >> $instructions
-    fi
-  else
-    instructions=$(generate_curl_instructions)
-  fi
+  instructions=$(generate_curl_instructions)
   if [ -n "$instructions" ]; then
     cat $instructions
     rm $instructions
@@ -2482,16 +2464,7 @@ fewer_misspellings() {
   if [ -n "$INPUT_EXPERIMENTAL_COMMIT_NOTE" ]; then
     skip_push_and_pop=1
 
-    instructions_head=$(mktemp)
-    (
-      patch_add=1
-      patch_remove=1
-      should_exclude_patterns=1
-      patch_variables $comment_body > $instructions_head
-    )
-    . $instructions_head
-    rm $instructions_head
-    instructions=$(generate_instructions)
+    instructions=$(generate_curl_instructions)
 
     . $instructions &&
     git_commit "$INPUT_EXPERIMENTAL_COMMIT_NOTE" &&
