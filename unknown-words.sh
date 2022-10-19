@@ -1887,7 +1887,15 @@ spelling_body() {
     else
       sarif_report_query="branch:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
     fi
-    sarif_report="or [:angel: SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+$sarif_report_query)"
+    sarif_report="[:angel: SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+$sarif_report_query)"
+    # check-spelling here corresponds to the uses github/codeql-action/upload-sarif / with / category
+    code_scanning_results_run=$(GH_TOKEN="$GITHUB_TOKEN" gh api /repos/$GITHUB_REPOSITORY/commits/${GITHUB_HEAD_SHA:-$GITHUB_SHA}/check-runs -q '.check_runs|map(select(.app.id==57789 and .name=="check-spelling"))[0].url // empty')
+    if [ -n "$code_scanning_results_run" ]; then
+      code_scanning_results_url=$(GH_TOKEN="$GITHUB_TOKEN" gh api "$code_scanning_results_run" -q '.html_url // empty')
+      sarif_report=", $sarif_report or [:mag_right:]($code_scanning_results_url)"
+    else
+      sarif_report="or $sarif_report"
+    fi
     or_markdown=','
   else
     or_markdown=' or'
