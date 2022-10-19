@@ -524,6 +524,11 @@ show_github_actions_push_disclaimer() {
   +     ssh-key: "${{ secrets.CHECK_SPELLING }}"
   ```'
   fi
+  if [ -n "$workflow_path" ]; then
+    qualified_workflow_path="$b$workflow_path$b workflow"
+  else
+    qualified_workflow_path="workflow"
+  fi
   OUTPUT="### :hourglass: check-spelling changes applied
 
   As [configured](https://github.com/check-spelling/check-spelling/wiki/Feature:-Update-expect-list#github_token), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
@@ -544,7 +549,7 @@ show_github_actions_push_disclaimer() {
 
   #### Configure update job in workflow to use secret
 
-  If the $b$workflow_path$b workflow ${b}update${b} job doesn't already have the $workflow_ssh_key_hint
+  If the $qualified_workflow_path ${b}update${b} job doesn't already have the $workflow_ssh_key_hint
 
   </details>
 
