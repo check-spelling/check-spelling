@@ -1239,17 +1239,33 @@ set_up_files() {
       GITHUB_HEAD_REF=$(jq -r '.pull_request.head.ref // empty' $GITHUB_EVENT_PATH)
     fi
   fi
-  if [ ! -d "$bucket/$project/" ] && [ -n "$INPUT_SPELL_CHECK_THIS" ]; then
-    spell_check_this_repo=$(mktemp -d)
-    spell_check_this_config=.github/actions/spelling/
-    spell_check_this_repo_name=${INPUT_SPELL_CHECK_THIS%%@*}
-    if [ "$spell_check_this_repo_name" != "$INPUT_SPELL_CHECK_THIS" ]; then
-      spell_check_this_repo_branch=${INPUT_SPELL_CHECK_THIS##*@}
-      if [ -n "$spell_check_this_repo_branch" ]; then
-        spell_check_this_repo_branch="--branch $spell_check_this_repo_branch"
+  case "$INPUT_TASK" in
+    comment|collapse_previous_comment|pr_head_sha)
+      if [ -e "$data_dir/spell_check_this.json" ]; then
+        spell_check_this_repo=$(mktemp -d)
+        spelling_config=$(jq -r .config "$data_dir/spell_check_this.json")
+        spell_check_this_repo_url=$(jq -r .url "$data_dir/spell_check_this.json")
+        spell_check_this_repo_branch=$(jq -r .branch "$data_dir/spell_check_this.json")
+        spell_check_this_config=$(jq -r .path "$data_dir/spell_check_this.json")
       fi
+    ;;
+    *)
+      if [ ! -d "$bucket/$project/" ] && [ -n "$INPUT_SPELL_CHECK_THIS" ]; then
+        spelling_config="$bucket/$project/"
+        spell_check_this_repo=$(mktemp -d)
+        spell_check_this_config=.github/actions/spelling/
+        spell_check_this_repo_name=${INPUT_SPELL_CHECK_THIS%%@*}
+        if [ "$spell_check_this_repo_name" != "$INPUT_SPELL_CHECK_THIS" ]; then
+          spell_check_this_repo_branch=${INPUT_SPELL_CHECK_THIS##*@}
+        fi
+      fi
+    ;;
+  esac
+  if [ -n "$spelling_config" ]; then
+    if [ -n "$spell_check_this_repo_branch" ]; then
+      spell_check_this_repo_with_branch="--branch $spell_check_this_repo_branch"
     fi
-    if git clone --depth 1 "https://github.com/$spell_check_this_repo_name" $spell_check_this_repo_branch "$spell_check_this_repo" > /dev/null 2> /dev/null; then
+    if git clone --depth 1 "https://github.com/$spell_check_this_repo_name" $spell_check_this_repo_with_branch "$spell_check_this_repo" > /dev/null 2> /dev/null; then
       if [ ! -d "$spell_check_this_repo/$spell_check_this_config" ]; then
         (
           if [ -n "$workflow_path" ]; then
@@ -1259,7 +1275,6 @@ set_up_files() {
           fi
         ) >> "$early_warnings"
       else
-        spelling_config="$bucket/$project/"
         mkdir -p "$spelling_config"
         cp -R "$spell_check_this_repo/$spell_check_this_config"/* "$spelling_config"
         spell_check_this_repo_url=$(cd "$spell_check_this_repo"; git remote get-url origin)
@@ -1267,11 +1282,21 @@ set_up_files() {
           echo "mkdir -p '$spelling_config'"
           echo 'cp -i -R $('
           echo 'cd $(mktemp -d)'
-          echo "git clone --depth 1 --no-tags $spell_check_this_repo_url $spell_check_this_repo_branch . > /dev/null 2> /dev/null"
+          echo "git clone --depth 1 --no-tags $spell_check_this_repo_url $spell_check_this_repo_with_branch . > /dev/null 2> /dev/null"
           echo "cd '$spell_check_this_config'; pwd"
           echo ")/* '$spelling_config'"
           echo "git add '$spelling_config'"
         ) > "$instructions_preamble"
+        if [ ! -e "$data_dir/spell_check_this.json" ]; then
+          spell_check_this_repo_branch=$(git -C "$spell_check_this_repo" branch --show-current)
+          echo '{}' |
+          jq -r \
+            --arg config "$spelling_config" \
+            --arg url "$spell_check_this_repo_url" \
+            --arg branch "$spell_check_this_repo_branch" \
+            --arg path "$spell_check_this_config" \
+          '.config=$config|.url=$url|.branch=$branch|.path=$path' > "$data_dir/spell_check_this.json"
+        fi
       fi
     fi
   fi
