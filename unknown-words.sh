@@ -1822,7 +1822,9 @@ spelling_warning() {
   OUTPUT="### :red_circle: $1
 "
   spelling_body "$2" "$3" "$4"
-  post_summary
+  if [ -n "$OUTPUT" ]; then
+    post_summary
+  fi
   post_commit_comment
 }
 spelling_info() {
@@ -1834,7 +1836,9 @@ spelling_info() {
 $2"
   fi
   spelling_body "$out" "" "$3"
-  post_summary
+  if [ -n "$OUTPUT" ]; then
+    post_summary
+  fi
   if [ -n "$VERBOSE" ]; then
     post_commit_comment
   else
@@ -2242,49 +2246,45 @@ post_summary() {
     return
   fi
 
-  if [ -n "$OUTPUT" ]; then
-    if true; then
-      jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
-      step_summary_draft=$(mktemp)
-      echo "$OUTPUT" >> "$step_summary_draft"
-      retrieve_step="$(echo '
-      (
-      artifact_dir=$(mktemp -d)
-      gh_err=$(mktemp)
-      if gh run download -D "$artifact_dir" -R '"$GITHUB_REPOSITORY $GITHUB_RUN_ID"' -n check-spelling-comment 2> "$gh_err"; then
-        patch_remove=$(unzip -p "$artifact_dir/artifact.zip" remove_words.txt 2>/dev/null)
-        patch_add=$(unzip -p "$artifact_dir/artifact.zip" tokens.txt 2>/dev/null)
-        should_exclude_patterns=$(unzip -p "$artifact_dir/artifact.zip" should_exclude.txt 2>/dev/null | perl -pe '"'s{^(.*)}{^\\\\Q\$1\\\\E\\\$}'"')
-        update_files
-      elif grep -q "no valid artifacts found to download" "$gh_err"; then
-        if [ "$('"gh api /repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts -q '.artifacts.[]|select(.name==${Q}check-spelling-comment${Q})|.expired'"')" = "true" ]; then
-          echo "Run artifact expired. You will need to trigger a new run."
-        else
-          echo "Run may not have completed. If so, please wait for it to finish and try again."
-        fi
-      elif grep -q "no artifact matches any of the names or patterns provided" "$gh_err"; then
-        echo "unexpected error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
-        cat "$gh_err"
-      else
-        echo "unknown error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
-        cat "$gh_err"
-      fi
-      )' | perl -pe 's/^      //')"
-      RETRIEVE_STEP="$retrieve_step" perl -i -e '$/=undef; $_=<>; s!^comment_json=.*^update_files!$ENV{RETRIEVE_STEP}!ms; s!^rm \S*comment_body\S*!!m; print' "$step_summary_draft"
-      if offer_quote_reply; then
-        quote_reply_insertion=$(mktemp)
-        (
-          if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
-            apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
-          fi
-          echo
-          echo "To have the bot do this for you, comment with the following line:"
-          echo "@check-spelling-bot apply [changes]($jobs_summary_link)$apply_changes_suffix."
-        )>> "$step_summary_draft"
-      fi
-      cat "$step_summary_draft" >> "$GITHUB_STEP_SUMMARY"
+  jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
+  step_summary_draft=$(mktemp)
+  echo "$OUTPUT" >> "$step_summary_draft"
+  retrieve_step="$(echo '
+  (
+  artifact_dir=$(mktemp -d)
+  gh_err=$(mktemp)
+  if gh run download -D "$artifact_dir" -R '"$GITHUB_REPOSITORY $GITHUB_RUN_ID"' -n check-spelling-comment 2> "$gh_err"; then
+    patch_remove=$(unzip -p "$artifact_dir/artifact.zip" remove_words.txt 2>/dev/null)
+    patch_add=$(unzip -p "$artifact_dir/artifact.zip" tokens.txt 2>/dev/null)
+    should_exclude_patterns=$(unzip -p "$artifact_dir/artifact.zip" should_exclude.txt 2>/dev/null | perl -pe '"'s{^(.*)}{^\\\\Q\$1\\\\E\\\$}'"')
+    update_files
+  elif grep -q "no valid artifacts found to download" "$gh_err"; then
+    if [ "$('"gh api /repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts -q '.artifacts.[]|select(.name==${Q}check-spelling-comment${Q})|.expired'"')" = "true" ]; then
+      echo "Run artifact expired. You will need to trigger a new run."
+    else
+      echo "Run may not have completed. If so, please wait for it to finish and try again."
     fi
+  elif grep -q "no artifact matches any of the names or patterns provided" "$gh_err"; then
+    echo "unexpected error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
+    cat "$gh_err"
+  else
+    echo "unknown error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
+    cat "$gh_err"
   fi
+  )' | perl -pe 's/^      //')"
+  RETRIEVE_STEP="$retrieve_step" perl -i -e '$/=undef; $_=<>; s!^comment_json=.*^update_files!$ENV{RETRIEVE_STEP}!ms; s!^rm \S*comment_body\S*!!m; print' "$step_summary_draft"
+  if offer_quote_reply; then
+    quote_reply_insertion=$(mktemp)
+    (
+      if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+        apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
+      fi
+      echo
+      echo "To have the bot do this for you, comment with the following line:"
+      echo "@check-spelling-bot apply [changes]($jobs_summary_link)$apply_changes_suffix."
+    )>> "$step_summary_draft"
+  fi
+  cat "$step_summary_draft" >> "$GITHUB_STEP_SUMMARY"
 }
 post_commit_comment() {
   if [ -n "$OUTPUT" ]; then
