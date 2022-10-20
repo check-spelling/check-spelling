@@ -2071,9 +2071,9 @@ spelling_body() {
       if [ -s "$advice_path" ]; then
         output_advice="$N"`cat "$advice_path"`"$n"
       fi
-    fi
-    if offer_quote_reply; then
-      output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
+      if offer_quote_reply; then
+        output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
+      fi
     fi
     OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_candidate_pattern_suggestions$output_warnings$output_advice
       " | perl -pe 's/^\s+$/\n/;'| uniq)
