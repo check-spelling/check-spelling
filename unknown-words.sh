@@ -462,7 +462,7 @@ git_commit() {
   git commit \
     "$COMMIT_AUTHOR" \
     --date="$created_at" \
-    -m "$(echo "[check-spelling] Applying automated metadata updates
+    -m "$(echo "[check-spelling] Update metadata
 
                 $commit_reason
 
