@@ -296,6 +296,32 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "duplicate-extra-dictionary",
+              "name": "DuplicateExtraDictionary",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#duplicate-extra-dictionary",
+              "shortDescription": {
+                "text": "Duplicate Extra Dictionary"
+              },
+              "fullDescription": {
+                "text": "Workflow 'extra_dictionaries' contains multiple entries for the same dictionary"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove duplicate entries. check-spelling will ignore duplicate instances.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "medium",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }
