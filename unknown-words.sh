@@ -916,6 +916,15 @@ check_inputs() {
     check_yaml_key_value "$workflow_path"
     INPUT_SPELL_CHECK_THIS=''
   fi
+  if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
+    for duplicated_dictionary in $(echo $INPUT_EXTRA_DICTIONARIES | words_to_lines | sort | uniq -d); do
+      KEY=extra_dictionaries \
+      VALUE="$duplicated_dictionary" \
+      MESSAGE="Warning - \`$duplicated_dictionary\` appears multiple times in 'extra_dictionaries' (duplicate-extra-dictionary)" \
+      check_yaml_key_value "$workflow_path"
+    done
+    INPUT_EXTRA_DICTIONARIES=$(echo $INPUT_EXTRA_DICTIONARIES | sort -u)
+  fi
 }
 
 sort_unique() {
