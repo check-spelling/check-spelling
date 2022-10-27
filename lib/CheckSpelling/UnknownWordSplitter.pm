@@ -18,7 +18,7 @@ use File::Temp qw/ tempfile tempdir /;
 use CheckSpelling::Util;
 our $VERSION='0.1.0';
 
-my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re, $candidates_re, $disable_word_collating);
+my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re, $candidates_re, $disable_word_collating, $check_file_names);
 my ($shortest, $longest) = (255, 0);
 my @forbidden_re_list;
 my @candidates_re_list;
@@ -151,6 +151,8 @@ sub init {
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
   our $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
 
+  our $check_file_names = CheckSpelling::Util::get_file_from_env('check_file_names', '');
+
   $word_match = valid_word();
 
   my $dict = "$dirname/words";
@@ -203,7 +205,7 @@ sub split_file {
     $unrecognized, $longest_word, $shortest_word, $largest_file, $words,
     $word_match, %unique, %unique_unrecognized, $forbidden_re,
     @forbidden_re_list, $patterns_re, %dictionary,
-    $candidates_re, @candidates_re_list,
+    $candidates_re, @candidates_re_list, $check_file_names
   );
   my @candidates_re_hits = (0) x scalar @candidates_re_list;
   my @candidates_re_lines = (0) x scalar @candidates_re_list;
@@ -212,12 +214,14 @@ sub split_file {
     print NAME $file;
   close NAME;
   if (defined $largest_file) {
-    my $file_size = -s $file;
-    if ($file_size > $largest_file) {
-      open(SKIPPED, '>:utf8', "$temp_dir/skipped");
-      print SKIPPED "size `$file_size` exceeds limit `$largest_file`. (large-file)\n";
-      close SKIPPED;
-      return $temp_dir;
+    unless ($check_file_names eq $file) {
+      my $file_size = -s $file;
+      if ($file_size > $largest_file) {
+        open(SKIPPED, '>:utf8', "$temp_dir/skipped");
+        print SKIPPED "size `$file_size` exceeds limit `$largest_file`. (large-file)\n";
+        close SKIPPED;
+        return $temp_dir;
+      }
     }
   }
   open FILE, '<', $file;
