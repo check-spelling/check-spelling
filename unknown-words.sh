@@ -1479,6 +1479,7 @@ run_spell_check() {
     INPUT_SHORTEST_WORD="$INPUT_SHORTEST_WORD" \
     INPUT_LARGEST_FILE="$INPUT_LARGEST_FILE" \
     INPUT_DISABLE_CHECKS="$INPUT_DISABLE_CHECKS" \
+    check_file_names="$check_file_names" \
   xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
     expect="$expect_path" \
     warning_output="$warning_output" \
