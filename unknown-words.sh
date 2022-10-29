@@ -808,6 +808,7 @@ define_variables() {
   word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
   word_collator="$spellchecker/spelling-collator.pl"
   strip_word_collator_suffix="$spellchecker/strip-word-collator-suffix.pl"
+  find_token="$spellchecker/find-token.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
@@ -1439,16 +1440,16 @@ run_spell_check() {
   if [ -n "$INPUT_CHECK_COMMIT_MESSAGES" ]; then
     commit_messages="$synthetic_base/commits"
     mkdir -p "$commit_messages"
-    if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | perl -ne 'next unless /\b(?:)commits\b/; print 1')" ]; then
+    if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | "$find_token" commits)" ]; then
       get_before
       for commit_sha in $(git log --format='%H' refs/private/before..refs/private/after); do
         append_commit_message_to_file_list "$commit_sha"
       done
-      if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | perl -ne 'next unless /\b(?:)commit\b/; print 1')" ]; then
+      if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | "$find_token" commit)" ]; then
         # warning about duplicate flag
         echo > /dev/null
       fi
-    elif [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | perl -ne 'next unless /\b(?:)commit\b/; print 1')" ]; then
+    elif [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | "$find_token" commit)" ]; then
       append_commit_message_to_file_list "${GITHUB_BASE_REF:-$GITHUB_REF}"
     fi
 
@@ -1456,12 +1457,12 @@ run_spell_check() {
     if [ -n "$pr_number" ]; then
       pr_details_path="$synthetic_base/pull-request/$pr_number"
       mkdir -p "$pr_details_path"
-      if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | perl -ne 'next unless /\b(?:)title\b/; print 1')" ]; then
+      if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | "$find_token" title)" ]; then
         pr_title_file="$pr_details_path/summary.txt"
         jq -r .pull_request.title "$GITHUB_EVENT_PATH" > "$pr_title_file"
         append_file_to_file_list "$pr_title_file"
       fi
-      if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | perl -ne 'next unless /\b(?:)description\b/; print 1')" ]; then
+      if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | "$find_token" description)" ]; then
         pr_description_file="$pr_details_path/description.txt"
         jq -r .pull_request.body "$GITHUB_EVENT_PATH" > "$pr_description_file"
         append_file_to_file_list "$pr_description_file"
