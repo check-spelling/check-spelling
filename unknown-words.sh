@@ -807,6 +807,7 @@ define_variables() {
   advice_path_txt="$temp/advice.txt"
   word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
   word_collator="$spellchecker/spelling-collator.pl"
+  strip_word_collator_suffix="$spellchecker/strip-word-collator-suffix.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
@@ -1488,7 +1489,7 @@ run_spell_check() {
     candidates_path="$candidates_path" \
     candidate_summary="$candidate_summary" \
     "$word_collator" |\
-  perl -p -n -e 's/ \(.*//' > "$run_output"
+  "$strip_word_collator_suffix" > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
   cat "$more_warnings" >> "$warning_output"
   rm "$more_warnings"
