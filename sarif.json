@@ -322,6 +322,32 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "utf16-surrogate",
+              "name": "Utf16Surrogate",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#utf16-surrogate",
+              "shortDescription": {
+                "text": "UTF-16 Surrogate"
+              },
+              "fullDescription": {
+                "text": "File contains a utf-16 surrogate. It's likely not a text file."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "medium",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }
