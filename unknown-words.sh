@@ -809,6 +809,7 @@ define_variables() {
   word_collator="$spellchecker/spelling-collator.pl"
   strip_word_collator_suffix="$spellchecker/strip-word-collator-suffix.pl"
   find_token="$spellchecker/find-token.pl"
+  output_covers="$spellchecker/output-covers.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
@@ -2313,8 +2314,7 @@ fewer_misspellings() {
 }
 more_misspellings() {
   if [ -s "$extra_dictionaries_json" ]; then
-    build_dictionary_alias_pattern
-    jq -r '.[]|keys[] as $k | "\($k)<\($k)> (\(.[$k][1])) covers \(.[$k][0]) of them"' $extra_dictionaries_json | perl -pe "$dictionary_alias_pattern"'s{^([^<]*)<([^>]*)>}{[$2]($1)};' > "$extra_dictionaries_cover_entries"
+    "$output_covers" "$extra_dictionaries_json" > "$extra_dictionaries_cover_entries"
   elif [ -z "$INPUT_TASK" ] || [ "$INPUT_TASK" = 'spelling' ]; then
     if [ ! -s "$extra_dictionaries_json" ]; then
       if [ -n "$check_extra_dictionaries_dir" ]; then
