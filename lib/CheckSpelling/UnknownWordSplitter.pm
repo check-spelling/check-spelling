@@ -240,6 +240,12 @@ sub split_file {
   open(WARNINGS, '>:utf8', "$temp_dir/warnings");
   while (<FILE>) {
     $_ = decode_utf8($_, FB_DEFAULT);
+    if (/[\x{D800}-\x{DFFF}]/) {
+      open SKIPPED, '>:utf8', "$temp_dir/skipped";
+      print SKIPPED "file contains a UTF-16 surrogate. This is not supported. (utf16-surrogate)\n";
+      close SKIPPED;
+      last;
+    }
     s/\R$//;
     next unless /./;
     my $raw_line = $_;
