@@ -167,21 +167,27 @@ who_am_i() {
   )
 }
 
-is_comment_minimized() {
+get_is_comment_minimized() {
   comment_is_collapsed_query="query { node(id:$Q$1$Q) { ... on IssueComment { minimizedReason } } }"
   comment_is_collapsed_json=$(echo '{}' | jq -r --arg query "$comment_is_collapsed_query" '.query=$query')
-  comment_is_minimized=$(
-    call_curl \
-    -H "Content-Type: application/json" \
-    --data-binary "$comment_is_collapsed_json" \
-    "$GITHUB_GRAPHQL_URL" |
-    jq -r '.data.node.minimizedReason'
-  )
-  [ "$comment_is_minimized" != "null" ]
+  call_curl \
+  -H "Content-Type: application/json" \
+  --data-binary "$comment_is_collapsed_json" \
+  "$GITHUB_GRAPHQL_URL" |
+  jq -r '.data.node.minimizedReason'
+}
+
+is_comment_minimized() {
+  [ "$(get_is_comment_minimized "$1")" != "null" ]
 }
 
 get_previous_comment() {
   comment_search_re="$(title="$report_header" perl -e 'my $title=quotemeta($ENV{title}); $title=~ s/\\././g; print "(?:^|\n)$title";')"
+  get_a_comment "$comment_search_re" | head -1
+}
+
+get_a_comment() {
+  comment_search_re="$1"
   if [ -z "$comment_author_id" ]; then
     who_am_i
   fi
@@ -210,9 +216,10 @@ get_previous_comment() {
     fi
     node_id=$(jq -r "$jq_comment_query" "$pr_comments")
     if [ -n "$node_id" ]; then
-      if ! is_comment_minimized "$node_id"; then
+      (
         echo "$node_id"
-      fi
+        get_is_comment_minimized "$node_id"
+      )
       return
     fi
     if [ -n "$link" ]; then
@@ -566,6 +573,38 @@ are_issue_head_and_base_in_same_repo() {
   are_head_and_base_in_same_repo "$pull_request_info" ''
 }
 
+report_if_bot_comment_is_minimized() {
+  minimized_info=$(mktemp_json)
+  call_curl \
+  -H "Content-Type: application/json" \
+  --data-binary "$(echo '{}' | jq --arg query "query { node(id: $Q$bot_comment_node_id$Q) { ... on IssueComment { isMinimized minimizedReason } } }" '.query = $query')" \
+  $GITHUB_GRAPHQL_URL > "$minimized_info"
+
+  if [ $(jq '.data.node.isMinimized' "$minimized_info") == 'true' ]; then
+    minimized_reason=$(jq -r '.data.node.minimizedReason | ascii_downcase // empty' "$minimized_info")
+    decorated_reason=" (_${minimized_reason}_)"
+    minimized_reason_suffix='.'
+    previous_comment_node_id=$(get_previous_comment)
+    if [ -n "$previous_comment_node_id" ]; then
+      latest_comment_url=$(get_comment_url_from_id "$previous_comment_node_id")
+      if [ -n "$latest_comment_url" ] && [ "$comment_url" != "$latest_comment_url" ]; then
+        minimized_reason_suffix=". Did you mean to apply the most recent report ($latest_comment_url)?"
+      fi
+    fi
+    case "$minimized_reason" in
+      "")
+        ;;
+      "resolved")
+        minimized_reason="$decorated_reason. This probably means the changes have already been applied";;
+      "outdated")
+        minimized_reason="$decorated_reason. This probably means the referenced comment has been obsoleted by a more recent push & review";;
+      *)
+        minimized_reason="$decorated_reason";;
+    esac
+    confused_comment "$trigger_comment_url" "The referenced report $(comment_url_to_html_url $comment_url) is hidden$minimized_reason$minimized_reason_suffix"
+  fi
+}
+
 handle_comment() {
   action=$(jq -r '.action // empty' "$GITHUB_EVENT_PATH")
   if [ "$action" != "created" ]; then
@@ -644,6 +683,10 @@ handle_comment() {
   export issue_comments_base=$(jq -r '.repository.issue_comment_url // empty' "$GITHUB_EVENT_PATH" | number_filter)
   export comments_url="$pull_request_base|$comments_base|$issue_comments_base"
 
+  summary_url=$(echo "$trigger" | perl -ne '
+    next unless m{($ENV{GITHUB_SERVER_URL}/$ENV{GITHUB_REPOSITORY}/actions/runs/\d+(?:/attempts/\d+|))};
+    print $1;
+  ')
   comment_url=$(echo "$trigger" | perl -ne '
     next unless m{((?:$ENV{comments_url}))};
     my $capture=$1;
@@ -654,96 +697,134 @@ handle_comment() {
     $capture =~ s{$old_base}{$prefix};
     print "$capture\n";
   ' | sort -u)
-  [ -n "$comment_url" ] ||
-    confused_comment "$trigger_comment_url" "Did not find match for _/_$b$comments_url${b}_/_ in comment."
-  [ $(echo "$comment_url" | wc -l) -gt 1 ] &&
-    confused_comment "$trigger_comment_url" "Found more than one _/_$b$comments_url${b}_/_ match in comment:$n$B$n$comment_url$n$B"
-
-  res=0
-  comment "$comment_url" > $comment ||
-    confused_comment "$trigger_comment_url" "Failed to retrieve $b$comment_url$b."
-
-  bot_comment_author=$(jq -r '.user.login // empty' $comment)
-  bot_comment_node_id=$(jq -r '.node_id // empty' $comment)
-  bot_comment_url=$(jq -r '.issue_url // .comment.url' $comment)
-  github_actions_bot="github-actions[bot]"
-  [ -n "$bot_comment_author" ] ||
-    confused_comment "$trigger_comment_url" "Could not retrieve author of $(comment_url_to_html_url $comment_url)."
-  [ "$bot_comment_author" = "$github_actions_bot" ] ||
-    confused_comment "$trigger_comment_url" "Expected @$github_actions_bot to be author of $(comment_url_to_html_url $comment_url) (found @$bot_comment_author)."
-  [ "$issue_url" = "$bot_comment_url" ] ||
-    confused_comment "$trigger_comment_url" "Referenced comment was for a different object: $bot_comment_url"
-
-  comment_body=$(mktemp)
-  jq -r '.body // empty' "$comment" > "$comment_body"
-  rm "$comment"
-  grep -q '@check-spelling-bot Report' "$comment_body" ||
-    confused_comment "$trigger_comment_url" "$(comment_url_to_html_url $comment_url) does not appear to be a @check-spelling-bot report"
-
-  minimized_info=$(mktemp_json)
-  call_curl \
-  -H "Content-Type: application/json" \
-  --data-binary "$(echo '{}' | jq --arg query "query { node(id: $Q$bot_comment_node_id$Q) { ... on IssueComment { isMinimized minimizedReason } } }" '.query = $query')" \
-  $GITHUB_GRAPHQL_URL > "$minimized_info"
-
-  if [ $(jq '.data.node.isMinimized' "$minimized_info") == 'true' ]; then
-    minimized_reason=$(jq -r '.data.node.minimizedReason | ascii_downcase // empty' "$minimized_info")
-    decorated_reason=" (_${minimized_reason}_)"
-    minimized_reason_suffix='.'
-    previous_comment_node_id=$(get_previous_comment)
-    if [ -n "$previous_comment_node_id" ]; then
-      latest_comment_url=$(get_comment_url_from_id "$previous_comment_node_id")
-      if [ -n "$latest_comment_url" ] && [ "$comment_url" != "$latest_comment_url" ]; then
-        minimized_reason_suffix=". Did you mean to apply the most recent report ($latest_comment_url)?"
-      fi
-    fi
-    case "$minimized_reason" in
-      "")
-        ;;
-      "resolved")
-        minimized_reason="$decorated_reason. This probably means the changes have already been applied";;
-      "outdated")
-        minimized_reason="$decorated_reason. This probably means the referenced comment has been obsoleted by a more recent push & review";;
-      *)
-        minimized_reason="$decorated_reason";;
-    esac
-    confused_comment "$trigger_comment_url" "The referenced report $(comment_url_to_html_url $comment_url) is hidden$minimized_reason$minimized_reason_suffix"
+  if [ -n "$summary_url" ]; then
+    [ -n "$comment_url" ] &&
+      confused_comment "$trigger_comment_url" "Found both summary url (/actions/runs) and _/_$b$comments_url${b}_/_ in comment."
+  else
+    [ -n "$comment_url" ] ||
+      confused_comment "$trigger_comment_url" "Did not find match for _/_$b$comments_url${b}_/_ in comment."
+    [ $(echo "$comment_url" | wc -l) -gt 1 ] &&
+      confused_comment "$trigger_comment_url" "Found more than one _/_$b$comments_url${b}_/_ match in comment:$n$B$n$comment_url$n$B"
   fi
-  skip_wrapping=1
 
-  instructions_head=$(mktemp)
-  (
-    patch_add=1
-    patch_remove=1
-    should_exclude_patterns=1
-    patch_variables $comment_body > $instructions_head
-  )
-  git restore -- $bucket/$project 2> /dev/null || true
-
-  res=0
-  . $instructions_head || res=$?
-  if [ $res -gt 0 ]; then
-    echo "instructions_head failed ($res)"
-    cat $instructions_head
-    confused_comment "$trigger_comment_url" "Failed to set up environment to apply changes for $(comment_url_to_html_url $comment_url)."
-  fi
-  rm $comment_body $instructions_head
-  instructions=$(generate_instructions)
-
-  react_prefix="${react_prefix}[Instructions]($(comment_url_to_html_url $comment_url)) "
-  . $instructions || res=$?
-  if [ $res -gt 0 ]; then
-    echo "instructions failed ($res)"
-    cat $instructions
+  if [ -n "$comment_url" ]; then
     res=0
-    confused_comment "$trigger_comment_url" "failed to apply."
+    comment "$comment_url" > $comment ||
+      confused_comment "$trigger_comment_url" "Failed to retrieve $b$comment_url$b."
+
+    bot_comment_author=$(jq -r '.user.login // empty' $comment)
+    bot_comment_node_id=$(jq -r '.node_id // empty' $comment)
+    bot_comment_url=$(jq -r '.issue_url // .comment.url' $comment)
+    github_actions_bot="github-actions[bot]"
+    [ -n "$bot_comment_author" ] ||
+      confused_comment "$trigger_comment_url" "Could not retrieve author of $(comment_url_to_html_url $comment_url)."
+    [ "$bot_comment_author" = "$github_actions_bot" ] ||
+      confused_comment "$trigger_comment_url" "Expected @$github_actions_bot to be author of $(comment_url_to_html_url $comment_url) (found @$bot_comment_author)."
+    [ "$issue_url" = "$bot_comment_url" ] ||
+      confused_comment "$trigger_comment_url" "Referenced comment was for a different object: $bot_comment_url"
+
+    comment_body=$(mktemp)
+    jq -r '.body // empty' "$comment" > "$comment_body"
+    rm "$comment"
+    grep -q '@check-spelling-bot Report' "$comment_body" ||
+      confused_comment "$trigger_comment_url" "$(comment_url_to_html_url $comment_url) does not appear to be a @check-spelling-bot report"
+
+    report_if_bot_comment_is_minimized
+    skip_wrapping=1
+
+    instructions_head=$(mktemp)
+    (
+      patch_add=1
+      patch_remove=1
+      should_exclude_patterns=1
+      patch_variables $comment_body > $instructions_head
+    )
+    git restore -- $bucket/$project 2> /dev/null || true
+
+    res=0
+    . $instructions_head || res=$?
+    if [ $res -gt 0 ]; then
+      echo "instructions_head failed ($res)"
+      cat $instructions_head
+      confused_comment "$trigger_comment_url" "Failed to set up environment to apply changes for $(comment_url_to_html_url $comment_url)."
+    fi
+    rm $comment_body $instructions_head
+    instructions=$(generate_instructions)
+
+    react_prefix="${react_prefix}[Instructions]($(comment_url_to_html_url $comment_url)) "
+    . $instructions || res=$?
+    if [ $res -gt 0 ]; then
+      echo "instructions failed ($res)"
+      cat $instructions
+      res=0
+      confused_comment "$trigger_comment_url" "failed to apply."
+    fi
+    rm $instructions
+    update_note="per $(comment_url_to_html_url $comment_url)"
+  elif [ -n "$summary_url" ]; then
+    if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+      title_suffix_re='.*'"$("$quote_meta" "$INPUT_REPORT_TITLE_SUFFIX")"
+    fi
+    comment_search_re='@check-spelling-bot(?:[\t ]+|:[\t ]*)apply.*'"$("$quote_meta" "$summary_url")$title_suffix_re"
+    COMMENTS_URL=$(jq -r '.issue.comments_url' "$GITHUB_EVENT_PATH")
+    bot_comment_node_id_and_status=$(get_a_comment "$comment_search_re")
+    if [ -n "$bot_comment_node_id_and_status" ]; then
+      bot_comment_node_id="$(echo "$bot_comment_node_id_and_status" | head -1)"
+      comment_url=$(get_comment_url_from_id "$bot_comment_node_id")
+      report_if_bot_comment_is_minimized
+    fi
+
+    summary_url_api=$(
+      echo "$summary_url" | perl -ne '
+      next unless m{$ENV{GITHUB_SERVER_URL}/($ENV{GITHUB_REPOSITORY}/actions/runs/\d+(?:/attempts/\d+|))};
+      print "/repos/$1";
+    ')
+    [ -n "$summary_url_api" ] || confused_comment "$trigger_comment_url" "Failed to retrieve api url -- this should never happen, please file a bug."
+    gh_api_fault=$(mktemp)
+    gh_api_err=$(mktemp)
+    if ! GH_TOKEN="$GITHUB_TOKEN" gh api /repos/$GITHUB_REPOSITORY/actions/cache/usage > "$gh_api_fault" 2> "$gh_api_err"; then
+      if [ "$(jq -r .message "$gh_api_fault")" = 'Resource not accessible by integration' ]; then
+        confused_comment "$trigger_comment_url" "In order for this job to handle $summary_url, it needs:$(echo "
+
+        $B diff
+         permissions:
+        +  actions: read
+        $B
+        " | perl -pe 's/^ {8}//')"
+      fi
+      confused_comment "$trigger_comment_url" "$(echo "Unexpected error retrieving action metadata for $GITHUB_REPOSITORY. Please file a bug.
+
+      Details:
+      $B json
+      $(cat "$gh_api_fault")
+      $B
+
+      $B
+      $(cat "$gh_api_err")
+      $B
+      " | strip_lead)"
+    fi
+    head_branch=$(GH_TOKEN="$GITHUB_TOKEN" gh api "$summary_url_api" -q '.head_branch')
+    [ -n "$head_branch" ] ||
+    confused_comment "$trigger_comment_url" "Failed to retrieve $b.head_branch$b for $summary_url. Please file a bug."
+    [ "$head_branch" = "$pull_request_ref" ] ||
+    confused_comment "$trigger_comment_url" "$summary_url ($head_branch) does not match expected branch ($pull_request_ref)"
+    apply_output=$(mktemp)
+    apply_err=$(mktemp)
+
+    GH_TOKEN="$GITHUB_TOKEN" \
+      "$spellchecker/apply.pl" "$summary_url" > "$apply_output" 2> "$apply_err" ||
+    confused_comment "$trigger_comment_url" "Apply failed.${N}$(cat "$apply_output")${N}${N}$(cat "$apply_err")"
+    update_note="for $summary_url"
+  else
+    confused_comment "$trigger_comment_url" "Unexpected state."
   fi
-  rm $instructions
+
   git status --u=no --porcelain | grep -q . ||
     confused_comment "$trigger_comment_url" "didn't change repository content.${N}Maybe someone already applied these changes?"
   react_prefix="$react_prefix_base"
   github_user_and_email $sender_login
-  git_commit "$(echo "Update per $(comment_url_to_html_url $comment_url)
+  git_commit "$(echo "Update $update_note
                       Accepted in $(comment_url_to_html_url $trigger_comment_url)
                     "|strip_lead)" ||
     confused_comment "$trigger_comment_url" "did not generate a commit."
@@ -751,7 +832,8 @@ handle_comment() {
     confused_comment "$trigger_comment_url" "generated a commit, but the $pull_request_repo rejected the commit.${N}Maybe this task lost a race with another push?"
 
   react "$trigger_comment_url" 'eyes' > /dev/null
-  react "$comment_url" 'rocket' > /dev/null
+
+  react "${comment_url:-$trigger_comment_url}" 'rocket' > /dev/null
   trigger_node=$(jq -r '.comment.node_id // empty' "$GITHUB_EVENT_PATH")
   collapse_comment $trigger_node $bot_comment_node_id
 
@@ -833,6 +915,7 @@ define_variables() {
   file_size="$spellchecker/file-size.pl"
   check_dictionary="$spellchecker/check-dictionary.pl"
   check_yaml_key_value="$spellchecker/check-yaml-key-value.pl"
+  quote_meta="$spellchecker/quote-meta.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
@@ -1323,6 +1406,12 @@ set_up_files() {
   if [ -s "$excludes_path" ]; then
     cp "$excludes_path" "$excludes"
   fi
+  expect_files="$expect_files" \
+  excludes_files="$excludes_files" \
+  new_expect_file="$new_expect_file" \
+  excludes_file="$excludes_file" \
+  spelling_config="${spelling_config:-"$bucket/$project/"}" \
+  "$spellchecker/generate-apply.pl" > "$data_dir/apply.json"
   should_exclude_file=$data_dir/should_exclude.txt
   counter_summary_file=$data_dir/counter_summary.json
   candidate_summary=$data_dir/candidate_summary.txt
@@ -2218,11 +2307,18 @@ minimize_comment_body() {
   echo "::warning ::Truncated comment payload ($payload_size) is likely to exceed GitHub size limit ($github_comment_size_limit)"
 }
 
+update_would_change_things() {
+  ([ -n "$INPUT_SPELL_CHECK_THIS" ] && [ ! -d "$bucket/$project/" ]) ||
+  [ -n "$patch_add" ] ||
+  [ -n "$patch_remove" ] ||
+  [ -s "$should_exclude_file" ]
+}
+
 post_summary() {
   jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
   step_summary_draft=$(mktemp)
   echo "$OUTPUT" >> "$step_summary_draft"
-  if offer_quote_reply; then
+  if offer_quote_reply && update_would_change_things; then
     quote_reply_insertion=$(mktemp)
     (
       if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
@@ -2230,7 +2326,7 @@ post_summary() {
       fi
       echo
       echo "To have the bot do this for you, comment with the following line:"
-      echo "@check-spelling-bot apply [changes]($jobs_summary_link)$apply_changes_suffix."
+      echo "@check-spelling-bot apply [updates]($jobs_summary_link)$apply_changes_suffix."
     )>> "$step_summary_draft"
   fi
   cat "$step_summary_draft" >> "$GITHUB_STEP_SUMMARY"
@@ -2283,7 +2379,8 @@ post_commit_comment() {
             rm "$BODY.orig"
           fi
           if [ -n "$COMMENT_URL" ]; then
-            if offer_quote_reply; then
+            if offer_quote_reply && update_would_change_things; then
+              jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
               quote_reply_insertion=$(mktemp)
               (
                 if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
@@ -2291,7 +2388,7 @@ post_commit_comment() {
                 fi
                 echo
                 echo "To have the bot do this for you, reply quoting the following line:"
-                echo "@check-spelling-bot apply [changes]($(comment_url_to_html_url $COMMENT_URL))$apply_changes_suffix."
+                echo "@check-spelling-bot apply [updates]($jobs_summary_link)$apply_changes_suffix."
               )> "$quote_reply_insertion"
               perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$BODY"
               no_patch=
@@ -2411,63 +2508,11 @@ compare_new_output() {
 
 generate_curl_instructions() {
   jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
-  has_instructions_canary=$(mktemp)
   calculate_exclude_patterns
   instructions=$(mktemp)
-  (
-    echo 'update_files() {'
-    (
-      skip_wrapping=1
-      if [ -n "$patch_remove" ]; then
-        patch_remove='$patch_remove'
-      fi
-      if [ -n "$patch_add" ]; then
-        patch_add='$patch_add'
-      fi
-      if [ -n "$should_exclude_patterns" ]; then
-        should_exclude_patterns='$should_exclude_patterns'
-      fi
-      generated=$(generate_instructions)
-      if [ -s "$generated" ]; then
-        cat "$generated"
-      else
-        rm "$has_instructions_canary"
-      fi
-      rm "$generated"
-    )
-    echo '}'
-  ) >> "$instructions"
-  if [ -e "$has_instructions_canary" ]; then
-    echo '
-      (
-      artifact_dir=$(mktemp -d)
-      gh_err=$(mktemp)
-      if gh run download -D "$artifact_dir" -R '"$GITHUB_REPOSITORY $GITHUB_RUN_ID"' -n check-spelling-comment 2> "$gh_err"; then
-        patch_remove=$(unzip -p "$artifact_dir/artifact.zip" remove_words.txt 2>/dev/null)
-        patch_add=$(unzip -p "$artifact_dir/artifact.zip" tokens.txt 2>/dev/null)
-        should_exclude_patterns=$(unzip -p "$artifact_dir/artifact.zip" should_exclude.txt 2>/dev/null | perl -pe '"'s{^(.*)}{^\\\\Q\$1\\\\E\\\$}'"')
-        update_files
-      elif grep -q "no valid artifacts found to download" "$gh_err"; then
-        if [ "$('"gh api /repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts -q '.artifacts.[]|select(.name==${Q}check-spelling-comment${Q})|.expired'"')" = "true" ]; then
-          echo "Run artifact expired. You will need to trigger a new run."
-        else
-          echo "Run may not have completed. If so, please wait for it to finish and try again."
-        fi
-      elif grep -q "no artifact matches any of the names or patterns provided" "$gh_err"; then
-        echo "unexpected error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
-        cat "$gh_err"
-      else
-        echo "unknown error, please file a bug to https://github.com/'"$GH_ACTION_REPOSITORY"'/issues/new"
-        cat "$gh_err"
-      fi
-      )
-      git add -u
-      ' | sed -e 's/^    //' >> "$instructions"
-    echo "$instructions"
-    rm "$has_instructions_canary"
-  else
-    rm "$instructions"
-  fi
+  echo "curl -s -S -L 'https://raw.githubusercontent.com/$GH_ACTION_REPOSITORY/$GH_ACTION_REF/apply.pl' |
+  perl - '$jobs_summary_link'" >> "$instructions"
+  echo "$instructions"
 }
 
 skip_curl() {
