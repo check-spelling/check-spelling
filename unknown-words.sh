@@ -811,6 +811,7 @@ define_variables() {
   find_token="$spellchecker/find-token.pl"
   output_covers="$spellchecker/output-covers.pl"
   cleanup_file="$spellchecker/cleanup-file.pl"
+  file_size="$spellchecker/file-size.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
@@ -1972,16 +1973,12 @@ set_comments_url() {
   esac
 }
 
-file_size() {
-  perl -e '@x=stat(shift);print $x[7]' "$1"
-}
-
 trim_commit_comment() {
   stripped=$(mktemp)
   (perl -p -i.raw -e '$/=undef; s{'"$2"'}{$1'"$3"'_Truncated, please see the log or artifact if available._\n}s; my $capture=$2; my $overview=q<'"$(get_action_log_overview)"'>; s{\n(See the) (\[action log\])}{\n$1 [overview]($overview) or $2}s unless m{\Q$overview\E}; print STDERR "$capture\n"' "$BODY") 2> "$stripped"
   body_to_payload "$BODY"
   previous_payload_size="$payload_size"
-  payload_size=$(file_size "$PAYLOAD")
+  payload_size=$("$file_size" "$PAYLOAD")
   if [ "$payload_size" -lt "$previous_payload_size" ]; then
     echo "::warning ::Comment payload ($previous_payload_size) is likely to exceed GitHub size limit ($github_comment_size_limit) -- trimming: $1 (=>$payload_size)"
     cat "$stripped"
@@ -2035,7 +2032,7 @@ post_commit_comment() {
         BODY=$(mktemp)
         echo "$OUTPUT" > "$BODY"
         body_to_payload "$BODY"
-        payload_size=$(file_size "$PAYLOAD")
+        payload_size=$("$file_size" "$PAYLOAD")
         github_comment_size_limit=65000
         minimize_comment_body
         response=$(mktemp_json)
