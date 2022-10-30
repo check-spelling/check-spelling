@@ -1082,7 +1082,7 @@ call_curl() {
       fi
       return
     fi
-    delay=$(perl -e 'my $delay=5; while (<>) { next unless /^retry-after:\s*(\d+)/i; $delay=$1 || 1; }; print $delay' "$response_headers")
+    delay=$("$spellchecker/calculate-delay.pl" "$response_headers")
     (echo "call_curl received a 429 and will wait for ${delay}s:"; grep -E -i 'x-github-request-id|x-rate-limit-|retry-after' "$response_headers") >&2
     sleep "$delay"
     curl_attempt=$(($curl_attempt + 1))
