@@ -1221,7 +1221,16 @@ set_up_files() {
     if [ ! -s "$dict" ]; then
       DICTIONARY_VERSION=${DICTIONARY_VERSION:-$INPUT_DICTIONARY_VERSION}
       DICTIONARY_URL=${DICTIONARY_URL:-$INPUT_DICTIONARY_URL}
-      DICTIONARY_URL="$(perl -e 'my $url = q<'"$DICTIONARY_URL"'>; $url =~ s{\$DICTIONARY_VERSION}{'"$DICTIONARY_VERSION"'}g; print $url;')"
+      DICTIONARY_URL="$(
+        DICTIONARY_URL="$DICTIONARY_URL" \
+        DICTIONARY_VERSION="$DICTIONARY_VERSION" \
+        perl -e '
+          my $url = $ENV{DICTIONARY_URL};
+          my $version=$ENV{DICTIONARY_VERSION};
+          $url =~ s{\$DICTIONARY_VERSION}{$version}g;
+          print $url;
+        '
+      )"
       if [ -z "$DICTIONARY_URL" ] && [ -n "$ACT" ]; then
         (
           echo "This workflow appears to be running under nektos/act"
