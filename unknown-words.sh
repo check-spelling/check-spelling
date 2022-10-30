@@ -709,12 +709,6 @@ handle_comment() {
     esac
     confused_comment "$trigger_comment_url" "The referenced report $(comment_url_to_html_url $comment_url) is hidden$minimized_reason$minimized_reason_suffix"
   fi
-  capture_items() {
-    perl -ne 'next unless s{^\s*my \@'$1'=qw\('$q$Q'(.*)'$Q$q'\);$}{$1}; print'
-  }
-  capture_item() {
-    perl -ne 'next unless s{^\s*my \$'$1'="(.*)";$}{$1}; print'
-  }
   skip_wrapping=1
 
   instructions_head=$(mktemp)
