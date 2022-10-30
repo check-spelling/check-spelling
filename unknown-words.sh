@@ -1262,7 +1262,7 @@ set_up_files() {
         (
           cd "$extra_dictionaries_dir"
           # Items that aren't proper should be moved to patterns instead
-          perl -ne "next unless /^[A-Za-z$q]+$/; print" * | sort -u >> "$dict"
+          "$spellchecker/dictionary-word-filter.pl" * | sort -u >> "$dict"
         )
         rm -rf "$extra_dictionaries_dir"
       fi
