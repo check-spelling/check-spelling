@@ -78,13 +78,28 @@ inputs:
       cspell:bash/bash-words.txt
       cspell:clojure/src/clojure.txt
       cspell:companies/src/companies.txt
+      cspell:cpp/src/compiler-clang-attributes.txt
+      cspell:cpp/src/compiler-gcc.txt
+      cspell:cpp/src/compiler-msvc.txt
+      cspell:cpp/src/cpp.txt
+      cspell:cpp/src/ecosystem.txt
+      cspell:cpp/src/lang-jargon.txt
+      cspell:cpp/src/lang-keywords.txt
+      cspell:cpp/src/people.txt
+      cspell:cpp/src/stdlib-c.txt
+      cspell:cpp/src/stdlib-cerrno.txt
+      cspell:cpp/src/stdlib-cmath.txt
+      cspell:cpp/src/stdlib-cpp.txt
+      cspell:cpp/src/template-strings.txt
+      cspell:cryptocurrencies/cryptocurrencies.txt
       cspell:csharp/csharp.txt
       cspell:css/css.txt
+      cspell:dart/src/dart.txt
       cspell:django/django.txt
+      cspell:django/requirements.txt
       cspell:docker/src/docker-words.txt
       cspell:dotnet/dotnet.txt
       cspell:elixir/elixir.txt
-      cspell:en_GB/src/wordsEnGb.txt
       cspell:filetypes/filetypes.txt
       cspell:fonts/fonts.txt
       cspell:fullstack/fullstack.txt
@@ -94,19 +109,35 @@ inputs:
       cspell:html/html.txt
       cspell:java/java.txt
       cspell:latex/latex.txt
+      cspell:latex/samples/sample-words.txt
+      cspell:lorem-ipsum/dictionary.txt
       cspell:lua/lua.txt
+      cspell:mnemonics/src/mnemonics.txt
+      cspell:monkeyc/src/monkeyc_keywords.txt
+      cspell:node/additional_words.txt
       cspell:node/node.txt
+      cspell:node/src/node-old.txt
       cspell:npm/npm.txt
       cspell:php/php.txt
+      cspell:powershell/powershell.txt
+      cspell:public-licenses/src/additional-licenses.txt
       cspell:public-licenses/src/generated/public-licenses.txt
+      cspell:python/src/additional_words.txt
+      cspell:python/src/common/extra.txt
       cspell:python/src/python/python-lib.txt
       cspell:python/src/python/python.txt
       cspell:r/src/r.txt
       cspell:ruby/ruby.txt
       cspell:rust/rust.txt
       cspell:scala/scala.txt
+      cspell:software-terms/src/network-os.txt
+      cspell:software-terms/src/network-protocols.txt
+      cspell:software-terms/src/software-terms.txt
+      cspell:software-terms/src/software-tools.txt
       cspell:sql/src/sql.txt
+      cspell:sql/src/tsql.txt
       cspell:swift/src/swift.txt
+      cspell:typescript/typescript.txt
       cspell:win32/src/win32.txt
   extra_dictionary_limit:
     description: 'Limit the number of suggested extra dictionaries.'
