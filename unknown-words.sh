@@ -1259,7 +1259,7 @@ get_extra_dictionaries() {
       fi
       dest=$(basename "$url")
       keep_headers=1 call_curl $url > "$extra_dictionaries_dir/$dest"
-      if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] 2> /dev/null; then
+      if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ] 2> /dev/null; then
         (
           echo "::error ::Failed to retrieve $extra_dictionary -- $url (dictionary-not-found)"
           cat "$response_headers"
