@@ -562,9 +562,8 @@ show_github_actions_push_disclaimer() {
 
   <!--$n$report_header$n-->
   To trigger another validation round and hopefully a :white_check_mark:, please add a blank line, e.g. to [$expect_file]($GITHUB_SERVER_URL/$repository_edit_branch/$expect_file?pr=$pr_path_escaped) and commit the change."
-  BODY=$(mktemp)
   echo "$OUTPUT" > "$BODY"
-  body_to_payload "$BODY"
+  body_to_payload
   COMMENTS_URL=$(jq -r '.issue.comments_url' "$GITHUB_EVENT_PATH")
   response=$(mktemp)
   comment "$COMMENTS_URL" "$PAYLOAD" > $response || res=$?
@@ -940,6 +939,7 @@ define_variables() {
   action_log_file_name="$data_dir/action_log_file_name.txt"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   file_list="$data_dir/checked_files.lst"
+  BODY="$data_dir/comment.md"
   output_variables=$(mktemp)
   instructions_preamble=$(mktemp)
 
@@ -2213,7 +2213,6 @@ quit() {
 }
 
 body_to_payload() {
-  BODY="$1"
   PAYLOAD=$(mktemp)
   echo '{}' | jq --rawfile body "$BODY" '.body = $body' > $PAYLOAD
   if to_boolean "$DEBUG"; then
@@ -2320,7 +2319,7 @@ set_comments_url() {
 trim_commit_comment() {
   stripped=$(mktemp)
   (perl -p -i.raw -e '$/=undef; s{'"$2"'}{$1'"$3"'_Truncated, please see the log or artifact if available._\n}s; my $capture=$2; my $overview=q<'"$(get_action_log_overview)"'>; s{\n(See the) (\[action log\])}{\n$1 [overview]($overview) or $2}s unless m{\Q$overview\E}; print STDERR "$capture\n"' "$BODY") 2> "$stripped"
-  body_to_payload "$BODY"
+  body_to_payload
   previous_payload_size="$payload_size"
   payload_size=$("$file_size" "$PAYLOAD")
   if [ "$payload_size" -lt "$previous_payload_size" ]; then
@@ -2363,7 +2362,7 @@ minimize_comment_body() {
     return 0
   fi
   cat "$BODY"
-  body_to_payload "$BODY"
+  body_to_payload
   echo "::warning ::Truncated comment payload ($payload_size) is likely to exceed GitHub size limit ($github_comment_size_limit)"
 }
 
@@ -2406,16 +2405,19 @@ post_summary() {
 }
 post_commit_comment() {
   if [ -n "$OUTPUT" ]; then
-    if to_boolean "$INPUT_POST_COMMENT"; then
-      echo "Preparing a comment for $GITHUB_EVENT_NAME"
-      set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
-      if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
-        BODY=$(mktemp)
+    echo "Preparing a comment for $GITHUB_EVENT_NAME"
+    set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
+    if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
+      if [ ! -s "$BODY" ]; then
         echo "$OUTPUT" > "$BODY"
-        body_to_payload "$BODY"
+        body_to_payload
         payload_size=$("$file_size" "$PAYLOAD")
         github_comment_size_limit=65000
         minimize_comment_body
+      else
+        body_to_payload
+      fi
+      if to_boolean "$INPUT_POST_COMMENT"; then
         response=$(mktemp_json)
 
         res=0
@@ -2467,7 +2469,7 @@ post_commit_comment() {
               no_patch=
             fi
             if [ -z "$no_patch" ]; then
-              body_to_payload $BODY
+              body_to_payload
               comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > $response || res=$?
               if [ $res -gt 0 ]; then
                 if ! to_boolean "$DEBUG"; then
@@ -2478,7 +2480,6 @@ post_commit_comment() {
                 cat $response
               fi
             fi
-            rm -f $BODY 2>/dev/null
             track_comment "$response"
           else
             cat "$BODY"
