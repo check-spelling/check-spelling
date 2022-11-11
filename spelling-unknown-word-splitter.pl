@@ -12,6 +12,8 @@ use CheckSpelling::UnknownWordSplitter;
 binmode STDIN;
 binmode STDOUT, ':utf8';
 
+$ENV{PATH} = '/usr/bin:/bin';
+
 # skip files that don't exist (including dangling symlinks)
 if (scalar @ARGV) {
   @ARGV = grep {! -l && -f && -r} @ARGV;

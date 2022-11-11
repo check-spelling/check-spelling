@@ -348,6 +348,32 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "binary-file",
+              "name": "BinaryFile",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#binary-file",
+              "shortDescription": {
+                "text": "Binary File"
+              },
+              "fullDescription": {
+                "text": "File magic determined to be binary. It's likely not a text file."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Disable `use_file_magic`\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }
