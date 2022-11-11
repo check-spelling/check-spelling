@@ -153,6 +153,8 @@ sub init {
 
   our $check_file_names = CheckSpelling::Util::get_file_from_env('check_file_names', '');
 
+  our $use_magic_file = CheckSpelling::Util::get_val_from_env('INPUT_USE_MAGIC_FILE', '');
+
   $word_match = valid_word();
 
   my $dict = "$dirname/words";
@@ -205,7 +207,7 @@ sub split_file {
     $unrecognized, $longest_word, $shortest_word, $largest_file, $words,
     $word_match, %unique, %unique_unrecognized, $forbidden_re,
     @forbidden_re_list, $patterns_re, %dictionary,
-    $candidates_re, @candidates_re_list, $check_file_names
+    $candidates_re, @candidates_re_list, $check_file_names, $use_magic_file
   );
   my @candidates_re_hits = (0) x scalar @candidates_re_list;
   my @candidates_re_lines = (0) x scalar @candidates_re_list;
@@ -219,6 +221,28 @@ sub split_file {
       if ($file_size > $largest_file) {
         open(SKIPPED, '>:utf8', "$temp_dir/skipped");
         print SKIPPED "size `$file_size` exceeds limit `$largest_file`. (large-file)\n";
+        close SKIPPED;
+        return $temp_dir;
+      }
+    }
+  }
+  if ($use_magic_file) {
+    if (open(my $file_fh, '-|',
+              '/usr/bin/file',
+              '-b',
+              '--mime',
+              '-e', 'cdf',
+              '-e', 'compress',
+              '-e', 'csv',
+              '-e', 'elf',
+              '-e', 'json',
+              '-e', 'tar',
+              $file)) {
+      my $file_kind = <$file_fh>;
+      close $file_fh;
+      if ($file_kind =~ /^(.*?); charset=binary/) {
+        open(SKIPPED, '>:utf8', "$temp_dir/skipped");
+        print SKIPPED "appears to be a binary file ('$1'). (binary-file)\n";
         close SKIPPED;
         return $temp_dir;
       }
