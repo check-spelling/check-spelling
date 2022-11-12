@@ -1348,8 +1348,10 @@ run_spell_check() {
     "$spellchecker/exclude.pl" > "$file_list"
   if to_boolean "$INPUT_CHECK_FILE_NAMES"; then
     check_file_names="$spellchecker/paths-of-checked-files.txt"
-    cat "$file_list" | tr "\0" "\n" > "$check_file_names"
-    echo "$check_file_names" | tr "\n" "\0" >> "$file_list"
+    if [ -s "$file_list" ]; then
+      cat "$file_list" | tr "\0" "\n" > "$check_file_names"
+      echo "$check_file_names" | tr "\n" "\0" >> "$file_list"
+    fi
   fi
   count=$(perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print $count;' $file_list)
   echo "Checking $count files"
