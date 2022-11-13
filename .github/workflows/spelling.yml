@@ -17,6 +17,8 @@ jobs:
       security-events: write
     outputs:
       followup: ${{ steps.spelling.outputs.followup }}
+    env:
+      workflow_check_commit_messages: commits
     runs-on: ubuntu-latest
     if: "contains(github.event_name, 'pull_request') || github.event_name == 'push'"
     concurrency:
@@ -26,6 +28,8 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v3
+      with:
+        fetch-depth: ${{ !contains(env.workflow_check_commit_messages, 'commits') && '1' || '0' }}
     - name: test-clean
       shell: bash
       run:
@@ -52,6 +56,7 @@ jobs:
         checkout: false
         extra_dictionaries:
           cspell:software-terms/src/software-terms.txt
+        check_commit_messages: ${{ env.workflow_check_commit_messages }}
 
   comment:
     name: Report
