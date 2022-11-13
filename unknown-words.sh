@@ -507,28 +507,35 @@ show_github_actions_push_disclaimer() {
     jq -r '(.data.repository.pullRequest.headRepository.nameWithOwner + "/edit/" + .data.repository.pullRequest.headRefName)'
   )
 
+  get_job_info_and_step_info > /dev/null
+  update_job_name="${job_name:-update}"
+
   if to_boolean "$INPUT_CHECKOUT"; then
     workflow_ssh_key_hint='`check-spelling`/`with`/`ssh_key`, then add them:
 
   ``` diff
-    update:
+    '"${update_job_name}"':
     ...
-    - name: apply spelling updates
-      uses: check-spelling/check-spelling@...
-      with:
-        checkout: '"$INPUT_CHECKOUT"'
-  +     ssh_key: "${{ secrets.CHECK_SPELLING }}"
+      steps:
+      ...
+      - name: apply spelling updates
+        uses: check-spelling/check-spelling@...
+        with:
+          checkout: '"$INPUT_CHECKOUT"'
+  +       ssh_key: "${{ secrets.CHECK_SPELLING }}"
   ```'
   else
     workflow_ssh_key_hint='`checkout`/`with`/`ssh-key`, then add them:
 
   ``` diff
-    update:
+    '"${update_job_name}"':
     ...
-    - name: checkout
-      uses: actions/checkout@...
-  +   with:
-  +     ssh-key: "${{ secrets.CHECK_SPELLING }}"
+      steps:
+      ...
+      - name: checkout
+        uses: actions/checkout@...
+  +     with:
+  +       ssh-key: "${{ secrets.CHECK_SPELLING }}"
   ```'
   fi
   if [ -n "$workflow_path" ]; then
@@ -556,7 +563,7 @@ show_github_actions_push_disclaimer() {
 
   #### Configure update job in workflow to use secret
 
-  If the $qualified_workflow_path ${b}update${b} job doesn't already have the $workflow_ssh_key_hint
+  If the $qualified_workflow_path ${b}${update_job_name}${b} job doesn't already have the $workflow_ssh_key_hint
 
   </details>
 
