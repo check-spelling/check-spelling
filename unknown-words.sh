@@ -1230,6 +1230,7 @@ set_up_reporter() {
       INPUT_USE_SARIF=
     fi
   fi
+  echo "::add-matcher::$spellchecker/reporter-misc.json"
   if ! to_boolean "$INPUT_USE_SARIF"; then
     echo "::add-matcher::$spellchecker/reporter.json"
   fi
@@ -1563,14 +1564,32 @@ run_spell_check() {
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
   cat "$more_warnings" >> "$warning_output"
   rm "$more_warnings"
-  WARNINGS_LIST="$warnings_list" perl -pi -e 'next if /\((?:$ENV{WARNINGS_LIST})\)$/; s{(^(?:.+?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}' "$warning_output"
+  commit_messages="$commit_messages" \
+  pr_details_path="$pr_details_path" \
+  synthetic_base="$synthetic_base" \
+  WARNINGS_LIST="$warnings_list" \
+  perl -pi -e '
+    my $GITHUB_SERVER_URL=$ENV{GITHUB_SERVER_URL};
+    my $GITHUB_REPOSITORY=$ENV{GITHUB_REPOSITORY};
+    my $commit_messages=$ENV{commit_messages};
+    my $pr_details_path=$ENV{pr_details_path};
+    my $synthetic_base=$ENV{synthetic_base};
+    if (defined $commit_messages) {
+      s<^$commit_messages/([0-9a-f]+)\.message><$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$1#>;
+    }
+    if (defined $pr_details_path) {
+      s<^$synthetic_base/pull-request/(\d+)/(?:description|summary).txt><$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$1#>;
+    }
+    next if /\((?:$ENV{WARNINGS_LIST})\)$/;
+    s{(^(?:.+?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}
+    ' "$warning_output"
   cat "$warning_output"
   echo "::set-output name=warnings::$warning_output" >> $output_variables
   if to_boolean "$INPUT_USE_SARIF"; then
     SARIF_FILE="$(mktemp).sarif.json"
     echo UPLOAD_SARIF="$SARIF_FILE" >> "$GITHUB_ENV"
     sarif_results="$(mktemp_json)"
-    perl -ne 'next unless m{^(.+):(\d+):(\d+) \.\.\. (\d+),\s(Error|Warning|Notice)\s-\s(.+\s\((.+)\))$}; my ($file, $line, $column, $endColumn, $severity, $message, $code) = ($1, $2, $3, $4, $5, $6, $7); sub encode_low_ascii { $_ = shift; s/([\x{0}-\x{9}\x{0b}\x{1f}#])/"\\u".sprintf("%04x",ord($1))/eg; return $_; } $message =~ s/(["\\])/\\$1/g; $message =~ s/(["()\]])/\\\\$1/g; $message = encode_low_ascii $message; $file = encode_low_ascii $file; $message =~ s/(^|[^\\])\`([^`]+[^`\\])\`/${1}[${2}](#security-tab)/; $message =~ s/\`/\\"/g; print qq<{"ruleId": "$code", "ruleIndex": 0,"message": { "text": "$message" }, "locations": [ { "physicalLocation": { "artifactLocation": { "uri": "$file", "uriBaseId": "%SRCROOT%" }, "region": { "startLine": $line, "startColumn": $column, "endColumn": $endColumn } } } ] }>;' "$warning_output" > "$sarif_results"
+    perl -ne 'next if m{^https://};next unless m{^(.+):(\d+):(\d+) \.\.\. (\d+),\s(Error|Warning|Notice)\s-\s(.+\s\((.+)\))$}; my ($file, $line, $column, $endColumn, $severity, $message, $code) = ($1, $2, $3, $4, $5, $6, $7); sub encode_low_ascii { $_ = shift; s/([\x{0}-\x{9}\x{0b}\x{1f}#])/"\\u".sprintf("%04x",ord($1))/eg; return $_; } $message =~ s/(["\\])/\\$1/g; $message =~ s/(["()\]])/\\\\$1/g; $message = encode_low_ascii $message; $file = encode_low_ascii $file; $message =~ s/(^|[^\\])\`([^`]+[^`\\])\`/${1}[${2}](#security-tab)/; $message =~ s/\`/\\"/g; print qq<{"ruleId": "$code", "ruleIndex": 0,"message": { "text": "$message" }, "locations": [ { "physicalLocation": { "artifactLocation": { "uri": "$file", "uriBaseId": "%SRCROOT%" }, "region": { "startLine": $line, "startColumn": $column, "endColumn": $endColumn } } } ] }>;' "$warning_output" > "$sarif_results"
     jq --slurpfile results "$sarif_results" '.runs[0].tool.driver.version="'"$CHECK_SPELLING_VERSION"'" | .runs[0].results = $results' $spellchecker/sarif.json > "$SARIF_FILE" || (
       echo "::error title=Sarif generation failed::Returning rejected json as sarif file for review -- please file a bug (sarif-generation-failed)"
       cp "$sarif_results" "$SARIF_FILE"
@@ -1930,6 +1949,7 @@ spelling_body() {
 
 quit() {
   echo "::remove-matcher owner=check-spelling::"
+  echo "::remove-matcher owner=check-spelling-https::"
   status="$1"
   if ([ -z "$status" ] || [ "$status" -eq 0 ]) && [ -n "$has_errors" ]; then
     status=1
