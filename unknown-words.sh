@@ -1589,7 +1589,23 @@ run_spell_check() {
     SARIF_FILE="$(mktemp).sarif.json"
     echo UPLOAD_SARIF="$SARIF_FILE" >> "$GITHUB_ENV"
     sarif_results="$(mktemp_json)"
-    perl -ne 'next if m{^https://};next unless m{^(.+):(\d+):(\d+) \.\.\. (\d+),\s(Error|Warning|Notice)\s-\s(.+\s\((.+)\))$}; my ($file, $line, $column, $endColumn, $severity, $message, $code) = ($1, $2, $3, $4, $5, $6, $7); sub encode_low_ascii { $_ = shift; s/([\x{0}-\x{9}\x{0b}\x{1f}#])/"\\u".sprintf("%04x",ord($1))/eg; return $_; } $message =~ s/(["\\])/\\$1/g; $message =~ s/(["()\]])/\\\\$1/g; $message = encode_low_ascii $message; $file = encode_low_ascii $file; $message =~ s/(^|[^\\])\`([^`]+[^`\\])\`/${1}[${2}](#security-tab)/; $message =~ s/\`/\\"/g; print qq<{"ruleId": "$code", "ruleIndex": 0,"message": { "text": "$message" }, "locations": [ { "physicalLocation": { "artifactLocation": { "uri": "$file", "uriBaseId": "%SRCROOT%" }, "region": { "startLine": $line, "startColumn": $column, "endColumn": $endColumn } } } ] }>;' "$warning_output" > "$sarif_results"
+    perl -ne '
+    next if m{^https://};
+    next unless m{^(.+):(\d+):(\d+) \.\.\. (\d+),\s(Error|Warning|Notice)\s-\s(.+\s\((.+)\))$};
+    my ($file, $line, $column, $endColumn, $severity, $message, $code) = ($1, $2, $3, $4, $5, $6, $7);
+    sub encode_low_ascii {
+      $_ = shift;
+      s/([\x{0}-\x{9}\x{0b}\x{1f}#])/"\\u".sprintf("%04x",ord($1))/eg;
+      return $_;
+    }
+    $message =~ s/(["\\])/\\$1/g;
+    $message =~ s/(["()\]])/\\\\$1/g;
+    $message = encode_low_ascii $message;
+    $file = encode_low_ascii $file;
+    $message =~ s/(^|[^\\])\`([^`]+[^`\\])\`/${1}[${2}](#security-tab)/;
+    $message =~ s/\`/\\"/g;
+    print qq<{"ruleId": "$code", "ruleIndex": 0,"message": { "text": "$message" }, "locations": [ { "physicalLocation": { "artifactLocation": { "uri": "$file", "uriBaseId": "%SRCROOT%" }, "region": { "startLine": $line, "startColumn": $column, "endColumn": $endColumn } } } ] }>;
+    ' "$warning_output" > "$sarif_results"
     jq --slurpfile results "$sarif_results" '.runs[0].tool.driver.version="'"$CHECK_SPELLING_VERSION"'" | .runs[0].results = $results' $spellchecker/sarif.json > "$SARIF_FILE" || (
       echo "::error title=Sarif generation failed::Returning rejected json as sarif file for review -- please file a bug (sarif-generation-failed)"
       cp "$sarif_results" "$SARIF_FILE"
