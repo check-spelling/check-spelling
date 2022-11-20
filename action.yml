@@ -351,8 +351,7 @@ runs:
         GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
         GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
       run:
-        spellchecker=$(echo $spellchecker| perl -pe 's{/$}{}')
-        stdbuf -i0 -o0 -e0 $spellchecker/unknown-words.sh
+        stdbuf -i0 -o0 -e0 "${{ github.action_path }}/unknown-words.sh"
       shell: bash
     - name: store-comment
       if: (contains(github.event_name, 'pull_request') ||

@@ -5,6 +5,7 @@
 # plus `fchurn` which uses `dn` mostly rolled together.
 set -e
 export spellchecker=${spellchecker:-${GITHUB_ACTION_PATH:-/app}}
+spellchecker="$(echo $spellchecker| perl -pe 's{/$}{}')"
 
 if [ $(id -u) != 0 ]; then
   SUDO=sudo
