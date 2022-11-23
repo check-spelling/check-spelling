@@ -615,11 +615,11 @@ report_if_bot_comment_is_minimized() {
       "resolved")
         minimized_reason="$decorated_reason. This probably means the changes have already been applied";;
       "outdated")
-        minimized_reason="$decorated_reason. This probably means the referenced comment has been obsoleted by a more recent push & review";;
+        minimized_reason="$decorated_reason. This probably means the referenced report has been obsoleted by a more recent push & review";;
       *)
         minimized_reason="$decorated_reason";;
     esac
-    confused_comment "$trigger_comment_url" "The referenced report $(comment_url_to_html_url $comment_url) is hidden$minimized_reason$minimized_reason_suffix"
+    confused_comment "$trigger_comment_url" "The referenced report comment $(comment_url_to_html_url $comment_url) is hidden$minimized_reason$minimized_reason_suffix"
   fi
 }
 
@@ -775,7 +775,7 @@ handle_comment() {
       echo "instructions failed ($res)"
       cat $instructions
       res=0
-      confused_comment "$trigger_comment_url" "failed to apply."
+      confused_comment "$trigger_comment_url" "Failed to apply changes."
     fi
     rm $instructions
     update_note="per $(comment_url_to_html_url $comment_url)"
@@ -839,15 +839,15 @@ handle_comment() {
   fi
 
   git status --u=no --porcelain | grep -q . ||
-    confused_comment "$trigger_comment_url" "didn't change repository content.${N}Maybe someone already applied these changes?"
+    confused_comment "$trigger_comment_url" "Request did not change repository content.${N}Maybe someone already applied these changes?"
   react_prefix="$react_prefix_base"
   github_user_and_email $sender_login
   git_commit "$(echo "Update $update_note
                       Accepted in $(comment_url_to_html_url $trigger_comment_url)
                     "|strip_lead)" ||
-    confused_comment "$trigger_comment_url" "did not generate a commit."
+    confused_comment "$trigger_comment_url" "Did not generate a commit.${N}Perhaps there was a merge conflict or an object changed from being a directory to a file or vice versa? (Please file a bug including a link to this comment.)"
   git push request "HEAD:$pull_request_ref" ||
-    confused_comment "$trigger_comment_url" "generated a commit, but the $pull_request_repo rejected the commit.${N}Maybe this task lost a race with another push?"
+    confused_comment "$trigger_comment_url" "Generated a commit, but the $pull_request_repo rejected the commit.${N}Maybe this task lost a race with another push?"
 
   react "$trigger_comment_url" 'eyes' > /dev/null
 
