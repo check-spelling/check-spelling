@@ -1321,7 +1321,7 @@ welcome() {
 }
 
 run_spell_check() {
-  echo "::set-output name=internal_state_directory::$data_dir" >> $output_variables
+  echo "internal_state_directory=$data_dir" >> $GITHUB_OUTPUT
 
   begin_group 'Spell check files'
   file_list=$(mktemp)
@@ -1374,7 +1374,7 @@ run_spell_check() {
   rm "$more_warnings"
   WARNINGS_LIST="$warnings_list" perl -pi -e 'next if /\((?:$ENV{WARNINGS_LIST})\)$/; s{(^(?:.+):[\s]line\s(?:\d+),[\s]columns\s(?:\d+)-(?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}' "$warning_output"
   cat "$warning_output"
-  echo "::set-output name=warnings::$warning_output" >> $output_variables
+  echo "warnings=$warning_output" >> $GITHUB_OUTPUT
   end_group
   if [ "$word_splitter_status" != '0 0' ]; then
     echo "$word_splitter failed ($word_splitter_status)"
@@ -1449,7 +1449,7 @@ remove_items() {
       " | strip_lead_and_blanks
       remove_words=$data_dir/remove_words.txt
       echo "$patch_remove" > $remove_words
-      echo "::set-output name=stale_words::$remove_words" >> $output_variables
+      echo "stale_words=$remove_words" >> $GITHUB_OUTPUT
     else
       rm "$fewer_misspellings_canary"
     fi
@@ -1610,7 +1610,7 @@ spelling_body() {
     fi
     if [ -s "$should_exclude_file" ]; then
       calculate_exclude_patterns
-      echo "::set-output name=skipped_files::$should_exclude_file" >> $output_variables
+      echo "skipped_files=$should_exclude_file" >> $GITHUB_OUTPUT
       output_excludes="$(echo "
         <details><summary>Some files were automatically ignored</summary>
 
@@ -2193,7 +2193,7 @@ more_misspellings() {
   if [ -s "$extra_dictionaries_cover_entries" ]; then
     perl -pe 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
     jq -s '.' > $extra_dictionaries_json
-    echo "::set-output name=suggested_dictionaries::$extra_dictionaries_json" >> $output_variables
+    echo "suggested_dictionaries=$extra_dictionaries_json" >> $GITHUB_OUTPUT
   fi
 
   instructions=$(
@@ -2203,7 +2203,7 @@ more_misspellings() {
   unknown_count=$(cat "$tokens_file" | wc -l | strip_lead)
   title='Please review'
   begin_group "Unrecognized ($unknown_count)"
-  echo "::set-output name=unknown_words::$tokens_file" >> $output_variables
+  echo "unknown_words=$tokens_file" >> $GITHUB_OUTPUT
   if [ "$unknown_count" -eq 0 ]; then
     unknown_word_body=''
   else
