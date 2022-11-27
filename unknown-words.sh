@@ -2120,13 +2120,17 @@ spelling_body() {
         event_title='Warnings'
         event_icon=':information_source:'
       fi
-      warnings_details="$(echo "
-        [$event_icon ${event_title}](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) | Count
-        -|-
-        $(jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file" | WARNINGS_LIST="$warnings_list" perl -pe 'next if /$ENV{WARNINGS_LIST}/; s/information_source/x/')
+      if [ -s "$counter_summary_file" ]; then
+        warnings_details="$(echo "
+          [$event_icon ${event_title}](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) | Count
+          -|-
+          $(jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file" | WARNINGS_LIST="$warnings_list" perl -pe 'next if /$ENV{WARNINGS_LIST}/; s/information_source/x/')
 
-        See [$event_icon Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) for more information.
-        " | strip_lead)"
+          See [$event_icon Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) for more information.
+          " | strip_lead)"
+      else
+        warnings_details="_Could not get warning list from ${counter_summary_file}_"
+      fi
       if [ -n "$has_errors" ] && [ -z "$message" ]; then
         message="$warnings_details"
       else
