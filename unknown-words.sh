@@ -897,6 +897,16 @@ define_variables() {
     export AUTHORIZATION_HEADER='X-No-Authorization: Sorry About That'
   fi
 
+  if  [ -n "$ACT" ] &&
+      [ -z "$GITHUB_ACTION_REPOSITORY" ] &&
+      [ -z "$GITHUB_ACTION_REF" ] &&
+      [ "$GH_ACTION_REF" = "$GITHUB_REF_NAME" ] &&
+      [ "$GH_ACTION_REPOSITORY" = "$GITHUB_REPOSITORY" ]; then
+    # https://github.com/nektos/act/issues/1473 github.action_repository / github.action_ref aren't properly filled in
+    GH_ACTION_REPOSITORY=$(git -C "$GITHUB_ACTION_PATH" config --get remote.origin.url|perl -pe 's{.*[:/]([^:/]+/[^/]+)$}{$1}')
+    GH_ACTION_REF=${GITHUB_ACTION_PATH##*@}
+  fi
+
   export early_warnings=$(mktemp)
   if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ]; then
     data_dir="$INPUT_INTERNAL_STATE_DIRECTORY"
