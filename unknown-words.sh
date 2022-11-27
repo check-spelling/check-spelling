@@ -39,7 +39,15 @@ dispatcher() {
       exit 1
       ;;
     push)
-      if to_boolean "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"; then
+      if to_boolean "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST" && ! echo $GITHUB_REPOSITORY | grep -q '^..*/..*$'; then
+        (
+          echo '$GITHUB_REPOSITORY '"($GITHUB_REPOSITORY) does not appear to be an OWNER/REPOSITORY"
+          if [ -n "$ACT" ]; then
+            echo '[act] `git remote -v origin` is probably misconfigured'
+          fi
+          echo 'Cannot determine if there is an open pull request, proceeding as if there is not.'
+        ) >&2
+      elif to_boolean "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"; then
         pull_request_json=$(mktemp_json)
         pull_request_headers=$(mktemp)
         pull_heads_query="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?head=${GITHUB_REPOSITORY%/*}:$GITHUB_REF"
