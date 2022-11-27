@@ -347,10 +347,15 @@ get_workflow_path() {
         fi
       else
         possible_workflows=$(mktemp)
+        github_job_pattern="^\s\s*$GITHUB_JOB\s*:\s*$"
+        if [ -n "$ACT" ]; then
+          # https://github.com/nektos/act/issues/1473
+          github_job_pattern="$github_job_pattern\|^\s\s*name\s*:\s*$GITHUB_JOB\s*$"
+        fi
         find .github/workflows \( -name '*.yml' -o -name '*.yaml' \) -type f ! -empty -print0 |
           xargs -0 grep -l --null "^\s\s*uses\s*:\s*$GH_ACTION_REPOSITORY@$GH_ACTION_REF" |
           xargs -0 grep -l --null "^name\s*:\s*$GITHUB_WORKFLOW\s*$" |
-          xargs -0 grep -l --null "^\s\s*$GITHUB_JOB\s*:\s*$" > "$possible_workflows"
+          xargs -0 grep -l --null "$github_job_pattern" > "$possible_workflows"
         if [ $(tr -cd '\000' < "$possible_workflows" | wc -c) -eq 1 ]; then
           cat "$possible_workflows" | xargs -0 echo | tee "$action_workflow_path_file"
         fi
