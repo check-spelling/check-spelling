@@ -870,6 +870,15 @@ handle_comment() {
   quit 0
 }
 
+encode_artifact() {
+  echo 'You will want to cat the following content to:'
+  echo
+  echo "perl -ne 'next if /--- (?:BEGIN|END) BASE64 ---/; next unless s{^[^|]*\|\s*}{};print' | base64 -d -o artifact.zip"
+  echo '--- BEGIN BASE64 ---'
+  base64 "$1"
+  echo '--- END BASE64 ---'
+}
+
 define_variables() {
   if [ -f "$output_variables" ]; then
     return
@@ -893,6 +902,9 @@ define_variables() {
     if [ -e "$data_dir/artifact.zip" ]; then
       (
         cd "$data_dir"
+        if [ -n "$INPUT_CALLER_CONTAINER" ]; then
+          encode_artifact 'artifact.zip'
+        fi
         unzip -q 'artifact.zip'
         rm artifact.zip
       )
@@ -2223,6 +2235,9 @@ quit() {
     (
       cd "$data_dir"
       zip -q "$artifact.zip" *
+      if [ -n "$ACT" ] && to_boolean "$INPUT_POST_COMMENT"; then
+        encode_artifact "$artifact.zip"
+      fi
       rm *
       mv "$artifact.zip" 'artifact.zip'
     )
@@ -2602,9 +2617,14 @@ compare_new_output() {
 }
 
 generate_curl_instructions() {
-  jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
+  instructions="$(mktemp)"
+  if [ -n "$ACT" ]; then
+    echo '# look for the instructions to extract `artifact.zip` from your log' >> "$instructions"
+    jobs_summary_link=./artifact.zip
+  else
+    jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
+  fi
   calculate_exclude_patterns
-  instructions=$(mktemp)
   echo "curl -s -S -L 'https://raw.githubusercontent.com/$GH_ACTION_REPOSITORY/$GH_ACTION_REF/apply.pl' |
   perl - '$jobs_summary_link'" >> "$instructions"
   echo "$instructions"
