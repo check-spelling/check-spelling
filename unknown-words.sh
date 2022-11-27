@@ -1054,15 +1054,7 @@ set_up_ua() {
   curl_ua="check-spelling/$CHECK_SPELLING_VERSION; $(curl --version|perl -ne '$/=undef; <>; s/\n.*//;s{ }{/};s/ .*//;print')"
 }
 
-set_up_tools() {
-  apps=""
-  add_app() {
-    if ! command_v $1; then
-      apps="$apps $@"
-    fi
-  }
-  add_app curl ca-certificates
-  add_app git
+install_tools() {
   if [ -n "$apps" ]; then
     if command_v apt-get; then
       export DEBIAN_FRONTEND=noninteractive
@@ -1075,6 +1067,18 @@ set_up_tools() {
       echo missing $apps -- things will fail >&2
     fi
   fi
+}
+
+set_up_tools() {
+  apps=""
+  add_app() {
+    if ! command_v $1; then
+      apps="$apps $@"
+    fi
+  }
+  add_app curl ca-certificates
+  add_app git
+  install_tools
   set_up_jq
 }
 
