@@ -251,6 +251,9 @@ inputs:
     description: 'Publish Sarif report'
     required: false
     default: ''
+  caller_container:
+    description: "Hack for nektos/act - pass the outputs.docker_container to give check-spelling a way to retrieve data it needs to report a comment"
+    required: false
 
 outputs:
   unknown_words:
@@ -277,6 +280,9 @@ outputs:
   followup:
     description: "Next task"
     value: ${{ steps.spelling.outputs.followup }}
+  docker_container:
+    description: "Hack for nektos/act - pass to inputs.caller_container to give check-spelling a way to retrieve data it needs to report a comment"
+    value: ${{ steps.spelling.outputs.docker_container }}
 
 runs:
   using: 'composite'
@@ -327,13 +333,13 @@ runs:
         git fetch origin "$PRIVATE_SARIF_REF"
         echo "PRIVATE_SARIF_SHA=$(git rev-parse FETCH_HEAD)" >> "$GITHUB_ENV"
     - name: prepare
-      if: inputs.task && inputs.task != 'spelling'
+      if: inputs.task && inputs.task != 'spelling' && (!env.ACT || github.token)
       run: |
         mkdir -p /tmp/data;
         echo "INPUT_INTERNAL_STATE_DIRECTORY=/tmp/data" >> "$GITHUB_ENV"
       shell: bash
     - name: retrieve-comment
-      if: inputs.task && inputs.task != 'spelling'
+      if: inputs.task && inputs.task != 'spelling' && (!env.ACT || github.token)
       uses: actions/download-artifact@v3
       with:
         name: "check-spelling-comment"

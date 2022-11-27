@@ -871,6 +871,10 @@ define_variables() {
   export early_warnings=$(mktemp)
   if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ]; then
     data_dir="$INPUT_INTERNAL_STATE_DIRECTORY"
+    if [ ! -e "$data_dir" ] && [ -n "$INPUT_CALLER_CONTAINER" ]; then
+      mkdir -p "$data_dir"
+      docker cp "$INPUT_CALLER_CONTAINER:$data_dir" "$(dirname "$data_dir")"
+    fi
     if [ -e "$data_dir/artifact.zip" ]; then
       (
         cd "$data_dir"
@@ -2188,6 +2192,7 @@ quit() {
   echo "followup=$followup" >> "$GITHUB_OUTPUT"
   echo "$followup" > "$data_dir/followup"
   echo "result_code=$status" >> "$GITHUB_ENV"
+  echo "docker_container=$(cat /proc/self/cgroup | perl -ne 'next unless m{:/docker/(.*)}; print $1;last')" >> "$GITHUB_OUTPUT"
   cat "$output_variables" >> "$GITHUB_OUTPUT"
   if [ -n "$GH_OUTPUT_STUB" ]; then
     perl -pe 's/^(\S+)=(.*)/::set-output name=$1::$2/' "$GITHUB_OUTPUT"
