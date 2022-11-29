@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+if [ -z "$GITHUB_ENV" ]; then
+  GITHUB_ENV=/dev/stdout
+fi
+
 die() {
   echo "::error ::$1"
   echo "::error ::This is a fatal error ... asking Action Host to kill our workflow"
