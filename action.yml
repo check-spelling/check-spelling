@@ -320,8 +320,26 @@ runs:
       run: |
         rsync --delete --exclude=.git -a alternate-engine/ "${{ github.action_path }}"
         rm -rf alternate-engine/
+    - name: check-actions
+      id: check-actions
+      env:
+        spellchecker: ${{ github.action_path }}
+        GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
+        GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
+      run:
+        stdbuf -i0 -o0 -e0 "${{ env.spellchecker }}/secpoll.sh"
+      shell: bash
     - name: checkout
-      if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task
+      id: checkout-replacement
+      if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && env.replace_v3_actions_checkout
+      uses: check-spelling/actions-checkout@v3
+      with:
+        path: ${{ inputs.experimental_path }}
+        ssh-key: ${{ inputs.ssh_key }}
+        fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
+        token: ${{ inputs.GITHUB_TOKEN }}
+    - name: checkout
+      if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !env.replace_v3_actions_checkout
       uses: actions/checkout@v3
       with:
         path: ${{ inputs.experimental_path }}
