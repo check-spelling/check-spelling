@@ -2499,6 +2499,19 @@ post_commit_comment() {
             echo "Body:"
             cat "$response"
             echo " //// "
+            if [ "$response_code" -eq 403 ]; then
+              if grep -q '#create-a-commit-comment' "$response"; then
+                echo "Consider adding:"
+                echo
+                echo "permissions:"
+                echo "  contents: write"
+              elif grep -q '#create-an-issue-comment' "$response"; then
+                echo "Consider adding:"
+                echo
+                echo "permissions:"
+                echo "  pull-requests: write"
+              fi
+            fi
           fi
           no_patch=1
         else
