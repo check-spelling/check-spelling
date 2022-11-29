@@ -167,7 +167,6 @@ sub remove_stale {
 
     my $re = join "|", @stale;
     my $suffix = ".".time();
-    my $previous = "";
     my $old_argv = '';
     for my $file (@expect_files) {
         my $rewritten = "$file$suffix";
@@ -181,7 +180,6 @@ sub remove_stale {
         close INPUT;
         rename($rewritten, $file);
     };
-    maybe_unlink($previous);
 }
 
 sub add_expect {
