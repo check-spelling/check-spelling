@@ -129,6 +129,7 @@ sub main {
   my $should_exclude_file = CheckSpelling::Util::get_file_from_env('should_exclude_file', '/dev/null');
   my $unknown_word_limit = CheckSpelling::Util::get_val_from_env('unknown_word_limit', undef);
   my $candidate_summary = CheckSpelling::Util::get_file_from_env('candidate_summary', '/dev/stderr');
+  my $candidate_example_limit = CheckSpelling::Util::get_file_from_env('INPUT_CANDIDATE_EXAMPLE_LIMIT', '3');
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
   my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
   my $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
@@ -229,7 +230,7 @@ sub main {
             my $hits = $candidate_list[$i];
             if ($hits) {
               $candidate_totals[$i] += $hits;
-              if ($candidate_file_counts[$i]++ < 3) {
+              if ($candidate_file_counts[$i]++ < $candidate_example_limit) {
                 my $pattern = (split /\n/,$candidates[$i])[-1];
                 my $position = $lines[$i];
                 $position =~ s/:(\d+)$/ ... $1/;
