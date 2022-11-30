@@ -2718,8 +2718,8 @@ more_misspellings() {
         (
           cd "$check_extra_dictionaries_dir";
           aliases="$dictionary_alias_pattern" extra_dictionaries="$check_extra_dictionaries" "$spellchecker/dictionary-coverage.pl" "$run_output" |
-          sort -nr |
-          perl -pe 's/^\d+ //' > "$extra_dictionaries_cover_entries"
+          perl -e 'print sort { $a =~ /^(\d+)\D(\d+)\D(.*)/; my ($a1, $a2, $a3) = ($1, $2, $3); $b =~ /^(\d+)\D(\d+)\D(.*)/; my ($b1, $b2, $b3) = ($1, $2, $3); $b1 <=> $a1 || $a2 <=> $b2 || $a3 cmp $b3 } <>; ' |
+          perl -pe 's/^\S+ //' > "$extra_dictionaries_cover_entries"
         )
         end_group
       fi

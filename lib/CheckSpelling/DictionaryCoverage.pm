@@ -6,6 +6,10 @@ our $VERSION='0.1.0';
 use File::Basename;
 use CheckSpelling::Util;
 
+use constant {
+  NO_WORD_SEEN_YET => '0'
+};
+
 sub entry {
   my ($name) = @_;
   my $handle;
@@ -13,7 +17,7 @@ sub entry {
   return {
     name => $name,
     handle => $handle,
-    word => "0",
+    word => NO_WORD_SEEN_YET,
     covered => 0
   }
 }
@@ -34,6 +38,7 @@ sub main {
   while (@files) {
     last if eof($unknown_words);
     my $unknown = <$unknown_words>;
+    chomp $unknown;
     last if ($unknown eq '');
     my @drop;
     for (my $file_id = 0; $file_id < scalar @files; $file_id++) {
@@ -44,17 +49,19 @@ sub main {
           $word = '';
         } else {
           $word = <$handle>;
+          chomp $word;
         }
       }
       if ($word eq $unknown) {
-        ++$current->{"covered"};
+        ++$current->{'covered'};
         if (eof $handle) {
           $word = '';
         } else {
           $word = <$handle>;
+          chomp $word;
         }
       }
-      $current->{"word"} = $word;
+      $current->{'word'} = $word;
       if ($word eq '') {
         push @drop, $file_id;
       }
@@ -70,12 +77,12 @@ sub main {
   @dictionaries=split /\n/, $extra_dictionaries;
   for (my $file_id = 0; $file_id < scalar @results; $file_id++) {
     my $current = $results[$file_id];
-    my $covered = $current->{"covered"};
+    my $covered = $current->{'covered'};
     next unless $covered;
 
-    my $handle = $current->{"handle"};
+    my $handle = $current->{'handle'};
 
-    my $name = $current->{"name"};
+    my $name = $current->{'name'};
     my @pretty = grep m{[:/]$name}, @dictionaries;
     unless (@pretty) {
       $name = basename($name);
@@ -83,7 +90,7 @@ sub main {
     }
     $name = $pretty[0] if @pretty;
 
-    my $word = $current->{"word"};
+    my $word = $current->{'word'};
     $word = <$handle> while !eof($handle);
     my $lines = $handle->input_line_number();
 
@@ -91,7 +98,10 @@ sub main {
     eval $re;
     my $url = $_;
 
-    print "$covered [$name]($url) ($lines) covers $covered of them\n";
+    my $name_without_spaces = $name;
+    $name_without_spaces =~ s/\s+/_/g;
+
+    print "$covered-$lines-$name_without_spaces [$name]($url) ($lines) covers $covered of them\n";
   }
 }
 
