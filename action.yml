@@ -258,6 +258,10 @@ inputs:
   caller_container:
     description: "Hack for nektos/act - pass the outputs.docker_container to give check-spelling a way to retrieve data it needs to report a comment"
     required: false
+  candidate_example_limit:
+    description: 'Control the number of examples shown for candidate patterns'
+    required: false
+    default: 3
 
 outputs:
   unknown_words:
