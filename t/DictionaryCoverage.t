@@ -36,7 +36,7 @@ $ENV{'extra_dictionaries'} = $dict;
 my @files = grep{/.*/} glob($dict);
 CheckSpelling::DictionaryCoverage::main($filename, @files);
 select $oldFH;
-is($output, "2 [$dict](test:case) (3) covers 2 of them
+is($output, "2-3-$dict [$dict](test:case) (3) covers 2 of them
 ");
 my ($fh2, $one_match) = tempfile();
 print $fh2 'not
@@ -63,8 +63,8 @@ CheckSpelling::DictionaryCoverage::main($filename, @files);
 select $oldFH;
 my $one_match_name = basename $one_match;
 my $dict_name = basename $dict;
-is($output2, "1 [other:$one_match_name]($one_match) (4) covers 1 of them
-2 [suggest:$dict_name]($dict) (3) covers 2 of them
+is($output2, "1-4-other:$one_match_name [other:$one_match_name]($one_match) (4) covers 1 of them
+2-3-suggest:$dict_name [suggest:$dict_name]($dict) (3) covers 2 of them
 ");
 my $capture = IO::Capture::Stderr->new();
 $capture->start();
