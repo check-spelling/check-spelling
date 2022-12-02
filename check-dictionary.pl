@@ -30,4 +30,5 @@ while ($content =~ s/([^\r\n\x0b\f\x85\x{2028}\x{2029}]*)(\r\n|\n|\r|\x0b|\f|\x8
     }
     print FILE "$line\n";
 }
+print FILE $content;
 close WARNINGS;
