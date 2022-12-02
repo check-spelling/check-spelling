@@ -357,7 +357,7 @@ runs:
         token: ${{ inputs.GITHUB_TOKEN }}
     - name: checkout-merge
       if: github.event.pull_request.number && (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task)
-      uses: check-spelling/checkout-merge@v0.0.3
+      uses: check-spelling/checkout-merge@prerelease
       with:
         path: ${{ inputs.experimental_path }}
     - name: save sha
