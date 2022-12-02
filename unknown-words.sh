@@ -2140,7 +2140,7 @@ spelling_body() {
       calculate_exclude_patterns
       echo "skipped_files=$should_exclude_file" >> "$output_variables"
       output_excludes="$(echo "
-        <details><summary>Some files were automatically ignored</summary>
+        <details><summary>Some files were automatically ignored :see_no_evil:</summary>
 
         These sample patterns would exclude them:
         $B
@@ -2426,7 +2426,7 @@ minimize_comment_body() {
   if [ "$payload_size" -le "$github_comment_size_limit" ]; then
     return 0
   fi
-  trim_commit_comment 'Files' '(<details><summary>Some files were automatically ignored</summary>)\n.*?\`\`\`(.*?)\`\`\`.*?(?=</details>)' '\n\n'
+  trim_commit_comment 'Files' '(<details><summary>Some files were automatically ignored.*</summary>)\n.*?\`\`\`(.*?)\`\`\`.*?(?=</details>)' '\n\n'
   if [ "$payload_size" -le "$github_comment_size_limit" ]; then
     return 0
   fi
