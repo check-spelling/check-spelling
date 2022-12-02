@@ -39,7 +39,7 @@ jobs:
         mv ../introspected .
     - name: test-merge
       if: "contains(github.event_name, 'pull_request')"
-      uses: check-spelling/checkout-merge@v0.0.3
+      uses: check-spelling/checkout-merge@v0.0.4
       with:
         path: introspected
     - name: check-spelling
