@@ -356,7 +356,7 @@ runs:
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
         token: ${{ inputs.GITHUB_TOKEN }}
     - name: checkout-merge
-      if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task)
+      if: github.event.pull_request.number && (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task)
       uses: check-spelling/checkout-merge@v0.0.3
       with:
         path: ${{ inputs.experimental_path }}
