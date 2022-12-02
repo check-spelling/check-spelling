@@ -29,7 +29,7 @@ dns_server() {
 }
 
 base_domain=check-spelling.dev
-version=$(cat "$spellchecker/version")
+version=$(cat "$THIS_ACTION_PATH/version")
 version_reversed=$(echo $version|tr '.' "\n" | tac| tr "\n" '.')
 dns_server_cached=$(dns_server)
 
@@ -87,7 +87,7 @@ case "$poll_status" in
 esac
 
 for fallback_action in $(
-  perl -ne 'next unless m{uses: check-spelling/((?:github|actions)-[^/]*)(?:/[^@]*|)\@(\S+)}; print "$2.$1\n"' $spellchecker/action.yml|sort -u
+  perl -ne 'next unless m{uses: check-spelling/((?:github|actions)-[^/]*)(?:/[^@]*|)\@(\S+)}; print "$2.$1\n"' $THIS_ACTION_PATH/action.yml|sort -u
 ); do
   response=$(lookup $fallback_action.flaky-action.$base_domain)
   case "$response" in

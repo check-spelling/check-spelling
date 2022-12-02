@@ -320,14 +320,19 @@ runs:
       run: |
         rsync --delete --exclude=.git -a alternate-engine/ "${{ github.action_path }}"
         rm -rf alternate-engine/
+    - name: shim-path
+      shell: bash
+      run: |
+        THIS_ACTION_PATH=$(perl -pe 's#/\./#/#g; s#//+#/#g; s#/$##g' <<< "${{ github.action_path }}")
+        echo "THIS_ACTION_PATH=$THIS_ACTION_PATH" >> "$GITHUB_ENV"
+        echo "PATH=$THIS_ACTION_PATH/wrappers:$PATH" >> "$GITHUB_ENV"
     - name: check-actions
       id: check-actions
       env:
-        spellchecker: ${{ github.action_path }}
         GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
         GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
-      run:
-        stdbuf -i0 -o0 -e0 "${{ env.spellchecker }}/secpoll.sh"
+      run: |
+        secpoll
       shell: bash
     - name: checkout
       id: checkout-replacement
@@ -379,11 +384,10 @@ runs:
       env:
         INPUTS: ${{ toJSON(inputs) }}
         DEBUG: ${{ inputs.debug }}
-        spellchecker: ${{ github.action_path }}
         GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
         GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
-      run:
-        stdbuf -i0 -o0 -e0 "${{ github.action_path }}/unknown-words.sh"
+      run: |
+        unknown-words
       shell: bash
     - name: store-comment
       if: (contains(github.event_name, 'pull_request') ||

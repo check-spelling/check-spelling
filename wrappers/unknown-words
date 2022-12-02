@@ -1,0 +1,2 @@
+#!/bin/sh
+stdbuf -i0 -o0 -e0 $THIS_ACTION_PATH/unknown-words.sh
