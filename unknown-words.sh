@@ -4,8 +4,7 @@
 # It is conceptually `f` which runs `w` (spelling-unknown-word-splitter)
 # plus `fchurn` which uses `dn` mostly rolled together.
 set -e
-export spellchecker="${spellchecker:-"${GITHUB_ACTION_PATH:-/app}"}"
-spellchecker="$(echo $spellchecker| perl -pe 's{/$}{}')"
+export spellchecker="${spellchecker:-$THIS_ACTION_PATH}"
 
 if [ "$(id -u)" != 0 ]; then
   SUDO=sudo
