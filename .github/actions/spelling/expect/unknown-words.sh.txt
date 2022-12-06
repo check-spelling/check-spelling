@@ -2,6 +2,8 @@ apps
 bdc
 cbeaff
 codeql
+cpanm
+cpanminus
 Cwd
 DEBIAN
 dpkg
@@ -22,6 +24,7 @@ mkdir
 mktemp
 nektos
 noreply
+notest
 PIPESTATUS
 quotemeta
 rawfile
