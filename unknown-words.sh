@@ -979,6 +979,7 @@ define_variables() {
   check_dictionary="$spellchecker/check-dictionary.pl"
   check_yaml_key_value="$spellchecker/check-yaml-key-value.pl"
   quote_meta="$spellchecker/quote-meta.pl"
+  summary_tables="$spellchecker/summary-tables.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
@@ -1234,6 +1235,9 @@ set_up_ua() {
 }
 
 install_tools() {
+  if [ -n "$perl_libs" ] && ! command_v cpanm; then
+    apps="$apps cpanminus"
+  fi
   if [ -n "$apps" ]; then
     if command_v apt-get; then
       export DEBIAN_FRONTEND=noninteractive
@@ -1248,6 +1252,20 @@ install_tools() {
       echo "missing $apps -- things will fail" >&2
     fi
   fi
+  if [ -n "$perl_libs" ]; then
+    $SUDO perl `command -v cpanm` -S --notest $perl_libs
+    perl_libs=''
+  fi
+}
+
+add_perl_lib() {
+  if ! perl -M"$1" -e '' 2>/dev/null; then
+    if [ -n "$HAS_APT" ]; then
+      apps="$apps $2"
+    else
+      perl_libs="$perl_libs $1"
+    fi
+  fi
 }
 
 set_up_tools() {
@@ -1257,8 +1275,13 @@ set_up_tools() {
       apps="$apps $@"
     fi
   }
+  if command_v apt-get; then
+    HAS_APT=1
+  fi
+
   add_app curl ca-certificates
   add_app git
+  add_perl_lib URI::Escape liburi-escape-xs-perl
   if ! command_v gh; then
     if command_v apt-get && ! apt-cache policy gh | grep -q Candidate:; then
       curl -A "$curl_ua" -f -s -S -L https://cli.github.com/packages/githubcli-archive-keyring.gpg |
@@ -2466,6 +2489,18 @@ post_summary() {
   step_summary_draft=$(mktemp)
   echo "$OUTPUT" >> "$step_summary_draft"
   add_talk_to_bot_message "$step_summary_draft"
+  if [ -n "$INPUT_SUMMARY_TABLE" ] && [ -s "$warning_output" ]; then
+    begin_group 'Building summary table'
+    summary_table="$(mktemp)"
+    summary_budget=$((1024*1024 - $(cat "$step_summary_draft" | wc -c) - 100))
+    summary_budget="$summary_budget" "$summary_tables" "$warning_output" > "$summary_table"
+    if [ $summary_budget -gt $(cat "$summary_table" | wc -c) ]; then
+      cat "$summary_table" >> "$step_summary_draft"
+    else
+      echo "::warning title=summary-table::Details too big to include in Step Summary. (summary-table-skipped)"
+    fi
+    end_group
+  fi
   cat "$step_summary_draft" >> "$GITHUB_STEP_SUMMARY"
 }
 post_commit_comment() {

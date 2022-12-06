@@ -260,6 +260,10 @@ inputs:
     description: 'Control the number of examples shown for candidate patterns'
     required: false
     default: 3
+  summary_table:
+    description: 'Provide item table (paths, content)'
+    required: false
+    default: 1
 
 outputs:
   unknown_words:
