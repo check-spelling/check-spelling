@@ -133,18 +133,30 @@ sub load_dictionary {
 
 sub init {
   my ($dirname) = @_;
-  our ($word_match, %unique);
+  our ($word_match, %unique, $patterns_re, @forbidden_re_list, $forbidden_re, @candidates_re_list, $candidates_re);
+  my (@patterns_re_list, %in_patterns_re_list);
+  if (-e "$dirname/patterns.txt") {
+    @patterns_re_list = file_to_list "$dirname/patterns.txt";
+    $patterns_re = list_to_re @patterns_re_list;
+    %in_patterns_re_list = map {$_ => 1} @patterns_re_list;
+  } else {
+    $patterns_re = undef;
+  }
 
-  my @patterns_re_list = file_to_list "$dirname/patterns.txt";
-  our $patterns_re = list_to_re @patterns_re_list;
-  my %in_patterns_re_list = map {$_ => 1} @patterns_re_list;
+  if (-e "$dirname/forbidden.txt") {
+    @forbidden_re_list = file_to_list "$dirname/forbidden.txt";
+    $forbidden_re = list_to_re @forbidden_re_list;
+  } else {
+    $forbidden_re = undef;
+  }
 
-  our @forbidden_re_list = file_to_list "$dirname/forbidden.txt";
-  our $forbidden_re = list_to_re @forbidden_re_list;
-
-  our @candidates_re_list = file_to_list "$dirname/candidates.txt";
-  @candidates_re_list = map { my $quoted = quote_re($_); $in_patterns_re_list{$_} || !test_re($quoted) ? '' : $quoted } @candidates_re_list;
-  our $candidates_re = list_to_re @candidates_re_list;
+  if (-e "$dirname/candidates.txt") {
+    @candidates_re_list = file_to_list "$dirname/candidates.txt";
+    @candidates_re_list = map { my $quoted = quote_re($_); $in_patterns_re_list{$_} || !test_re($quoted) ? '' : $quoted } @candidates_re_list;
+    $candidates_re = list_to_re @candidates_re_list;
+  } else {
+    $candidates_re = undef;
+  }
 
   our $largest_file = CheckSpelling::Util::get_val_from_env('INPUT_LARGEST_FILE', 1024*1024);
 
@@ -274,32 +286,36 @@ sub split_file {
     next unless /./;
     my $raw_line = $_;
     # hook for custom line based text exclusions:
-    s/($patterns_re)/"="x length($1)/ge;
+    if (defined $patterns_re) {
+      s/($patterns_re)/"="x length($1)/ge;
+    }
     my $previous_line_state = $_;
     my $line_flagged;
-    while (s/($forbidden_re)/"="x length($1)/e) {
-      $line_flagged = 1;
-      my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
-      my $found_trigger_re;
-      for my $forbidden_re_singleton (@forbidden_re_list) {
-        my $test_line = $previous_line_state;
-        if ($test_line =~ s/($forbidden_re_singleton)/"="x length($1)/e) {
-          next unless $test_line eq $_;
-          my ($begin_test, $end_test, $match_test) = ($-[0] + 1, $+[0] + 1, $1);
-          next unless $begin == $begin_test;
-          next unless $end == $end_test;
-          next unless $match eq $match_test;
-          $found_trigger_re = $forbidden_re_singleton;
-          last;
+    if ($forbidden_re) {
+      while (s/($forbidden_re)/"="x length($1)/e) {
+        $line_flagged = 1;
+        my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
+        my $found_trigger_re;
+        for my $forbidden_re_singleton (@forbidden_re_list) {
+          my $test_line = $previous_line_state;
+          if ($test_line =~ s/($forbidden_re_singleton)/"="x length($1)/e) {
+            next unless $test_line eq $_;
+            my ($begin_test, $end_test, $match_test) = ($-[0] + 1, $+[0] + 1, $1);
+            next unless $begin == $begin_test;
+            next unless $end == $end_test;
+            next unless $match eq $match_test;
+            $found_trigger_re = $forbidden_re_singleton;
+            last;
+          }
         }
+        if ($found_trigger_re) {
+          $found_trigger_re =~ s/^\(\?:(.*)\)$/$1/;
+          print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry: `$found_trigger_re`. (forbidden-pattern)\n";
+        } else {
+          print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
+        }
+        $previous_line_state = $_;
       }
-      if ($found_trigger_re) {
-        $found_trigger_re =~ s/^\(\?:(.*)\)$/$1/;
-        print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry: `$found_trigger_re`. (forbidden-pattern)\n";
-      } else {
-        print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
-      }
-      $previous_line_state = $_;
     }
     # This is to make it easier to deal w/ rules:
     s/^/ /;
@@ -327,7 +343,7 @@ sub split_file {
         print WARNINGS ":$.:$begin ... $end: '$match'\n";
       }
     }
-    if ($line_flagged) {
+    if ($line_flagged && $candidates_re) {
       $_ = $previous_line_state;
       s/($candidates_re)/"="x length($1)/ge;
       if ($_ ne $previous_line_state) {
