@@ -208,7 +208,7 @@ sub add_expect {
     system("git", "add", $new_expect_file);
 }
 
-sub get_artifact {
+sub get_artifacts {
     my ($program, $repo, $run) = @_;
     my $artifact_dir = tempdir(CLEANUP => 1);
     my ($fh, $gh_err) = tempfile();
@@ -243,7 +243,7 @@ sub get_artifact {
         print "$gh_err";
         exit 4;
     }
-    return "$artifact_dir/artifact.zip";
+    return glob("$artifact_dir/artifact*.zip");
 }
 
 sub update_repository {
@@ -288,9 +288,10 @@ sub main {
     check_current_script();
     # - 4 parse arguments
     die $syntax unless defined $first;
-    my ($repo, $artifact);
+    my $repo;
+    my @artifacts;
     if (-s $first) {
-        $artifact = $first;
+        my $artifact = $first;
         open my $artifact_reader, '-|', 'unzip', '-l', $artifact;
         my ($has_artifact, $only_file) = (0, 0);
         while (my $line = <$artifact_reader>) {
@@ -311,7 +312,7 @@ sub main {
             my ($fh, $gh_err) = tempfile();
             close $fh;
             system('unzip', '-d', $artifact_dir, $artifact, 'artifact.zip');
-            $artifact = "$artifact_dir/artifact.zip";
+            @artifacts = ["$artifact_dir/artifact.zip"];
         }
     } else {
         if ($first =~ m{^\s*https://.*/([^/]+/[^/]+)/actions/runs/(\d+)(?:/attempts/\d+|)\s*$}) {
@@ -322,10 +323,12 @@ sub main {
         die $syntax unless defined $repo && defined $run;
         # - 3 check for tool readiness (is `gh` working)
         tools_are_ready();
-        $artifact = get_artifact($program, $repo, $run);
+        @artifacts = get_artifacts($program, $repo, $run);
     }
 
     # - 5 do work
-    update_repository($program, $artifact);
+    for my $artifact (@artifacts) {
+        update_repository($program, $artifact);
+    }
 }
 main($0, @ARGV);

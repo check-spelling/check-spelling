@@ -890,6 +890,10 @@ encode_artifact() {
   echo '--- END BASE64 ---'
 }
 
+build_artifact_suffix() {
+  artifact_suffix="-$(echo "$INPUT_REPORT_TITLE_SUFFIX" | perl -pe 's/^\s+|\s+$//; s/[^a-z]+/-/gi;')"
+}
+
 define_variables() {
   if [ -f "$output_variables" ]; then
     return
@@ -920,14 +924,22 @@ define_variables() {
       mkdir -p "$data_dir"
       docker cp "$INPUT_CALLER_CONTAINER:$data_dir" "$(dirname "$data_dir")"
     fi
-    if [ -e "$data_dir/artifact.zip" ]; then
+    artifact=artifact
+    if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+      build_artifact_suffix
+      if [ -e "$data_dir/$artifact$artifact_suffix.zip" ]; then
+        artifact="$artifact$artifact_suffix"
+      fi
+    fi
+    if [ -e "$data_dir/$artifact.zip" ]; then
+      artifact="$artifact.zip"
       (
         cd "$data_dir"
         if [ -n "$INPUT_CALLER_CONTAINER" ]; then
-          encode_artifact 'artifact.zip'
+          encode_artifact "$artifact"
         fi
-        unzip -q 'artifact.zip'
-        rm artifact.zip
+        unzip -q "$artifact"
+        rm "$artifact"
       )
     fi
   else
@@ -2285,7 +2297,10 @@ quit() {
         encode_artifact "$artifact.zip"
       fi
       rm *
-      mv "$artifact.zip" 'artifact.zip'
+      if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+        build_artifact_suffix
+      fi
+      mv "$artifact.zip" "artifact$artifact_suffix.zip"
     )
   fi
   if to_boolean "$quit_without_error"; then
