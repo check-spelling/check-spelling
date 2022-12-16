@@ -429,7 +429,7 @@ runs:
       with:
         wait-for-processing: false
         sarif_file: ${{ env.UPLOAD_SARIF }}
-        category: check-spelling
+        category: ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling', inputs.report_title_suffix) || 'check-spelling' }}
         checkout_path: ${{ inputs.experimental_path }}
         ref: ${{ env.PRIVATE_SARIF_REF }}
         sha: ${{ env.PRIVATE_SARIF_SHA }}
