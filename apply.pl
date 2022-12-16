@@ -166,19 +166,18 @@ sub remove_stale {
     }
 
     my $re = join "|", @stale;
-    my $suffix = ".".time();
-    my $old_argv = '';
     for my $file (@expect_files) {
-        my $rewritten = "$file$suffix";
         open INPUT, '<', $file;
-        open OUTPUT, '>', $rewritten;
+        my @keep;
         while (<INPUT>) {
             next if /^(?:$re)(?:(?:\r|\n)*$| .*)/;
-            print OUTPUT $_;
+            push @keep, $_;
         }
-        close OUTPUT;
         close INPUT;
-        rename($rewritten, $file);
+
+        open OUTPUT, '>', $file;
+        print OUTPUT join '', @keep;
+        close OUTPUT;
     };
 }
 
