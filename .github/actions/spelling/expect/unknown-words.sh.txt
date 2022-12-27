@@ -31,7 +31,6 @@ rawfile
 realpath
 rfc
 sarifs
-slurpfile
 spellchecker
 sprintf
 SRCROOT
