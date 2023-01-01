@@ -168,12 +168,12 @@ grape
 close $fh;
 CheckSpelling::UnknownWordSplitter::init($dirname);
 ($fh, $filename) = tempfile();
-print $fh 'banana cherry
+print $fh "banana cherry
 cherry fruit fruit egg
 fruit donut grape donut banana
-egg ham
+egg \xE2\x80\x99ham
 grape
-';
+";
 close $fh;
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/name", $filename);
@@ -181,7 +181,7 @@ check_output_file("$output_dir/stats", '{words: 9, unrecognized: 1, unknown: 1, 
 check_output_file_sorted_lines("$output_dir/warnings", ":2:7 ... 20, Warning - ` fruit fruit ` matches a line_forbidden.patterns entry: `\\s([A-Z]{3,}|[A-Z][a-z]{2,}|[a-z]{3,})\\s\\g{-1}\\s`. (forbidden-pattern)
 :3:19 ... 24, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
 :3:7 ... 12, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
-:4:5 ... 8: 'ham'
+:4:6 ... 9: 'ham'
 ");
 check_output_file("$output_dir/unknown", 'ham');
 open $fh, '>', "$dirname/candidates.txt";
@@ -203,7 +203,7 @@ ok($output_directory =~ /.*\n/);
 chomp($output_directory);
 ok(-d $output_directory);
 check_output_file("$output_directory/name", $filename);
-check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4:5:8]}');
-check_output_file_sorted_lines("$output_directory/warnings", ":4:5 ... 8: 'ham'
+check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4:6:9]}');
+check_output_file_sorted_lines("$output_directory/warnings", ":4:6 ... 9: 'ham'
 ");
 check_output_file("$output_directory/unknown", 'ham');
