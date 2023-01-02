@@ -1259,7 +1259,6 @@ set_up_tools() {
   }
   add_app curl ca-certificates
   add_app git
-  install_tools
   if ! command_v gh; then
     if command_v apt-get && ! apt-cache policy gh | grep -q Candidate:; then
       curl -A "$curl_ua" -f -s -S -L https://cli.github.com/packages/githubcli-archive-keyring.gpg |
@@ -1269,8 +1268,8 @@ set_up_tools() {
         $SUDO tee /etc/apt/sources.list.d/github-cli.list > /dev/null
     fi
     add_app gh
-    install_tools
   fi
+  install_tools
   set_up_jq
 }
 
