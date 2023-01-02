@@ -28,7 +28,8 @@ jobs:
         (
           sudo apt-get update &&
           sudo apt-get install -y cpanminus &&
-          perl `command -v cpanm` -S --notest Module::Build::Tiny Devel::Cover IO::Capture::Stderr
+          perl `command -v cpanm` -S --notest Module::Build::Tiny Devel::Cover IO::Capture::Stderr Hash::Merge &&
+          go install 'github.com/josephburnett/jd@latest' || echo 'Could not install jd' >&2
         ) > /tmp/prework || (cat /tmp/prework && false)
         ./Build.PL
         ./Build build

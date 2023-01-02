@@ -1001,6 +1001,7 @@ define_variables() {
   action_log_ref="$data_dir/action_log_ref.txt"
   action_log_file_name="$data_dir/action_log_file_name.txt"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
+  export sarif_overlay_path="$data_dir/overlay.sarif.json"
   file_list="$data_dir/checked_files.lst"
   BODY="$data_dir/comment.md"
   output_variables="$(mktemp)"
@@ -1296,6 +1297,9 @@ set_up_tools() {
   add_app curl ca-certificates
   add_app git
   add_perl_lib URI::Escape liburi-escape-xs-perl
+  if to_boolean "$INPUT_USE_SARIF"; then
+    add_perl_lib Hash::Merge libhash-merge-perl
+  fi
   if ! command_v gh; then
     if command_v apt-get && ! apt-cache policy gh | grep -q Candidate:; then
       curl -A "$curl_ua" -f -s -S -L https://cli.github.com/packages/githubcli-archive-keyring.gpg |
@@ -1653,6 +1657,7 @@ set_up_files() {
   if [ ! -s "$advice_path" ]; then
     get_project_files_deprecated advice.md advice.txt "$advice_path_txt"
   fi
+  get_project_files sarif.json "$sarif_overlay_path"
 
   if [ -n "$debug" ]; then
     echo "Clean up from previous run"
