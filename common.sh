@@ -11,8 +11,6 @@ if [ "$INITIALIZED" != defined ]; then
     esac
   }
 
-  "$spellchecker/secpoll.sh"
-
   if [ "$RUNNER_OS" = "Windows" ]; then
     echo "::error ::Windows isn't currently supported"
     exit 5
