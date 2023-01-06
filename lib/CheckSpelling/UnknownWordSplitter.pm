@@ -27,8 +27,7 @@ my %unique;
 my %unique_unrecognized;
 my ($last_file, $words, $unrecognized) = ('', 0, 0);
 
-my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
-my $disable_minified_file = $disable_flags =~ /(?:^|,|\s)minified-file(?:,|\s|$)/;
+my $disable_flags;
 
 sub file_to_list {
   my ($re) = @_;
@@ -162,6 +161,7 @@ sub init {
 
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
   our $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
+  our $disable_minified_file = $disable_flags =~ /(?:^|,|\s)minified-file(?:,|\s|$)/;
 
   our $check_file_names = CheckSpelling::Util::get_file_from_env('check_file_names', '');
 
@@ -219,7 +219,7 @@ sub split_file {
     $unrecognized, $longest_word, $shortest_word, $largest_file, $words,
     $word_match, %unique, %unique_unrecognized, $forbidden_re,
     @forbidden_re_list, $patterns_re, %dictionary,
-    $candidates_re, @candidates_re_list, $check_file_names, $use_magic_file
+    $candidates_re, @candidates_re_list, $check_file_names, $use_magic_file, $disable_minified_file
   );
   my @candidates_re_hits = (0) x scalar @candidates_re_list;
   my @candidates_re_lines = (0) x scalar @candidates_re_list;
