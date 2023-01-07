@@ -100,9 +100,7 @@ sub main {
 
         $merge_behaviors->{'ARRAY'}->{'ARRAY'} = sub {
             return $merge_arrays->(@_) if ref($_[0][0]).ref($_[1][0]);
-            my %hash;
-            @hash{(@{$_[0]}, @{$_[1]})} = ();
-            [ keys %hash ];
+            return [@{$_[1]}];
         };
 
         if (-s $sarif_template_overlay_file) {
