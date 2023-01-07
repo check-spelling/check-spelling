@@ -7,6 +7,8 @@ use File::Basename;
 use CheckSpelling::Util;
 
 use constant {
+  NO_MATCHES => -1,
+  NOT_UNIQUE => -2,
   NO_WORD_SEEN_YET => '0'
 };
 
@@ -18,8 +20,19 @@ sub entry {
     name => $name,
     handle => $handle,
     word => NO_WORD_SEEN_YET,
+    uniq => 0,
     covered => 0
   }
+}
+
+sub update_unique {
+  my ($uniq, $file_id) = @_;
+  if ($uniq == NO_MATCHES) {
+    $uniq = $file_id;
+  } elsif ($uniq > NO_MATCHES) {
+    $uniq = NOT_UNIQUE;
+  }
+  return $uniq;
 }
 
 sub main {
@@ -41,9 +54,10 @@ sub main {
     chomp $unknown;
     last if ($unknown eq '');
     my @drop;
+    my $uniq = NO_MATCHES;
     for (my $file_id = 0; $file_id < scalar @files; $file_id++) {
       my $current = $files[$file_id];
-      my ($word, $handle) = ($current->{"word"}, $current->{"handle"});
+      my ($word, $handle) = ($current->{'word'}, $current->{'handle'});
       while ($word ne '' && $word lt $unknown) {
         if (eof $handle) {
           $word = '';
@@ -54,6 +68,7 @@ sub main {
       }
       if ($word eq $unknown) {
         ++$current->{'covered'};
+        $uniq = update_unique($uniq, $file_id);
         if (eof $handle) {
           $word = '';
         } else {
@@ -65,6 +80,10 @@ sub main {
       if ($word eq '') {
         push @drop, $file_id;
       }
+    }
+    if ($uniq > NO_MATCHES) {
+      my $current = $files[$uniq];
+      ++$current->{'uniq'};
     }
     if (@drop) {
       for $file_id (reverse @drop) {
@@ -90,6 +109,7 @@ sub main {
     }
     $name = $pretty[0] if @pretty;
 
+    my $uniq = $current->{'uniq'};
     my $word = $current->{'word'};
     $word = <$handle> while !eof($handle);
     my $lines = $handle->input_line_number();
@@ -101,7 +121,13 @@ sub main {
     my $name_without_spaces = $name;
     $name_without_spaces =~ s/\s+/_/g;
 
-    print "$covered-$lines-$name_without_spaces [$name]($url) ($lines) covers $covered of them\n";
+    my $unique = '';
+    if ($uniq) {
+      $unique = " ($uniq uniquely)";
+    } else {
+      $uniq = 0;
+    }
+    print "$covered-$lines-$uniq-$name_without_spaces [$name]($url) ($lines) covers $covered of them$unique\n";
   }
 }
 
