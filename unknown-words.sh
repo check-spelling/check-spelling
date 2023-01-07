@@ -2127,9 +2127,9 @@ spelling_body() {
 
         $expect_details
 
-        Dictionary | Entries | Covers
-        -|-|-
-        $(perl -pe 's/ \((\d+)\) covers (\d+) of them/|$1|$2|/' "$extra_dictionaries_cover_entries_limited")
+        Dictionary | Entries | Covers | Uniquely
+        -|-|-|-
+        $(perl -pe 's/ \((\d+)\) covers (\d+) of them \((\d+) uniquely\)/|$1|$2|$3|/ || s/ \((\d+)\) covers (\d+) of them/|$1|$2||/' "$extra_dictionaries_cover_entries_limited")
 
         Consider adding them using$workflow_path_hint:
         $B yml
@@ -2759,7 +2759,13 @@ more_misspellings() {
         (
           cd "$check_extra_dictionaries_dir";
           aliases="$dictionary_alias_pattern" extra_dictionaries="$check_extra_dictionaries" "$spellchecker/dictionary-coverage.pl" "$run_output" |
-          perl -e 'print sort { $a =~ /^(\d+)\D(\d+)\D(.*)/; my ($a1, $a2, $a3) = ($1, $2, $3); $b =~ /^(\d+)\D(\d+)\D(.*)/; my ($b1, $b2, $b3) = ($1, $2, $3); $b1 <=> $a1 || $a2 <=> $b2 || $a3 cmp $b3 } <>; ' |
+          perl -e 'print sort {
+            $a =~ /^(\d+)-(\d+)-(\d+)-(.*)/;
+            my ($a1, $a2, $a3, $a4) = ($1, $2, $3, $4);
+            $b =~ /^(\d+)-(\d+)-(\d+)-(.*)/;
+            my ($b1, $b2, $b3, $b4) = ($1, $2, $3, $4);
+            $b1 <=> $a1 || $b3 / $b2 <=> $a3 / $a2 || $a2 <=> $b2 || $a4 cmp $b4 } <>;
+          ' |
           perl -pe 's/^\S+ //' > "$extra_dictionaries_cover_entries"
         )
         end_group
@@ -2767,7 +2773,7 @@ more_misspellings() {
     fi
   fi
   if [ -s "$extra_dictionaries_cover_entries" ]; then
-    perl -pe 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
+    perl -pe 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+) of them \((\d+) uniquely\).*/{"$1":[$3, $2, $4]}/ || s/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
     jq -s '.' > "$extra_dictionaries_json"
     echo "suggested_dictionaries=$extra_dictionaries_json" >> "$output_variables"
   fi

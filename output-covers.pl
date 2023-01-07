@@ -17,12 +17,16 @@ for my $suggested_dictionary_ref (@suggested_dictionaries) {
     for my $dict (keys %suggested_dictionary) {
         my $suggested_dictionary_ref = $suggested_dictionary{$dict};
         my @suggested_dictionary_array = @{$suggested_dictionary_ref};
-        my ($covers, $total) = @suggested_dictionary_array;
+        my ($covers, $total, $uniq) = @suggested_dictionary_array;
         my $url = $dict;
         for my $key (keys %prefix_map) {
             $url =~ s<$key:><$prefix_map{$key}>;
         }
-        print "[$dict]($url) ($total) covers $covers of them\n";
+        my $unique = '';
+        if ($uniq) {
+            $unique = " ($uniq uniquely)";
+        }
+        print "[$dict]($url) ($total) covers $covers of them$unique\n";
     }
 
 }
