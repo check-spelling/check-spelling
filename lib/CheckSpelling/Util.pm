@@ -27,4 +27,14 @@ sub case_biased :prototype($$) ($a, $b) {
   lc($a) cmp lc($b) || $a cmp $b;
 }
 
+sub calculate_delay {
+  my (@lines) = @_;
+  my $delay = 5;
+  for my $line (@lines) {
+    next unless /^retry-after:\s*(\d+)/i;
+    $delay = $1 || 1;
+  }
+  return $delay;
+}
+
 1;
