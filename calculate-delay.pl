@@ -1,7 +1,9 @@
 #!/usr/bin/env perl
-my $delay = 5;
+
+use CheckSpelling::Util;
+
+my @lines;
 while (<>) {
-    next unless /^retry-after:\s*(\d+)/i;
-    $delay = $1 || 1;
-};
-print $delay;
+    push @lines;
+}
+print CheckSpelling::Util::calculate_delay(@lines);
