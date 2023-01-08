@@ -1,4 +1,6 @@
 ignore$
+\.aff$
+\.dic$
 \.png$
 \.t$
 ^LICENSE\.txt$

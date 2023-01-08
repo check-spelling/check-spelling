@@ -965,7 +965,7 @@ define_variables() {
   action_workflow_path_file="$data_dir/workflow-path.txt"
   workflow_path=$(get_workflow_path)
 
-  dict="$spellchecker/words"
+  dict=$(mktemp)
   patterns="$spellchecker/patterns.txt"
   forbidden_path="$spellchecker/forbidden.txt"
   candidates_path="$spellchecker/candidates.txt"
@@ -1310,6 +1310,11 @@ set_up_tools() {
     fi
     add_app gh
   fi
+  if ! command_v hunspell &&
+    echo "$INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" | grep -q '\.dic'; then
+    add_app hunspell
+    add_perl_lib Text::Hunspell libtext-hunspell-perl
+  fi
   install_tools
   set_up_jq
 }
@@ -1371,6 +1376,24 @@ build_dictionary_alias_pattern() {
   fi
 }
 
+get_extra_dictionary() {
+  extra_dictionary_url="$1"
+  source_link="$dictionaries_dir"/."$2"
+  url="$(echo "$extra_dictionary_url" | perl -pe "$dictionary_alias_pattern")"
+  if [ "$url" = "${url#https://raw.githubusercontent.com/*}" ]; then
+    no_curl_auth=1
+  fi
+  keep_headers=1 call_curl "$url" > "$extra_dictionaries_dir"/"$dest"
+  if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ] 2> /dev/null; then
+    (
+      echo "::error ::Failed to retrieve $extra_dictionary_url -- $url (dictionary-not-found)"
+      cat "$response_headers"
+    ) >&2
+    rm -f "$extra_dictionaries_canary"
+  fi
+  echo "$extra_dictionary_url" > "$source_link"
+}
+
 get_extra_dictionaries() {
   extra_dictionaries="$(echo "$1" | words_to_lines)"
   extra_dictionaries_canary="$(mktemp)"
@@ -1379,18 +1402,19 @@ get_extra_dictionaries() {
   if [ -n "$extra_dictionaries" ]; then
     for extra_dictionary in $extra_dictionaries; do
     (
-      url="$(echo "$extra_dictionary" | perl -pe "$dictionary_alias_pattern")"
-      if [ "$url" = "${url#https://raw.githubusercontent.com/*}" ]; then
-        no_curl_auth=1
-      fi
-      dest="$(basename "$url")"
-      keep_headers=1 call_curl "$url" > "$extra_dictionaries_dir"/"$dest"
-      if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ] 2> /dev/null; then
-        (
-          echo "::error ::Failed to retrieve $extra_dictionary -- $url (dictionary-not-found)"
-          cat "$response_headers"
-        ) >&2
-        rm -f "$extra_dictionaries_canary"
+      get_extra_dictionary "$extra_dictionary"
+      if echo "$extra_dictionary" | grep -q '\.dic$'; then
+        get_extra_dictionary "$(echo "$extra_dictionary" | sed -e 's/\.dic$/.aff/')"
+        if [ "$(basename "$extra_dictionary")" = index.dic ]; then
+          hunspell_dictionary_name="$(
+            echo "$extra_dictionary" | perl -pe 's{/src/hunspell/index.*}{};s{.*/}{}'
+          )"
+          (
+            cd "$extra_dictionaries_dir"
+            mv index.dic "$hunspell_dictionary_name.dic"
+            mv index.aff "$hunspell_dictionary_name.aff"
+          )
+        fi
       fi
     )
     done
@@ -1598,8 +1622,14 @@ set_up_files() {
         if [ "$extra_dictionaries_dir" = fail ]; then
           quit 4
         fi
+        if find "$extra_dictionaries_dir" -type f -name '*.aff' -o -name '*.dic' | grep -q .; then
+          hunspell_dictionary_path=$(mktemp -d)
+        fi
         (
           cd "$extra_dictionaries_dir"
+          if [ -d "$hunspell_dictionary_path" ]; then
+            mv *.aff *.dic "$hunspell_dictionary_path" 2>/dev/null || true
+          fi
           # Items that aren't proper should be moved to patterns instead
           "$spellchecker/dictionary-word-filter.pl" * | sort -u >> "$dict"
         )
@@ -1849,6 +1879,8 @@ run_spell_check() {
     INPUT_NOT_LOWER_PATTERN="$INPUT_NOT_LOWER_PATTERN" \
     INPUT_NOT_UPPER_OR_LOWER_PATTERN="$INPUT_NOT_UPPER_OR_LOWER_PATTERN" \
     INPUT_PUNCTUATION_PATTERN="$INPUT_PUNCTUATION_PATTERN" \
+    dict="$dict" \
+    hunspell_dictionary_path="$hunspell_dictionary_path" \
     check_file_names="$check_file_names" \
   xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
     expect="$expect_path" \

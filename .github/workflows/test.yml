@@ -30,6 +30,7 @@ jobs:
           Devel::Cover
           IO::Capture::Stderr
           Hash::Merge
+          Text::Hunspell
           " |sort|xargs)"
         perl_modules_sha=$(echo "$perl_modules" | shasum | perl -pe 's/\s.*//')
         installsitearch=$(perl -V:'installsitearch' | perl -pe 's/.*=.(.*).;/$1/')

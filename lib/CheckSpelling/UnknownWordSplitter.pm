@@ -11,7 +11,7 @@ use 5.022;
 use feature 'unicode_strings';
 use strict;
 use warnings;
-use Encode qw/decode_utf8 FB_DEFAULT/;
+use Encode qw/decode_utf8 encode FB_DEFAULT/;
 use File::Basename;
 use Cwd 'abs_path';
 use File::Temp qw/ tempfile tempdir /;
@@ -23,6 +23,8 @@ my ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_up
 my ($shortest, $longest) = (255, 0);
 my @forbidden_re_list;
 my @candidates_re_list;
+my $hunspell_dictionary_path;
+my @hunspell_dictionaries;
 my %dictionary = ();
 my $base_dict;
 my %unique;
@@ -146,9 +148,46 @@ sub load_dictionary {
   $word_match = valid_word();
 }
 
+sub hunspell_dictionary {
+  my ($dict) = @_;
+  my $name = $dict;
+  $name =~ s{/src/index/hunspell/index\.dic$}{};
+  $name =~ s{.*/}{};
+  my $aff = $dict;
+  my $encoding;
+  $aff =~ s/\.dic$/.aff/;
+  if (open AFF, '<', $aff) {
+    while (<AFF>) {
+      next unless /^SET\s+(\S+)/;
+      $encoding = $1 if ($1 !~ /utf-8/i);
+      last;
+    }
+    close AFF;
+  }
+  return {
+    name => $name,
+    dict => $dict,
+    aff => $aff,
+    encoding => $encoding,
+    engine => Text::Hunspell->new($aff, $dict),
+  }
+}
+
 sub init {
   my ($dirname) = @_;
   our ($word_match, %unique, $patterns_re, @forbidden_re_list, $forbidden_re, @candidates_re_list, $candidates_re);
+  our $hunspell_dictionary_path = CheckSpelling::Util::get_file_from_env('hunspell_dictionary_path', '');
+  if ($hunspell_dictionary_path) {
+    our @hunspell_dictionaries = ();
+    if (eval 'use Text::Hunspell; 1') {
+      my @hunspell_dictionaries_list = glob("$hunspell_dictionary_path/*.dic");
+      for my $hunspell_dictionary_file (@hunspell_dictionaries_list) {
+        push @hunspell_dictionaries, hunspell_dictionary($hunspell_dictionary_file);
+      }
+    } else {
+      print STDERR "Could not load Text::Hunspell for dictionaries (hunspell-unavailable)\n";
+    }
+  }
   my (@patterns_re_list, %in_patterns_re_list);
   if (-e "$dirname/patterns.txt") {
     @patterns_re_list = file_to_list "$dirname/patterns.txt";
@@ -193,6 +232,7 @@ sub init {
 sub split_line {
   our (%dictionary, $word_match, $disable_word_collating);
   our ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
+  our @hunspell_dictionaries;
   our $shortest;
   my $pattern = '.';
   # $pattern = "(?:$upper_pattern){$shortest,}|$upper_pattern(?:$lower_pattern){2,}\n";
@@ -217,6 +257,20 @@ sub split_line {
         ++$words;
         $unique_ref->{$token}=1;
         next;
+      }
+      if (@hunspell_dictionaries) {
+        my $found = 0;
+        for my $hunspell_dictionary (@hunspell_dictionaries) {
+          my $token_encoded = defined $hunspell_dictionary->{'encoding'} ?
+            encode($hunspell_dictionary->{'encoding'}, $token) : $token;
+          next unless ($hunspell_dictionary->{'engine'}->check($token_encoded));
+          ++$words;
+          $dictionary{$token} = 1;
+          $unique_ref->{$token}=1;
+          $found = 1;
+          last;
+        }
+        next if $found;
       }
       my $key = lc $token;
       unless ($disable_word_collating) {
