@@ -26,6 +26,17 @@ sub get_val_from_env {
 sub case_biased :prototype($$) ($a, $b) {
   lc($a) cmp lc($b) || $a cmp $b;
 }
+  
+sub read_file {
+  my ($file) = @_;
+  local $/ = undef;
+  my ($content, $output);
+  if (open $output, '<:utf8', $file) {
+    $content = <$output>;
+    close $output;
+  }
+  return $content;
+}
 
 sub calculate_delay {
   my (@lines) = @_;
