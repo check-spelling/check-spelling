@@ -6,7 +6,7 @@ use File::Temp qw/ tempfile tempdir /;
 use File::Basename;
 use Test::More;
 use IO::Capture::Stderr;
-plan tests => 9;
+plan tests => 10;
 use_ok('CheckSpelling::DictionaryCoverage');
 
 my $name = '/dev/null';
@@ -83,3 +83,17 @@ CheckSpelling::DictionaryCoverage::main("/dev/no-such-file", ());
 $capture->stop();
 is((join "\n", $capture->read()), 'Could not read /dev/no-such-file
 ');
+
+$capture = IO::Capture::Stderr->new();
+$capture->start();
+($fh, $filename) = tempfile();
+print $fh 'world
+hello
+try
+worked
+something
+';
+close $fh;
+CheckSpelling::DictionaryCoverage::main($filename, 't/sample.dic');
+$capture->stop();
+is((join "\n", $capture ? $capture->read() : ()), '');
