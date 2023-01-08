@@ -264,6 +264,30 @@ inputs:
     description: 'Provide item table (paths, content)'
     required: false
     default: 1
+  ignore-pattern:
+    description: 'Word Splitter Ignore Pattern'
+    required: false
+    default: "[^a-zA-Z']"
+  upper-pattern:
+    description: 'Word Splitter Upper Pattern'
+    required: false
+    default: "[A-Z]"
+  lower-pattern:
+    description: 'Word Splitter Lower Pattern'
+    required: false
+    default: "[a-z]"
+  not-lower-pattern:
+    description: 'Word Splitter Not Lower Pattern'
+    required: false
+    default: "[^a-z]"
+  not-upper-or-lower-pattern:
+    description: 'Word Splitter Not Upper or Lower Pattern'
+    required: false
+    default: "[^A-Za-z]"
+  punctuation-pattern:
+    description: 'Word Splitter Punctuation Pattern'
+    required: false
+    default: "'"
 
 outputs:
   unknown_words:
