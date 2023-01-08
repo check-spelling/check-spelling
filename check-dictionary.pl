@@ -15,7 +15,7 @@ $. = 0;
 
 sub process_line {
     my ($file, $line) = @_;
-    if ($line =~ /^.*?($ENV{expected_chars}+)/) {
+    if ($line =~ /^.*?($ENV{INPUT_IGNORE_PATTERN}+)/) {
         my ($left, $right) = ($-[1] + 1, $+[1] + 1);
         my $column_range="$left ... $right";
         unless ($line =~ /^$ENV{comment_char}/) {

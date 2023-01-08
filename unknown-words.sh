@@ -1113,7 +1113,6 @@ check_for_newline_at_eof() {
 
 check_dictionary() {
   file="$1"
-  expected_chars="a-zA-Z'" \
   comment_char="#" \
   "$check_dictionary" "$file"
 }
@@ -1827,6 +1826,12 @@ run_spell_check() {
     INPUT_DISABLE_CHECKS="$INPUT_DISABLE_CHECKS" \
     INPUT_CANDIDATE_EXAMPLE_LIMIT="$INPUT_CANDIDATE_EXAMPLE_LIMIT" \
     INPUT_USE_MAGIC_FILE="$INPUT_USE_MAGIC_FILE" \
+    INPUT_IGNORE_PATTERN="$INPUT_IGNORE_PATTERN" \
+    INPUT_UPPER_PATTERN="$INPUT_UPPER_PATTERN" \
+    INPUT_LOWER_PATTERN="$INPUT_LOWER_PATTERN" \
+    INPUT_NOT_LOWER_PATTERN="$INPUT_NOT_LOWER_PATTERN" \
+    INPUT_NOT_UPPER_OR_LOWER_PATTERN="$INPUT_NOT_UPPER_OR_LOWER_PATTERN" \
+    INPUT_PUNCTUATION_PATTERN="$INPUT_PUNCTUATION_PATTERN" \
     check_file_names="$check_file_names" \
   xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
     expect="$expect_path" \

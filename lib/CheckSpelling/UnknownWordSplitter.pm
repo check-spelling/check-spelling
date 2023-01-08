@@ -19,6 +19,7 @@ use CheckSpelling::Util;
 our $VERSION='0.1.0';
 
 my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re, $candidates_re, $disable_word_collating, $check_file_names);
+my ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
 my ($shortest, $longest) = (255, 0);
 my @forbidden_re_list;
 my @candidates_re_list;
@@ -100,10 +101,17 @@ sub valid_word {
     # it's possible that this should scale with word length
     $longest += 2;
   }
-  return qr/\w{3}/ if (defined $shortest && not_empty($longest)) && ($shortest > $longest);
+  our ($upper_pattern, $lower_pattern, $punctuation_pattern);
+  my $word_pattern = join '|', (grep { defined $_ && /./ } ($upper_pattern, $lower_pattern, $punctuation_pattern));
+  $word_pattern = '(?:\\w)' unless $word_pattern;
+  if ((defined $shortest && not_empty($longest)) &&
+      ($shortest > $longest)) {
+    $word_pattern = "(?:$word_pattern){3}";
+    return qr/$word_pattern/;
+  }
   $shortest = 3 unless defined $shortest;
   $longest = '' unless defined $longest;
-  $word_match = "\\w{$shortest,$longest}";
+  $word_match = "(?:\\w){$shortest,$longest}";
   return qr/\b$word_match\b/;
 }
 
@@ -112,6 +120,13 @@ sub load_dictionary {
   our ($word_match, $longest, $shortest, $longest_word, $shortest_word, %dictionary);
   $longest_word = CheckSpelling::Util::get_val_from_env('INPUT_LONGEST_WORD', undef);
   $shortest_word = CheckSpelling::Util::get_val_from_env('INPUT_SHORTEST_WORD', undef);
+  our ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
+  $ignore_pattern = CheckSpelling::Util::get_file_from_env('INPUT_IGNORE_PATTERN', q<[^a-zA-Z']>);
+  $upper_pattern = CheckSpelling::Util::get_file_from_env('INPUT_UPPER_PATTERN', '[A-Z]');
+  $lower_pattern = CheckSpelling::Util::get_file_from_env('INPUT_LOWER_PATTERN', '[a-z]');
+  $not_lower_pattern = CheckSpelling::Util::get_file_from_env('INPUT_NOT_LOWER_PATTERN', '[^a-z]');
+  $not_upper_or_lower_pattern = CheckSpelling::Util::get_file_from_env('INPUT_NOT_UPPER_OR_LOWER_PATTERN', '[^A-Za-z]');
+  $punctuation_pattern = CheckSpelling::Util::get_file_from_env('INPUT_PUNCTUATION_PATTERN', q<'>);
   %dictionary = ();
 
   open(DICT, '<:utf8', $dict);
@@ -176,15 +191,21 @@ sub init {
 
 sub split_line {
   our (%dictionary, $word_match, $disable_word_collating);
+  our ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
+  our $shortest;
+  my $pattern = '.';
+  # $pattern = "(?:$upper_pattern){$shortest,}|$upper_pattern(?:$lower_pattern){2,}\n";
+
   my ($words, $unrecognized) = (0, 0);
   my ($line, $unique_ref, $unique_unrecognized_ref, $unrecognized_line_items_ref) = @_;
     # https://www.fileformat.info/info/unicode/char/2019/
     my $rsqm = "\xE2\x80\x99";
     $line =~ s/$rsqm|&apos;|&#39;/'/g;
-    $line =~ s/[^a-zA-Z']+/ /g;
-    while ($line =~ s/([A-Z]{2,})([A-Z][a-z]{2,})/ $1 $2 /g) {}
-    while ($line =~ s/([a-z']+)([A-Z])/$1 $2/g) {}
+    $line =~ s/(?:$ignore_pattern)+/ /g;
+    while ($line =~ s/($upper_pattern{2,})($upper_pattern$lower_pattern{2,})/ $1 $2 /g) {}
+    while ($line =~ s/((?:$lower_pattern|$punctuation_pattern)+)($upper_pattern)/$1 $2/g) {}
     for my $token (split /\s+/, $line) {
+      next unless $token =~ /$pattern/;
       $token =~ s/^(?:'|$rsqm)+//g;
       $token =~ s/(?:'|$rsqm)+s?$//g;
       my $raw_token = $token;
@@ -216,11 +237,12 @@ sub split_line {
 sub split_file {
   my ($file) = @_;
   our (
-    $unrecognized, $longest_word, $shortest_word, $largest_file, $words,
+    $unrecognized, $shortest, $largest_file, $words,
     $word_match, %unique, %unique_unrecognized, $forbidden_re,
     @forbidden_re_list, $patterns_re, %dictionary,
     $candidates_re, @candidates_re_list, $check_file_names, $use_magic_file, $disable_minified_file
   );
+  our ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
   my @candidates_re_hits = (0) x scalar @candidates_re_list;
   my @candidates_re_lines = (0) x scalar @candidates_re_list;
   my $temp_dir = tempdir();
@@ -328,14 +350,14 @@ sub split_file {
     for my $token (keys %unrecognized_line_items) {
       $token =~ s/'/(?:'|$rsqm)+/g;
       my $before;
-      if ($token =~ /^[A-Z][a-z]/) {
+      if ($token =~ /^$upper_pattern$lower_pattern/) {
         $before = '(?<=.)';
-      } elsif ($token =~ /^[A-Z]/) {
-        $before = '(?<=[^A-Z])';
+      } elsif ($token =~ /^$upper_pattern/) {
+        $before = "(?<=$upper_pattern)";
       } else {
-        $before = '(?<=[^a-z])';
+        $before = "(?<=$not_lower_pattern)";
       }
-      my $after = ($token =~ /[A-Z]$/) ? '(?=[^A-Za-z])|(?=[A-Z][a-z])' : '(?=[^a-z])';
+      my $after = ($token =~ /$upper_pattern$/) ? "(?=$not_upper_or_lower_pattern)|(?=$upper_pattern$lower_pattern)" : "(?=$not_lower_pattern)";
       while ($raw_line =~ /(?:\b|$before)($token)(?:\b|$after)/g) {
         $line_flagged = 1;
         my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);

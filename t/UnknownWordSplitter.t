@@ -71,6 +71,8 @@ foo
 close $fh;
 my $output_dir;
 my $dirname = tempdir();
+CheckSpelling::UnknownWordSplitter::init($dirname);
+
 open $fh, '>', "$dirname/forbidden.txt";
 print $fh '# forbidden
 # donut
