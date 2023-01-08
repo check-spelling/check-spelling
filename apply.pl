@@ -320,8 +320,7 @@ sub add_expect {
     @words = sort case_biased keys %items;
     open FILE, q{>}, $new_expect_file;
     for my $word (@words) {
-        chomp $word;
-        print FILE "$word\n" if $word =~ /\w/;
+        print FILE "$word" if $word =~ /\S/;
     };
     close FILE;
     system("git", "add", $new_expect_file);
