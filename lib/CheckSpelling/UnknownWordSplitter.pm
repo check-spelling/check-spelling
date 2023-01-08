@@ -24,6 +24,7 @@ my ($shortest, $longest) = (255, 0);
 my @forbidden_re_list;
 my @candidates_re_list;
 my %dictionary = ();
+my $base_dict;
 my %unique;
 my %unique_unrecognized;
 my ($last_file, $words, $unrecognized) = ('', 0, 0);
@@ -184,9 +185,9 @@ sub init {
 
   $word_match = valid_word();
 
-  my $dict = "$dirname/words";
-  $dict = '/usr/share/dict/words' unless -e $dict;
-  load_dictionary($dict);
+  our $base_dict = CheckSpelling::Util::get_file_from_env('dict', "$dirname/words");
+  $base_dict = '/usr/share/dict/words' unless -e $base_dict;
+  load_dictionary($base_dict);
 }
 
 sub split_line {
