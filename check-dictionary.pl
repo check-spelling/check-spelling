@@ -1,11 +1,11 @@
 #!/usr/bin/env perl
-open WARNINGS, ">>", $ENV{early_warnings};
+open WARNINGS, ">>:encoding(UTF-8)", $ENV{early_warnings};
 my $file = $ARGV[0];
-open FILE, "<", $file;
+open FILE, "<:encoding(UTF-8)", $file;
 $/ = undef;
 my $content = <FILE>;
 close FILE;
-open FILE, ">", $file;
+open FILE, ">:encoding(UTF-8)", $file;
 
 $ENV{comment_char} = '$^' unless $ENV{comment_char} =~ /\S/;
 
