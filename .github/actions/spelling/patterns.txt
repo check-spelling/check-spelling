@@ -20,6 +20,9 @@ catching 'templatesz'
 # regex
 \\b
 
+# commits
+https://perldoc\.perl\.org/.*
+
 # debian perl packages
 \blib[-a-z]+-perl\b
 

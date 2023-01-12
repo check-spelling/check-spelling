@@ -1,4 +1,4 @@
-#!/usr/bin/env -S perl -wT
+#!/usr/bin/env -S perl -T
 
 use warnings;
 use CheckSpelling::Sarif;
