@@ -1,4 +1,4 @@
-#!/usr/bin/env -S perl -wT -Ilib
+#!/usr/bin/env -S perl -T -Ilib
 
 use 5.022;
 use feature 'unicode_strings';

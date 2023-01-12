@@ -1,6 +1,7 @@
-#!/usr/bin/env -S perl -wT -Ilib
+#!/usr/bin/env -S perl -T -Ilib
 
 use strict;
+use warnings;
 
 use Test::More;
 
