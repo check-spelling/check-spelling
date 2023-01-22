@@ -4,6 +4,7 @@ use v5.20;
 
 package CheckSpelling::Util;
 
+use HTTP::Date;
 use feature 'signatures';
 no warnings qw(experimental::signatures);
 
@@ -38,13 +39,34 @@ sub read_file {
   return $text;
 }
 
+sub maybe_str2time {
+  my ($time) = @_;
+  $time = str2time $time;
+  return $time if $time;
+}
+
 sub calculate_delay {
   my (@lines) = @_;
-  my $delay = 5;
+  my $now_stamp = time;
+  my ($requested, $expires, $delay);
   for my $line (@lines) {
-    next unless /^retry-after:\s*(\d+)/i;
+    if ($line =~ /^date:\s*(.*)/i) {
+      $requested = maybe_str2time($1);
+      next;
+    }
+    if ($line =~ /^expires:\s*(.*)/i) {
+      $expires = maybe_str2time($1);
+      next;
+    }
+    next unless $line =~ /^retry-after:\s*(\d+)/i;
     $delay = $1 || 1;
   }
+  return $delay if defined $delay;
+  if (defined $requested && defined $expires) {
+    $delay = $expires - $requested;
+  }
+  $delay = 5 unless defined $delay && $delay > 0;
+
   return $delay;
 }
 

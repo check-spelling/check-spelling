@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 
-plan tests => 5;
+plan tests => 16;
 use_ok('CheckSpelling::Util');
 
 $ENV{'EMPTY_VAR'}='';
@@ -42,3 +42,41 @@ my $file;
 is(CheckSpelling::Util::read_file('t/Util.t'), $file);
 
 is(CheckSpelling::Util::read_file('no-such-file'), undef, "undefined as expected");
+
+is(CheckSpelling::Util::calculate_delay(
+    'Ignored: 2'
+), 5);
+is(CheckSpelling::Util::calculate_delay(
+    'Retry-After: 0'
+), 1);
+is(CheckSpelling::Util::calculate_delay(
+    'Retry-After: 2'
+), 2);
+is(CheckSpelling::Util::calculate_delay(
+    'Retry-After: 4',
+    'Retry-After: 3'
+), 3);
+is(CheckSpelling::Util::calculate_delay(
+    'Date: Thu, 19 Jan 2023 01:44:06 GMT',
+    'expires: Thu, 19 Jan 2023 01:49:06 GMT'
+), 300);
+is(CheckSpelling::Util::calculate_delay(
+    'Date: Thu, 19 Jan 2023 01:44:06 GMT',
+    'expires: Thu, 19 Jan 2023 01:44:06 GMT'
+), 5);
+is(CheckSpelling::Util::calculate_delay(
+    'Date: Thu, 19 Jan 2023 01:44:06 GMT'
+), 5);
+is(CheckSpelling::Util::calculate_delay(
+    'Date: Thu, 19 Jan 2023 01:44:06 GMT',
+    'expires: MT'
+), 5);
+is(CheckSpelling::Util::calculate_delay(
+    'expires: Thu, 19 Jan 2023 01:49:06 GMT'
+), 5);
+is(CheckSpelling::Util::calculate_delay(
+    'Date: GMT'
+), 5);
+is(CheckSpelling::Util::calculate_delay(
+    'expires: MT'
+), 5);
