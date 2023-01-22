@@ -1296,6 +1296,7 @@ set_up_tools() {
 
   add_app curl ca-certificates
   add_app git
+  add_perl_lib HTTP::Date libhttp-date-perl
   add_perl_lib URI::Escape liburi-escape-xs-perl
   if to_boolean "$INPUT_USE_SARIF"; then
     add_perl_lib Hash::Merge libhash-merge-perl
