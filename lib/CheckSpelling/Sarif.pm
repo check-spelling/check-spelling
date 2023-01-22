@@ -16,7 +16,7 @@ sub encode_low_ascii {
 sub parse_warnings {
     my ($warnings) = @_;
     my @results;
-    open WARNINGS, '<', $warnings;
+    open WARNINGS, '<', $warnings || print STDERR "Could not open $warnings\n";
     while (<WARNINGS>) {
         next if m{^https://};
         next unless m{^(.+):(\d+):(\d+) \.\.\. (\d+),\s(Error|Warning|Notice)\s-\s(.+\s\((.+)\))$};
