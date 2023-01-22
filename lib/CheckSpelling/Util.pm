@@ -28,14 +28,14 @@ sub case_biased :prototype($$) ($a, $b) {
 }
   
 sub read_file {
-  my ($file) = @_;
+  my ($name) = @_;
   local $/ = undef;
-  my ($content, $output);
-  if (open $output, '<:utf8', $file) {
-    $content = <$output>;
-    close $output;
+  my ($text, $file);
+  if (open $file, '<:utf8', $name) {
+    $text = <$file>;
+    close $file;
   }
-  return $content;
+  return $text;
 }
 
 sub calculate_delay {

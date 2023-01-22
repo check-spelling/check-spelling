@@ -4,7 +4,7 @@ use strict;
 
 use Test::More;
 
-plan tests => 3;
+plan tests => 5;
 use_ok('CheckSpelling::Util');
 
 $ENV{'EMPTY_VAR'}='';
@@ -30,3 +30,14 @@ my @expected = qw(
     Zoo
 );
 is(join ('-', @sorted), join ('-', @expected));
+
+my $file;
+{
+    open FILE, '<:utf8', 't/Util.t';
+    local $/ = undef;
+    $file = <FILE>;
+    close FILE;
+}
+is(CheckSpelling::Util::read_file('t/Util.t'), $file);
+
+is(CheckSpelling::Util::read_file('no-such-file'), undef, "undefined as expected");
