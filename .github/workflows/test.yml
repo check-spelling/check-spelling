@@ -26,8 +26,14 @@ jobs:
       shell: bash
       run: |
         (
-          sudo apt-get update &&
-          sudo apt-get install -y cpanminus &&
+          command -v cpanm >/dev/null 2>/dev/null || CPANM_PACKAGE=cpanminus
+          command -v go >/dev/null 2>/dev/null || GO_PACKAGE=golang
+          (
+            APT_PACKAGES="$CPANM_PACKAGE $GO_PACKAGE"
+            sudo apt-get install -y $APT_PACKAGES ||
+            sudo apt-get update &&
+            sudo apt-get install -y $APT_PACKAGES
+          ) &&
           perl `command -v cpanm` -S --notest Module::Build::Tiny Devel::Cover IO::Capture::Stderr Hash::Merge &&
           go install 'github.com/josephburnett/jd@latest' || echo 'Could not install jd' >&2
         ) > /tmp/prework || (cat /tmp/prework && false)
