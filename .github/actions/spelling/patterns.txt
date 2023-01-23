@@ -17,6 +17,9 @@ catching 'templatesz'
 /[-a-z0-9]+\.githubusercontent\.com/[-a-zA-Z0-9?&=_\/.]*
 \bgithub\.com/[^/]+/[^/]+/(?:blob|commit)/[0-9a-f]+(?:/|$)
 
+# regex
+\\b
+
 # debian perl packages
 \blib[-a-z]+-perl\b
 

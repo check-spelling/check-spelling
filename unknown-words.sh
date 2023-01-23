@@ -993,6 +993,7 @@ define_variables() {
   quote_meta="$spellchecker/quote-meta.pl"
   summary_tables="$spellchecker/summary-tables.pl"
   generate_sarif="$spellchecker/generate-sarif.pl"
+  get_commits_for_check_commit_message="$spellchecker/get-commits-for-check-commit-message.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
@@ -1770,7 +1771,23 @@ run_spell_check() {
     mkdir -p "$commit_messages"
     if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | "$find_token" commits)" ]; then
       get_before
-      for commit_sha in $(git log --format='%H' refs/private/before..refs/private/after); do
+      workflow_blame=$(mktemp)
+      git blame HEAD -- "$workflow_path" > "$workflow_blame"
+      workflow_commits_revs=$(mktemp)
+      "$get_commits_for_check_commit_message" "$workflow_blame" | sort -u |xargs -n1 git rev-parse > "$workflow_commits_revs"
+      log_revs=$(mktemp)
+      git log --format='%H' refs/private/before..refs/private/after > "$log_revs"
+      clip_log=$(for commit_sha in $(cat "$workflow_commits_revs"); do
+        grep -q "$commit_sha" "$log_revs" && echo "$commit_sha" || true
+      done)
+      if [ -n "$clip_log" ]; then
+        clipped_log_revs=$(mktemp)
+        for commit_sha in $(echo "$clip_log"); do
+          git log --format='%H' $commit_sha..refs/private/after >> "$clipped_log_revs"
+        done
+        sort -u "$clipped_log_revs" > "$log_revs"
+      fi
+      for commit_sha in $(cat "$log_revs"); do
         append_commit_message_to_file_list "$commit_sha"
       done
       if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | "$find_token" commit)" ]; then
