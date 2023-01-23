@@ -13,9 +13,9 @@ use_ok('CheckSpelling::DictionaryCoverage');
 my $name = '/dev/null';
 my $object = CheckSpelling::DictionaryCoverage::entry($name);
 isa_ok($object->{'handle'}, 'GLOB');
-is($object->{'name'}, $name);
-is($object->{'word'}, 0);
-is($object->{'covered'}, 0);
+is($object->{'name'}, $name, 'object->name');
+is($object->{'word'}, 0, 'object->word');
+is($object->{'covered'}, 0, 'object->covered');
 
 my ($fh, $filename, $dict);
 ($fh, $dict) = tempfile();
@@ -76,14 +76,14 @@ $capture->start();
 CheckSpelling::DictionaryCoverage::main($filename, "no-such-file");
 $capture->stop();
 is((join "\n", $capture->read()), "Couldn't open dictionary \`no-such-file\` (dictionary-not-found)
-");
+", 'dictionary-not-found');
 
 $capture = IO::Capture::Stderr->new();
 $capture->start();
 CheckSpelling::DictionaryCoverage::main("/dev/no-such-file", ());
 $capture->stop();
 is((join "\n", $capture->read()), 'Could not read /dev/no-such-file
-');
+', 'no-such-file');
 
 $capture = IO::Capture::Stderr->new();
 $capture->start();
@@ -97,4 +97,4 @@ something
 close $fh;
 CheckSpelling::DictionaryCoverage::main($filename, 't/sample.dic');
 $capture->stop();
-is((join "\n", $capture ? $capture->read() : ()), '');
+is((join "\n", $capture ? $capture->read() : ()), '', 'coverage for .dic');
