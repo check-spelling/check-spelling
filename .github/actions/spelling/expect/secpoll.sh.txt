@@ -1,4 +1,3 @@
-dns
 NXDOMAIN
 secpoll
 tac
