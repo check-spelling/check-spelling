@@ -408,6 +408,22 @@ runs:
       with:
         name: "check-spelling-comment"
         path: /tmp/data
+    - name: hash-dictionaries
+      if: ${{ !inputs.task || inputs.task == 'spelling' }}
+      env:
+        INPUT_TASK: hash-dictionaries
+        INPUT_DICTIONARY_SOURCE_PREFIXES: ${{ inputs.dictionary_source_prefixes || inputs.dictionary-source-prefixes }}
+        INPUT_EXTRA_DICTIONARIES: ${{ inputs.extra_dictionaries || inputs.extra-dictionaries }} ${{ inputs.check_extra_dictionaries || inputs.check-extra-dictionaries }}
+      shell: bash
+      run: |
+        unknown-words
+    - name: retrieve-dictionaries
+      id: retrieve-dictionaries
+      if: ${{ env.DICTIONARY_URLS_HASH }}
+      uses: actions/cache/restore@v3
+      with:
+        path: ${{ env.THIS_ACTION_PATH }}/dictionaries
+        key: check-spelling-dictionaries-${{ env.DICTIONARY_URLS_HASH }}
     - name: check-spelling
       id: spelling
       if: env.MERGE_FAILED != '1'
@@ -419,6 +435,12 @@ runs:
       run: |
         unknown-words
       shell: bash
+    - name: save-dictionaries
+      uses: actions/cache/save@v3
+      if: (success() || (failure() && env.MERGE_FAILED != '1')) && steps.spelling.outputs.CACHE_DICTIONARIES && steps.retrieve-dictionaries.outputs.cache-hit != 'true'
+      with:
+        path: ${{ env.THIS_ACTION_PATH }}/dictionaries
+        key: check-spelling-dictionaries-${{ env.DICTIONARY_URLS_HASH }}
     - name: store-comment
       if: (contains(github.event_name, 'pull_request') ||
           github.event_name == 'push') &&

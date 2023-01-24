@@ -1379,10 +1379,18 @@ build_dictionary_alias_pattern() {
   fi
 }
 
+expand_dictionary_url() {
+  echo "$1" | perl -pe "$dictionary_alias_pattern"
+}
+
 get_extra_dictionary() {
   extra_dictionary_url="$1"
   source_link="$dictionaries_dir"/."$2"
-  url="$(echo "$extra_dictionary_url" | perl -pe "$dictionary_alias_pattern")"
+  url="$(expand_dictionary_url "$extra_dictionary_url")"
+  dest="$dictionaries_dir"/"$2"
+  if [ -s "$dest" ]; then
+    return
+  fi
   if [ "$url" = "${url#https://raw.githubusercontent.com/*}" ]; then
     no_curl_auth=1
   fi
@@ -1397,27 +1405,26 @@ get_extra_dictionary() {
   echo "$extra_dictionary_url" > "$source_link"
 }
 
+get_hunspell_stem() {
+  echo "$1" | perl -pe 's{.*?([^:/]+)/src/hunspell/index.*}{$1};s{.*/}{}'
+}
+
 get_extra_dictionaries() {
-  extra_dictionaries="$(echo "$1" | words_to_lines)"
+  dictionaries_dir="$spellchecker/dictionaries/$1"
+  extra_dictionaries="$(echo "$2" | words_to_lines)"
   extra_dictionaries_canary="$(mktemp)"
-  extra_dictionaries_dir="$(mktemp -d)"
+  mkdir -p "$dictionaries_dir"
   response_headers="$(mktemp)"
   if [ -n "$extra_dictionaries" ]; then
     for extra_dictionary in $extra_dictionaries; do
     (
-      get_extra_dictionary "$extra_dictionary"
+      dictionary_base="$(basename "$extra_dictionary")"
+      if [ "$dictionary_base" = index.dic ]; then
+        dictionary_base="$(get_hunspell_stem "$extra_dictionary")".dic
+      fi
+      get_extra_dictionary "$extra_dictionary" "$dictionary_base"
       if echo "$extra_dictionary" | grep -q '\.dic$'; then
-        get_extra_dictionary "$(echo "$extra_dictionary" | sed -e 's/\.dic$/.aff/')"
-        if [ "$(basename "$extra_dictionary")" = index.dic ]; then
-          hunspell_dictionary_name="$(
-            echo "$extra_dictionary" | perl -pe 's{/src/hunspell/index.*}{};s{.*/}{}'
-          )"
-          (
-            cd "$extra_dictionaries_dir"
-            mv index.dic "$hunspell_dictionary_name.dic"
-            mv index.aff "$hunspell_dictionary_name.aff"
-          )
-        fi
+        get_extra_dictionary "$(echo "$extra_dictionary" | sed -e 's/\.dic$/.aff/')" "$(echo "$dictionary_base" | sed -e 's/\.dic$/.aff/')"
       fi
     )
     done
@@ -1425,7 +1432,7 @@ get_extra_dictionaries() {
   rm -f "$response_headers"
   if [ -e "$extra_dictionaries_canary" ]; then
     rm "$extra_dictionaries_canary"
-    echo "$extra_dictionaries_dir"
+    echo "$dictionaries_dir"
   else
     echo 'fail'
   fi
@@ -1620,7 +1627,7 @@ set_up_files() {
     if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
       begin_group 'Extra dictionaries'
       build_dictionary_alias_pattern
-      extra_dictionaries_dir="$(get_extra_dictionaries "$INPUT_EXTRA_DICTIONARIES")"
+      extra_dictionaries_dir="$(get_extra_dictionaries extra "$INPUT_EXTRA_DICTIONARIES")"
       if [ -n "$extra_dictionaries_dir" ]; then
         if [ "$extra_dictionaries_dir" = fail ]; then
           quit 4
@@ -1636,7 +1643,6 @@ set_up_files() {
           # Items that aren't proper should be moved to patterns instead
           "$spellchecker/dictionary-word-filter.pl" * | sort -u >> "$dict"
         )
-        rm -rf "$extra_dictionaries_dir"
       fi
       end_group
     fi
@@ -1650,12 +1656,15 @@ set_up_files() {
         uniq -u
       )"
       if [ -n "$check_extra_dictionaries" ]; then
-        export check_extra_dictionaries_dir="$(get_extra_dictionaries "$check_extra_dictionaries")"
+        export check_extra_dictionaries_dir="$(get_extra_dictionaries check "$check_extra_dictionaries")"
         if [ "$check_extra_dictionaries_dir" = 'fail' ]; then
           check_extra_dictionaries_dir=
         fi
       fi
       end_group
+    fi
+    if [ -n "$extra_dictionaries_dir" ] || [ -n "$check_extra_dictionaries_dir" ]; then
+      echo "CACHE_DICTIONARIES=1" >> "$output_variables"
     fi
     get_project_files dictionary_additions.words "$allow_path"
     get_project_files allow.txt "$allow_path"
@@ -2871,6 +2880,30 @@ $B
   quit 1
 }
 
+hash_dictionaries() {
+  if [ -z "$INPUT_EXTRA_DICTIONARIES" ]; then
+    exit 0
+  fi
+  build_dictionary_alias_pattern
+  dictionary_list=$(mktemp)
+  (
+    for url in $INPUT_EXTRA_DICTIONARIES; do
+      expand_dictionary_url "$url"
+    done |
+    sort -u > "$dictionary_list"
+  )
+  if [ -s "$dictionary_list" ]; then
+    echo "DICTIONARY_URLS_HASH=$(
+      shasum "$dictionary_list" |
+      perl -pe 's/\s.*//'
+    )" >> "$GITHUB_ENV"
+  fi
+  exit
+}
+
+if [ "$INPUT_TASK" = hash-dictionaries ]; then
+  hash_dictionaries
+fi
 basic_setup
 set_up_ua
 define_variables
