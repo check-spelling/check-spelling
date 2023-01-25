@@ -1234,7 +1234,7 @@ download_or_quit_with_error() {
   exit_code="$(mktemp)"
   download "$1" "$2" || (
     echo "$?" > "$exit_code"
-    echo "Could not download $1 (to $2)" >&2
+    echo "Could not download $1 (to $2) (required-download-failed)" >&2
   )
   if [ -s "$exit_code" ]; then
     exit_value="$(cat "$exit_code")"
