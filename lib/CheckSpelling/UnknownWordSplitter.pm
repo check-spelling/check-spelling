@@ -359,6 +359,7 @@ sub split_file {
     }
   }
   close FILE;
+  close WARNINGS;
 
   if ($unrecognized) {
     open(STATS, '>:utf8', "$temp_dir/stats");
@@ -371,7 +372,6 @@ sub split_file {
     open(UNKNOWN, '>:utf8', "$temp_dir/unknown");
       print UNKNOWN join "\n", sort keys %unique_unrecognized;
     close UNKNOWN;
-    close WARNINGS;
   }
 
   return $temp_dir;
