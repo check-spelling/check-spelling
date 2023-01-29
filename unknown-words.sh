@@ -1009,6 +1009,9 @@ define_variables() {
   BODY="$data_dir/comment.md"
   output_variables="$(mktemp)"
   instructions_preamble="$(mktemp)"
+  if to_boolean "$INPUT_REPORT_TIMING"; then
+    timing_report="$data_dir/timing_report.csv"
+  fi
 
   warnings_list="$(echo "$INPUT_WARNINGS,$INPUT_NOTICES" | perl -pe 's/[^-a-z]+/|/g;s/^\||\|$//g')"
 
@@ -1904,6 +1907,7 @@ run_spell_check() {
     candidates_path="$candidates_path" \
     candidate_summary="$candidate_summary" \
     check_file_names="$check_file_names" \
+    timing_report="$timing_report" \
     "$word_collator" |\
   "$strip_word_collator_suffix" > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
