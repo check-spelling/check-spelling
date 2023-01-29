@@ -6,12 +6,14 @@
 set -e
 export spellchecker="${spellchecker:-$THIS_ACTION_PATH}"
 
-if [ "$(id -u)" != 0 ]; then
-  SUDO=sudo
-fi
-$SUDO "$spellchecker/fast-install.pl"
+basic_setup() {
+  if [ "$(id -u)" != 0 ]; then
+    SUDO=sudo
+  fi
+  $SUDO "$spellchecker/fast-install.pl"
 
-. "$spellchecker/common.sh"
+  . "$spellchecker/common.sh"
+}
 
 dispatcher() {
   if [ -n "$INPUT_EVENT_ALIASES" ]; then
@@ -2869,6 +2871,7 @@ $B
   quit 1
 }
 
+basic_setup
 set_up_ua
 define_variables
 set_up_reporter
