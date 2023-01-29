@@ -288,6 +288,10 @@ inputs:
     description: 'Word Splitter Punctuation Pattern'
     required: false
     default: "'"
+  report-timing:
+    description: 'Report processing time for files'
+    required: false
+    default: ''
 
 outputs:
   unknown_words:

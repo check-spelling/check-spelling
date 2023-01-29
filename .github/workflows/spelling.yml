@@ -67,6 +67,7 @@ jobs:
         not-lower-pattern: '[^\p{Ll}\p{Lm}]'
         not-upper-or-lower-pattern: '[^\p{Lu}\p{Lt}\p{Lm}]'
         punctuation-pattern: "'"
+        report-timing: 1
 
   comment:
     name: Report

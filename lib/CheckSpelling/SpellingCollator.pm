@@ -115,6 +115,13 @@ sub count_warning {
   }
 }
 
+sub report_timing {
+  my ($name, $start_time, $directory, $marker) = @_;
+  my $end_time = (stat "$directory/$marker")[9];
+  $name =~ s/"/\\"/g;
+  print TIMING_REPORT "\"$name\", $start_time, $end_time\n";
+}
+
 sub main {
   my @directories;
   my @cleanup_directories;
@@ -134,12 +141,18 @@ sub main {
   my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
   my $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
   my $file_list = CheckSpelling::Util::get_file_from_env('check_file_names', '');
+  my $timing_report = CheckSpelling::Util::get_file_from_env('timing_report', '');
+  my ($start_time, $end_time);
 
   open WARNING_OUTPUT, '>:utf8', $warning_output;
   open MORE_WARNINGS, '>:utf8', $more_warnings;
   open COUNTER_SUMMARY, '>:utf8', $counter_summary;
   open SHOULD_EXCLUDE, '>:utf8', $should_exclude_file;
   open CANDIDATE_SUMMARY, '>:utf8', $candidate_summary;
+  if ($timing_report) {
+    open TIMING_REPORT, '>:utf8', $timing_report;
+    print TIMING_REPORT "file, start, finish\n";
+  }
 
   my @candidates;
   if (defined $ENV{'candidates_path'}) {
@@ -186,6 +199,9 @@ sub main {
     next unless open(NAME, '<:utf8', "$directory/name");
     my $file=<NAME>;
     close NAME;
+    if ($timing_report) {
+      $start_time = (stat "$directory/name")[9];
+    }
 
     if (-e "$directory/skipped") {
       open SKIPPED, '<:utf8', "$directory/skipped";
@@ -195,11 +211,15 @@ sub main {
       push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because $reason\n";
       print SHOULD_EXCLUDE "$file\n";
       push @cleanup_directories, $directory;
+      report_timing($file, $start_time, $directory, 'skipped') if ($timing_report);
       next;
     }
 
     # stats isn't written if all words in the file are in the dictionary
-    next unless (-s "$directory/stats");
+    unless (-s "$directory/stats") {
+      report_timing($file, $start_time, $directory, 'warnings') if ($timing_report);
+      next;
+    }
 
     if ($file eq $file_list) {
       open FILE_LIST, '<:utf8', $file_list;
@@ -243,6 +263,7 @@ sub main {
       #print STDERR "$file (unrecognized: $unrecognized; unique: $unique; unknown: $unknown, words: $words, candidates: [".join(", ", @candidate_list)."])\n";
     }
 
+    report_timing($file, $start_time, $directory, 'unknown') if ($timing_report);
     # These heuristics are very new and need tuning/feedback
     if (
         ($unknown > $unique)
@@ -286,6 +307,7 @@ sub main {
     push @directories, $directory;
   }
   close SHOULD_EXCLUDE;
+  close TIMING_REPORT if $timing_report;
 
   if (@candidate_totals) {
     my @indices = sort {
