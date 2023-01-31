@@ -1254,6 +1254,7 @@ install_tools() {
   if [ -n "$apps" ]; then
     if command_v apt-get; then
       export DEBIAN_FRONTEND=noninteractive
+      $SUDO apt-get -qq install --no-install-recommends -y $apps >/dev/null 2>/dev/null ||
       $SUDO apt-get -qq update &&
       $SUDO apt-get -qq install --no-install-recommends -y $apps >/dev/null 2>/dev/null
       echo "Installed:$apps" >&2
