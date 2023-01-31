@@ -53,18 +53,26 @@ jobs:
       with:
         path: ${{ steps.perl-config.outputs.installsitelib }}
         key: ${{ steps.perl-config.outputs.perl-key }}-lib
+    - name: retrieve jd
+      id: retrieve-jd
+      uses: actions/cache/restore@v3
+      with:
+        path: ~/go/bin/jd
+        key: jd-${{ runner.os }}
     - name: test
       id: test
       shell: bash
       run: |
         (
+          PATH=$PATH:~/go/bin
           cpan_modules=$(
             for module in ${{ steps.perl-config.outputs.perl-modules }}; do
               perl -e "use $module; 1;" > /dev/null 2>/dev/null || echo $module
             done | xargs
           )
           [ -z "$cpan_modules" ] || command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
-          command -v go >/dev/null 2>/dev/null || GO_PACKAGE=golang
+          command -v jd && HAS_JD=1 || HAS_JD=
+          [ -n "$HAS_JD" ] || command -v go >/dev/null 2>/dev/null || GO_PACKAGE=" golang"
           APT_PACKAGES="$GO_PACKAGE"
           [ -z "$APT_PACKAGES" ] ||
           (
@@ -74,7 +82,7 @@ jobs:
             sudo apt-get install -y $APT_PACKAGES
           )
           [ -z "$cpan_modules" ] || perl `command -v cpanm` -S --notest $cpan_modules
-          go install 'github.com/josephburnett/jd@latest' || echo 'Could not install jd' >&2
+          [ -n "$HAS_JD" ] || go install 'github.com/josephburnett/jd@latest' || echo 'Could not install jd' >&2
         ) > /tmp/prework || (cat /tmp/prework && false)
         ./Build.PL
         ./Build build
@@ -93,6 +101,12 @@ jobs:
       with:
         path: ${{ steps.perl-config.outputs.installsitelib }}
         key: ${{ steps.perl-config.outputs.perl-key }}-lib
+    - name: save jd
+      if: ${{ steps.retrieve-jd.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v3
+      with:
+        path: ~/go/bin/jd
+        key: jd-${{ runner.os }}
     - name: store-coverage
       uses: actions/upload-artifact@v3
       timeout-minutes: 5
