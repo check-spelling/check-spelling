@@ -3,5 +3,5 @@
 use warnings;
 use CheckSpelling::DictionaryCoverage;
 
-my @dictionaries = glob("*");
+my @dictionaries = grep { !/\.(?:aff|etag)$/; } glob("*");
 CheckSpelling::DictionaryCoverage::main(shift, @dictionaries);

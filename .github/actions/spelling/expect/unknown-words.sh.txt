@@ -10,6 +10,7 @@ dpkg
 elif
 eol
 esac
+etag
 excludelist
 fchurn
 githubcli
