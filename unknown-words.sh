@@ -1274,8 +1274,14 @@ install_tools() {
     fi
   fi
   if [ -n "$perl_libs" ]; then
-    $SUDO perl `command -v cpanm` -S --notest $perl_libs
+    perl `command -v cpanm` --notest $perl_libs
     perl_libs=''
+  fi
+}
+
+add_app() {
+  if ! command_v "$1"; then
+    apps="$apps $@"
   fi
 }
 
@@ -1289,23 +1295,33 @@ add_perl_lib() {
   fi
 }
 
-set_up_tools() {
-  apps=""
-  add_app() {
-    if ! command_v "$1"; then
-      apps="$apps $@"
-    fi
-  }
+need_hunspell() {
+  echo "$INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" | grep -q '\.dic'
+}
+
+check_perl_libraries() {
   if command_v apt-get; then
     HAS_APT=1
   fi
 
-  add_app curl ca-certificates
-  add_app git
   add_perl_lib HTTP::Date libhttp-date-perl
   add_perl_lib URI::Escape liburi-escape-xs-perl
   if to_boolean "$INPUT_USE_SARIF"; then
     add_perl_lib Hash::Merge libhash-merge-perl
+  fi
+  if need_hunspell; then
+    add_app hunspell
+    add_perl_lib Text::Hunspell libtext-hunspell-perl
+  fi
+}
+
+set_up_tools() {
+  apps=""
+
+  add_app curl ca-certificates
+  add_app git
+  if need_hunspell; then
+    add_app hunspell
   fi
   if ! command_v gh; then
     if command_v apt-get && ! apt-cache policy gh | grep -q Candidate:; then
@@ -1317,11 +1333,7 @@ set_up_tools() {
     fi
     add_app gh
   fi
-  if ! command_v hunspell &&
-    echo "$INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" | grep -q '\.dic'; then
-    add_app hunspell
-    add_perl_lib Text::Hunspell libtext-hunspell-perl
-  fi
+  check_perl_libraries
   install_tools
   set_up_jq
 }
@@ -1393,20 +1405,41 @@ get_extra_dictionary() {
   url="$(expand_dictionary_url "$extra_dictionary_url")"
   dest="$dictionaries_dir"/"$2"
   if [ -s "$dest" ]; then
-    return
+    if [ ! -s "$dest.etag" ]; then
+      return
+    fi
+    check_etag="-H"
+    check_etag_value="$(perl -ne 's/\s+$//; print qq<If-None-Match: $_>; last' "$dest.etag")"
+    real_dest="$dest"
+    dest="$(mktemp)"
+  else
+    check_etag=
+    check_etag_value=
+    real_dest=
   fi
   if [ "$url" = "${url#https://raw.githubusercontent.com/*}" ]; then
     no_curl_auth=1
   fi
-  keep_headers=1 call_curl "$url" > "$dest"
+  keep_headers=1 call_curl "$check_etag" "$check_etag_value" "$url" > "$dest"
   if ([ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ]) 2> /dev/null; then
     (
       echo "::error ::Failed to retrieve $extra_dictionary_url -- $url (dictionary-not-found)"
       cat "$response_headers"
     ) >&2
     rm -f "$extra_dictionaries_canary"
+    return
+  fi
+  if [ "$response_code" -eq 304 ]; then
+    return
+  fi
+  echo "Retrieved $extra_dictionary_url" >&2
+  if [ -n "$real_dest" ]; then
+    mv "$dest" "$real_dest"
+    dest="$real_dest"
   fi
   echo "$extra_dictionary_url" > "$source_link"
+  perl -ne 'next unless s/^etag: //; chomp; print' "$response_headers" > "$dest.etag"
+  touch "$CACHE_DICTIONARIES"
 }
 
 get_hunspell_stem() {
@@ -1628,8 +1661,10 @@ set_up_files() {
       fi
       eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
     fi
+    CACHE_DICTIONARIES=$(mktemp)
+    rm -f "$CACHE_DICTIONARIES"
     if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
-      begin_group 'Extra dictionaries'
+      begin_group 'Retrieving extra dictionaries'
       build_dictionary_alias_pattern
       extra_dictionaries_dir="$(get_extra_dictionaries extra "$INPUT_EXTRA_DICTIONARIES")"
       if [ -n "$extra_dictionaries_dir" ]; then
@@ -1651,7 +1686,7 @@ set_up_files() {
       end_group
     fi
     if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
-      begin_group 'Check extra dictionaries'
+      begin_group 'Retrieving check extra dictionaries'
       build_dictionary_alias_pattern
       check_extra_dictionaries="$(
         echo "$INPUT_EXTRA_DICTIONARIES $INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" |
@@ -1667,7 +1702,7 @@ set_up_files() {
       fi
       end_group
     fi
-    if [ -n "$extra_dictionaries_dir" ] || [ -n "$check_extra_dictionaries_dir" ]; then
+    if [ -e "$CACHE_DICTIONARIES" ]; then
       echo "CACHE_DICTIONARIES=1" >> "$output_variables"
     fi
     get_project_files dictionary_additions.words "$allow_path"
@@ -2886,23 +2921,25 @@ $B
 }
 
 hash_dictionaries() {
-  if [ -z "$INPUT_EXTRA_DICTIONARIES" ]; then
-    exit 0
+  if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
+    build_dictionary_alias_pattern
+    dictionary_list=$(mktemp)
+    (
+      for url in $INPUT_EXTRA_DICTIONARIES; do
+        expand_dictionary_url "$url"
+      done |
+      sort -u > "$dictionary_list"
+    )
+    if [ -s "$dictionary_list" ]; then
+      echo "DICTIONARY_URLS_HASH=$(
+        shasum "$dictionary_list" |
+        perl -pe 's/\s.*//'
+      )" >> "$GITHUB_ENV"
+    fi
   fi
-  build_dictionary_alias_pattern
-  dictionary_list=$(mktemp)
-  (
-    for url in $INPUT_EXTRA_DICTIONARIES; do
-      expand_dictionary_url "$url"
-    done |
-    sort -u > "$dictionary_list"
-  )
-  if [ -s "$dictionary_list" ]; then
-    echo "DICTIONARY_URLS_HASH=$(
-      shasum "$dictionary_list" |
-      perl -pe 's/\s.*//'
-    )" >> "$GITHUB_ENV"
-  fi
+  . "$spellchecker/common.sh"
+  check_perl_libraries
+  echo "perl-libraries=$perl_libs" >> "$GITHUB_OUTPUT"
   exit
 }
 
