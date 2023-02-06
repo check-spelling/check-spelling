@@ -1255,7 +1255,8 @@ set_up_ua() {
 
 install_tools() {
   if [ -n "$perl_libs" ] && ! command_v cpanm; then
-    apps="$apps cpanminus"
+    command -v cpanm >/dev/null 2>/dev/null ||
+      curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
   fi
   if [ -n "$apps" ]; then
     if command_v apt-get; then
