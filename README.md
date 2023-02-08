@@ -17,39 +17,69 @@ Specifically, [w](https://github.com/jsoref/spelling/blob/master/w) understands
 enough about how programmers name things that it can split the above conventions
 into word-like things for checking against a dictionary.
 
-## Spell Checker GitHub Actions
+## GitHub Action
 
 [![Spell checking](https://github.com/check-spelling/check-spelling/workflows/Spell%20checking/badge.svg?branch=main&event=push)](https://github.com/check-spelling/check-spelling/actions?query=workflow:"Spell+checking"+branch:main+event:push)
 
-* [Basic Configuration](#basic-configuration)
-* [**Documentation**](https://github.com/check-spelling/check-spelling/wiki/) and [Possible features](https://github.com/check-spelling/check-spelling/wiki/Possible-features)
-are listed on the [Wiki](https://github.com/check-spelling/check-spelling/wiki/)
-  * [Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Warnings)
-* [Configuration](https://github.com/check-spelling/check-spelling/wiki/Configuration)
-  * [Workflow variables](https://github.com/check-spelling/check-spelling/wiki/Configuration#workflow-variables)
-  * [Workflows](https://github.com/check-spelling/check-spelling/wiki/Configuration:-Workflows)
-  * [Files](https://github.com/check-spelling/check-spelling/wiki/Configuration#Files)
-* [Historical information](https://github.com/jsoref/spelling#overview)
+- [@check-spelling/check-spelling GitHub Action](#check-spellingcheck-spelling-github-action)
+  - [Overview](#overview)
+  - [GitHub Action](#github-action)
+  - [Quick Setup](#quick-setup)
+  - [Configuration](#configuration)
+  - [Events](#events)
+  - [Multilingual](#multilingual)
+  - [Wiki](#wiki)
+  - [Sample output](#sample-output)
+    - [Comment as seen in a PR](#comment-as-seen-in-a-pr)
+    - [Comment as seen in a commit](#comment-as-seen-in-a-commit)
+    - [GitHub Action Run log](#github-action-run-log)
+  - [Running locally](#running-locally)
+    - [Running locally with Act](#running-locally-with-act)
+  - [Prerelease](#prerelease)
+  - [License](#license)
 
-### Sample output
-
-#### Comment as seen in a PR
-
-![github action comment](images/check-spelling-comment.png)
-
-#### Comment as seen in a commit
-
-![github action annotation](images/check-spelling-annotation.png)
-
-#### GitHub Action Run log
-
-![github action log](images/check-spelling-log.png)
-
-### Basic Configuration
+## Quick Setup
 
 Just copy the [spell-check-this](https://github.com/check-spelling/spell-check-this)
-[.github](https://github.com/check-spelling/spell-check-this/tree/main/.github)
-directory into your project.
+[`.github/workflows/spelling.yml`](https://github.com/check-spelling/spell-check-this/tree/main/.github/workflows/.github/workflows/spelling.yml) into your `.github/workflows` in your project.
+
+## Configuration
+
+See the [documentation](https://docs.check-spelling.dev) for [Configuration information](https://docs.check-spelling.dev/Configuration).
+
+## Events
+
+When check-spelling runs and encounters something that isn't ideal,
+it may output a message including an event code,
+at the end of the message `(unrecognized-spelling)`.
+
+You should be able to look up the code in
+https://docs.check-spelling.dev/Event-descriptions.
+For `unrecognized-spelling`,
+that's:
+https://docs.check-spelling.dev/Event-descriptions#unrecognized-spelling.
+
+## Multilingual
+
+As of v0.0.22, you'll be able to [use non English dictionaries](https://docs.check-spelling.dev/Feature%3A-Configurable-word-characters) with the help of [Hunspell](https://github.com/hunspell/hunspell).
+
+## Wiki
+
+There is a [wiki](https://github.com/check-spelling/check-spelling/wiki) containing evolving information. It's open to public editing (and is occasionally defaced/spammed).
+
+## Sample output
+
+### Comment as seen in a PR
+
+![github action comment](https://raw.githubusercontent.com/check-spelling/art/86a33c871e0e01aaf210087d13614c166d0ba536/output/check-spelling-comment.png)
+
+### Comment as seen in a commit
+
+![github action annotation](https://raw.githubusercontent.com/check-spelling/art/86a33c871e0e01aaf210087d13614c166d0ba536/output/check-spelling-annotation.png)
+
+### GitHub Action Run log
+
+![github action log](https://raw.githubusercontent.com/check-spelling/art/86a33c871e0e01aaf210087d13614c166d0ba536/output/check-spelling-log.png)
 
 ## Running locally
 
