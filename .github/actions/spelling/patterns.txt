@@ -33,3 +33,6 @@ https://perldoc\.perl\.org/.*
 
 # Perl warnings
 \bexperimental::[a-z_]+\b
+
+# README markdown links
+\]\(#[-a-z]+\)
