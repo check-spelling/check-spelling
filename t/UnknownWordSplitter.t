@@ -93,7 +93,8 @@ chomp($output_directory);
 ok(-d $output_directory);
 check_output_file("$output_directory/name", $filename);
 check_output_file("$output_directory/stats", '{words: 2, unrecognized: 1, unknown: 1, unique: 2}');
-check_output_file("$output_directory/unknown", 'Play');
+check_output_file("$output_directory/unknown", 'Play
+');
 check_output_file("$output_directory/warnings", ":3:8 ... 12: 'Play'
 ");
 open $fh, '>:utf8', $filename;
@@ -119,7 +120,8 @@ check_output_file_sorted_lines("$output_dir/warnings", ":1:8 ... 11: 'baz'
 :2:1 ... 10, Warning - `FooBarBar` matches a line_forbidden.patterns entry. (forbidden-pattern)
 ");
 check_output_file("$output_dir/unknown", 'baz
-elf');
+elf
+');
 
 $CheckSpelling::UnknownWordSplitter::largest_file = 1;
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
@@ -157,7 +159,8 @@ baz
 elf
 exp
 ragel
-supercal');
+supercal
+');
 $CheckSpelling::UnknownWordSplitter::patterns_re = '$^';
 
 close $fh;
@@ -188,7 +191,8 @@ check_output_file_sorted_lines("$output_dir/warnings", ":2:7 ... 20, Warning - `
 :3:7 ... 12, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
 :4:6 ... 9: 'ham'
 ");
-check_output_file("$output_dir/unknown", 'ham');
+check_output_file("$output_dir/unknown", 'ham
+');
 open $fh, '>', "$dirname/candidates.txt";
 print $fh '# grape
 grape
@@ -211,4 +215,5 @@ check_output_file("$output_directory/name", $filename);
 check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4:6:9]}');
 check_output_file_sorted_lines("$output_directory/warnings", ":4:6 ... 9: 'ham'
 ");
-check_output_file("$output_directory/unknown", 'ham');
+check_output_file("$output_directory/unknown", 'ham
+');
