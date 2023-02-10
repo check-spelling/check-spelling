@@ -1856,21 +1856,23 @@ run_spell_check() {
     mkdir -p "$commit_messages"
     if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | "$find_token" commits)" ]; then
       get_before
-      workflow_blame=$(mktemp)
-      git blame HEAD -- "$workflow_path" > "$workflow_blame"
-      workflow_commits_revs=$(mktemp)
-      "$get_commits_for_check_commit_message" "$workflow_blame" | sort -u |xargs -n1 git rev-parse > "$workflow_commits_revs"
       log_revs=$(mktemp)
       git log --format='%H' refs/private/before..refs/private/after > "$log_revs"
-      clip_log=$(for commit_sha in $(cat "$workflow_commits_revs"); do
-        grep -q "$commit_sha" "$log_revs" && echo "$commit_sha" || true
-      done)
-      if [ -n "$clip_log" ]; then
-        clipped_log_revs=$(mktemp)
-        for commit_sha in $(echo "$clip_log"); do
-          git log --format='%H' $commit_sha..refs/private/after >> "$clipped_log_revs"
-        done
-        sort -u "$clipped_log_revs" > "$log_revs"
+      if [ -n "$workflow_path" ]; then
+        workflow_blame=$(mktemp)
+        git blame HEAD -- "$workflow_path" > "$workflow_blame"
+        workflow_commits_revs=$(mktemp)
+        "$get_commits_for_check_commit_message" "$workflow_blame" | sort -u |xargs -n1 git rev-parse > "$workflow_commits_revs"
+        clip_log=$(for commit_sha in $(cat "$workflow_commits_revs"); do
+          grep -q "$commit_sha" "$log_revs" && echo "$commit_sha" || true
+        done)
+        if [ -n "$clip_log" ]; then
+          clipped_log_revs=$(mktemp)
+          for commit_sha in $(echo "$clip_log"); do
+            git log --format='%H' $commit_sha..refs/private/after >> "$clipped_log_revs"
+          done
+          sort -u "$clipped_log_revs" > "$log_revs"
+        fi
       fi
       for commit_sha in $(cat "$log_revs"); do
         append_commit_message_to_file_list "$commit_sha"
