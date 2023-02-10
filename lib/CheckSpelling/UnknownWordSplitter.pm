@@ -407,7 +407,7 @@ sub split_file {
     $words += $new_words;
     $unrecognized += $new_unrecognized;
     my $line_length = length($raw_line);
-    for my $token (keys %unrecognized_line_items) {
+    for my $token (sort CheckSpelling::Util::case_biased keys %unrecognized_line_items) {
       my $found_token = 0;
       my $raw_token = $token;
       $token =~ s/'/(?:'|$rsqm|\&apos;|\&#39;)+/g;
