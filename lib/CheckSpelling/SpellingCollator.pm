@@ -355,6 +355,9 @@ sub main {
           my ($line, $range, $item) = ($1, $2, $3);
           next if log_skip_item($item, $file, $warning, $unknown_word_limit);
         } else {
+          if ($warning =~ /\`(.*?)\` in line\. \(token-is-substring\)/) {
+            next if skip_item($1);
+          }
           count_warning $warning;
         }
         print WARNING_OUTPUT "$file$warning\n";
