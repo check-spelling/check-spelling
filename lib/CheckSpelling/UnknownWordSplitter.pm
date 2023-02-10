@@ -237,10 +237,11 @@ sub split_line {
   my $pattern = '.';
   # $pattern = "(?:$upper_pattern){$shortest,}|$upper_pattern(?:$lower_pattern){2,}\n";
 
+  # https://www.fileformat.info/info/unicode/char/2019/
+  my $rsqm = "\xE2\x80\x99";
+
   my ($words, $unrecognized) = (0, 0);
   my ($line, $unique_ref, $unique_unrecognized_ref, $unrecognized_line_items_ref) = @_;
-    # https://www.fileformat.info/info/unicode/char/2019/
-    my $rsqm = "\xE2\x80\x99";
     $line =~ s/$rsqm|&apos;|&#39;/'/g;
     $line =~ s/(?:$ignore_pattern)+/ /g;
     while ($line =~ s/($upper_pattern{2,})($upper_pattern$lower_pattern{2,})/ $1 $2 /g) {}
@@ -298,6 +299,10 @@ sub split_file {
     $candidates_re, @candidates_re_list, $check_file_names, $use_magic_file, $disable_minified_file
   );
   our ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
+
+  # https://www.fileformat.info/info/unicode/char/2019/
+  my $rsqm = "\xE2\x80\x99";
+
   my @candidates_re_hits = (0) x scalar @candidates_re_list;
   my @candidates_re_lines = (0) x scalar @candidates_re_list;
   my $temp_dir = tempdir();
@@ -401,9 +406,11 @@ sub split_file {
     my ($new_words, $new_unrecognized) = split_line($_, \%unique, \%unique_unrecognized, \%unrecognized_line_items);
     $words += $new_words;
     $unrecognized += $new_unrecognized;
-    my $rsqm = "\xE2\x80\x99";
+    my $line_length = length($raw_line);
     for my $token (keys %unrecognized_line_items) {
-      $token =~ s/'/(?:'|$rsqm)+/g;
+      my $found_token = 0;
+      my $raw_token = $token;
+      $token =~ s/'/(?:'|$rsqm|\&apos;|\&#39;)+/g;
       my $before;
       if ($token =~ /^$upper_pattern$lower_pattern/) {
         $before = '(?<=.)';
@@ -415,9 +422,18 @@ sub split_file {
       my $after = ($token =~ /$upper_pattern$/) ? "(?=$not_upper_or_lower_pattern)|(?=$upper_pattern$lower_pattern)" : "(?=$not_lower_pattern)";
       while ($raw_line =~ /(?:\b|$before)($token)(?:\b|$after)/g) {
         $line_flagged = 1;
+        $found_token = 1;
         my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
         next unless $match =~ /./;
         print WARNINGS ":$.:$begin ... $end: '$match'\n";
+      }
+      unless ($found_token) {
+        if ($raw_line !~ /$token.*$token/ && $raw_line =~ /($token)/) {
+          my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
+          print WARNINGS ":$.:$begin ... $end: '$match'\n";
+        } else {
+          print WARNINGS ":$.:1 ... $line_length, Warning - Could not identify whole word `$raw_token` in line. (token-is-substring)\n";
+        }
       }
     }
     if ($line_flagged && $candidates_re) {

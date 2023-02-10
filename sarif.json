@@ -399,6 +399,32 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "token-is-substring",
+              "name": "TokenIsSubstring",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#token-is-substring",
+              "shortDescription": {
+                "text": "Token is a substring"
+              },
+              "fullDescription": {
+                "text": "While trying to find the token in the line, the exact instance could not be found."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n- Correct any overeager [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- See [Feature: Warning about substring matches](https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Warning-about-substring-matches)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }
