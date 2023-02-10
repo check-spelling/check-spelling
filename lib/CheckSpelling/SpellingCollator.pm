@@ -351,14 +351,14 @@ sub main {
     for $warning (<WARNINGS>) {
       chomp $warning;
       if (!$is_file_list) {
-        if ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:$1:$2, Warning - `$3` is not a recognized word. (unrecognized-spelling)/) {
+        if ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:$1:$2, Warning - `$3` is not a recognized word\. \(unrecognized-spelling\)/) {
           my ($line, $range, $item) = ($1, $2, $3);
           next if log_skip_item($item, $file, $warning, $unknown_word_limit);
         } else {
           count_warning $warning;
         }
         print WARNING_OUTPUT "$file$warning\n";
-      } elsif ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:1:$2, Warning - `$3` is not a recognized word. (check-file-path)/) {
+      } elsif ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:1:$2, Warning - `$3` is not a recognized word\. \(check-file-path\)/) {
         my ($line, $range, $item) = ($1, $2, $3);
         $file = $check_file_paths[$line];
         next if log_skip_item($item, $file, $warning, $unknown_word_limit);
