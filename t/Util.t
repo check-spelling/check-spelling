@@ -4,8 +4,29 @@ use strict;
 
 use Test::More;
 
-plan tests => 2;
+plan tests => 3;
 use_ok('CheckSpelling::Util');
 
 $ENV{'EMPTY_VAR'}='';
 is(CheckSpelling::Util::get_val_from_env('EMPTY_VAR', 1), 1);
+
+my @unsorted = qw(
+    Zoo
+    ZOO
+    Cherry
+    CHERRY
+    cherry
+    Apple
+    APPLE
+);
+my @sorted = sort CheckSpelling::Util::case_biased @unsorted;
+my @expected = qw(
+    APPLE
+    Apple
+    CHERRY
+    Cherry
+    cherry
+    ZOO
+    Zoo
+);
+is(join ('-', @sorted), join ('-', @expected));
