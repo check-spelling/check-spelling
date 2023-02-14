@@ -407,7 +407,7 @@ sub main {
 
   # display the current unknown
   for my $char (sort keys %letter_map) {
-    for $key (sort { lc $a cmp lc $b || $a cmp $b } keys(%{$letter_map{$char}})) {
+    for $key (sort CheckSpelling::Util::case_biased keys(%{$letter_map{$char}})) {
       my %word_map = %{$letter_map{$char}{$key}};
       my @words = keys(%word_map);
       if (scalar(@words) > 1) {
