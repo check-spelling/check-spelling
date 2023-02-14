@@ -408,7 +408,7 @@ sub split_file {
       if ($token =~ /^$upper_pattern$lower_pattern/) {
         $before = '(?<=.)';
       } elsif ($token =~ /^$upper_pattern/) {
-        $before = "(?<=$upper_pattern)";
+        $before = "(?<!$upper_pattern)";
       } else {
         $before = "(?<=$not_lower_pattern)";
       }
