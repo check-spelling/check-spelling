@@ -174,7 +174,7 @@ sub hunspell_dictionary {
 }
 
 sub init {
-  my ($dirname) = @_;
+  my ($configuration) = @_;
   our ($word_match, %unique, $patterns_re, @forbidden_re_list, $forbidden_re, @candidates_re_list, $candidates_re);
   our $hunspell_dictionary_path = CheckSpelling::Util::get_file_from_env('hunspell_dictionary_path', '');
   if ($hunspell_dictionary_path) {
@@ -189,23 +189,23 @@ sub init {
     }
   }
   my (@patterns_re_list, %in_patterns_re_list);
-  if (-e "$dirname/patterns.txt") {
-    @patterns_re_list = file_to_list "$dirname/patterns.txt";
+  if (-e "$configuration/patterns.txt") {
+    @patterns_re_list = file_to_list "$configuration/patterns.txt";
     $patterns_re = list_to_re @patterns_re_list;
     %in_patterns_re_list = map {$_ => 1} @patterns_re_list;
   } else {
     $patterns_re = undef;
   }
 
-  if (-e "$dirname/forbidden.txt") {
-    @forbidden_re_list = file_to_list "$dirname/forbidden.txt";
+  if (-e "$configuration/forbidden.txt") {
+    @forbidden_re_list = file_to_list "$configuration/forbidden.txt";
     $forbidden_re = list_to_re @forbidden_re_list;
   } else {
     $forbidden_re = undef;
   }
 
-  if (-e "$dirname/candidates.txt") {
-    @candidates_re_list = file_to_list "$dirname/candidates.txt";
+  if (-e "$configuration/candidates.txt") {
+    @candidates_re_list = file_to_list "$configuration/candidates.txt";
     @candidates_re_list = map { my $quoted = quote_re($_); $in_patterns_re_list{$_} || !test_re($quoted) ? '' : $quoted } @candidates_re_list;
     $candidates_re = list_to_re @candidates_re_list;
   } else {
@@ -224,7 +224,7 @@ sub init {
 
   $word_match = valid_word();
 
-  our $base_dict = CheckSpelling::Util::get_file_from_env('dict', "$dirname/words");
+  our $base_dict = CheckSpelling::Util::get_file_from_env('dict', "$configuration/words");
   $base_dict = '/usr/share/dict/words' unless -e $base_dict;
   load_dictionary($base_dict);
 }
@@ -487,10 +487,10 @@ sub split_file {
 }
 
 sub main {
-  my ($dirname, @ARGV) = @_;
+  my ($configuration, @ARGV) = @_;
   our %dictionary;
   unless (%dictionary) {
-    init($dirname);
+    init($configuration);
   }
 
   # read all input
