@@ -479,7 +479,7 @@ sub split_file {
       "}";
     close STATS;
     open(UNKNOWN, '>:utf8', "$temp_dir/unknown");
-      print UNKNOWN map { "$_\n" } sort keys %unique_unrecognized;
+      print UNKNOWN map { "$_\n" } sort CheckSpelling::Util::case_biased keys %unique_unrecognized;
     close UNKNOWN;
   }
 
