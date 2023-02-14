@@ -968,9 +968,10 @@ define_variables() {
   workflow_path=$(get_workflow_path)
 
   dict=$(mktemp)
-  patterns="$spellchecker/patterns.txt"
-  forbidden_path="$spellchecker/forbidden.txt"
-  candidates_path="$spellchecker/candidates.txt"
+  splitter_configuration=$(mktemp -d)
+  patterns="$splitter_configuration/patterns.txt"
+  forbidden_path="$splitter_configuration/forbidden.txt"
+  candidates_path="$splitter_configuration/candidates.txt"
   excludes="$spellchecker/excludes.txt"
   excludes_path="$temp/excludes.txt"
   only="$spellchecker/only.txt"
@@ -1935,6 +1936,7 @@ run_spell_check() {
     dict="$dict" \
     hunspell_dictionary_path="$hunspell_dictionary_path" \
     check_file_names="$check_file_names" \
+    splitter_configuration="$splitter_configuration" \
   xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
     expect="$expect_path" \
     warning_output="$warning_output" \

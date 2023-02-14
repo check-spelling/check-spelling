@@ -8,6 +8,7 @@ use Encode qw/decode_utf8 FB_DEFAULT/;
 use Cwd 'abs_path';
 use File::Basename;
 use CheckSpelling::UnknownWordSplitter;
+use CheckSpelling::Util;
 
 binmode STDIN;
 binmode STDOUT, ':utf8';
@@ -25,6 +26,6 @@ unless (scalar @files) {
   exit 0;
 }
 
-my $dirname = dirname(abs_path(__FILE__));
-CheckSpelling::UnknownWordSplitter::init($dirname);
-CheckSpelling::UnknownWordSplitter::main($dirname, @files);
+my $configuration = CheckSpelling::Util::get_file_from_env('splitter_configuration', dirname(abs_path(__FILE__)));
+CheckSpelling::UnknownWordSplitter::init($configuration);
+CheckSpelling::UnknownWordSplitter::main($configuration, @files);
