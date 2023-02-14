@@ -153,11 +153,11 @@ check_output_file_sorted_lines("$output_dir/warnings", ":1:1 ... 4: 'Foo'
 :2:7 ... 10: 'Bar'
 ");
 check_output_file("$output_dir/unknown", 'Bar
-Foo
 bar
 baz
 elf
 exp
+Foo
 ragel
 supercal
 ');
