@@ -1,16 +1,44 @@
 #!/usr/bin/env perl
-my $pattern=q!(\s*)!.quotemeta($ENV{KEY}).q!\s*:\s*[-+|>]?\s*(?:|(?:\g{-1}\s*[^\n]+\n)*\g{-1}\s+)\s*!.quotemeta($ENV{VALUE}).q<\b>;
-my $break=$/;
-$/=undef;
-my $file=<>;
-for ($file =~ /$pattern/) {
-    my ($start, $end) = ($-[0]+1, $+[0]+1);
-    my $prefix = substr($file, 0, $start);
-    my $lines = ($prefix =~ s/$break//g) + 1;
-    my $lead = substr($file, $start, $end);
-    $lead =~ /\S/;
-    my $lead_count = $-[0] + 1;
-    $end = $end - $start;
-    $start = $lead_count;
-    print "$ARGV:$lines:$start ... $end, $ENV{MESSAGE}\n";
+my ($key, $value) = (quotemeta($ENV{KEY}), quotemeta($ENV{VALUE}));
+my ($state, $gh_yaml_mode) = (0, '');
+my @nests;
+my ($start_line, $start_pod, $end);
+sub report {
+    print "$ARGV:$start_line:$start_pos ... $end, $ENV{MESSAGE}\n";
+    exit;
+}
+while (<>) {
+    if (/^(\s*)#/) {
+        $end += length $_ if ($state == 3);
+        next;
+    }
+    if ($state == 0) {
+        next unless /^(\s*)\S+\s*:/;
+        my $spaces = $1;
+        my $len = length $spaces;
+        while (scalar @nests && $len < $nests[$#nests]) {
+            pop @nests;
+        }
+        push @nests, $len if (! scalar @nests || $len > $nests[$#nests]);
+        if (/^\s*($key)\s*:\s*([|>][-+]?|\$\{\{.*|(?:"\s*|)$value)\s*$/) {
+            $gh_yaml_mode = $2;
+            ($start_line, $start_pos, $end) = ($., $-[1] + 1, $+[2] + 1);
+            report() if ($gh_yaml_mode =~ /$value|\$\{\{/);
+            $state = 1;
+        }
+    } elsif ($state == 1) {
+        if (/^\s*(?:#.*|)$/) {
+            $end += length $_;
+            continue;
+        }
+        /^(\s*)(\S.*?)\s*$/;
+        my ($spaces, $v) = ($1, $2);
+        $len = length $spaces;
+        if (scalar @nests && $len > $nests[$#nests] && $v =~ /$value/) {
+            $end += $len + length $v;
+            report();
+        }
+        pop @nests;
+        $state = 0;
+    }
 }
