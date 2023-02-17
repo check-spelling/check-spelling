@@ -933,7 +933,7 @@ define_variables() {
         artifact="$artifact$artifact_suffix"
       fi
     fi
-    if [ -e "$data_dir/$artifact.zip" ]; then
+    if [ -s "$data_dir/$artifact.zip" ]; then
       artifact="$artifact.zip"
       (
         cd "$data_dir"
