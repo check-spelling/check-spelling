@@ -291,6 +291,13 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: act-windows-shim
+      if: env.ACT
+      shell: bash
+      run: |
+        THIS_ACTION_PATH=$(perl -pe 's#/\./#/#g; s#//+#/#g; s#/$##g' <<< "${{ github.action_path }}")
+        chmod +x $THIS_ACTION_PATH/*.sh $THIS_ACTION_PATH/*.pl $THIS_ACTION_PATH/wrappers/*
+        perl -pi -e's/\015\012/\012/g' $THIS_ACTION_PATH/*.sh $THIS_ACTION_PATH/*.pl $THIS_ACTION_PATH/wrappers/*
     - name: parse alternate engine
       id: parse-alternate-engine
       if: inputs.alternate_engine
