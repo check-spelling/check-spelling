@@ -312,7 +312,9 @@ sub main {
             my ($fh, $gh_err) = tempfile();
             close $fh;
             system('unzip', '-d', $artifact_dir, $artifact, 'artifact.zip');
-            @artifacts = ["$artifact_dir/artifact.zip"];
+            @artifacts = ("$artifact_dir/artifact.zip");
+        } else {
+            @artifacts = ($artifact);
         }
     } else {
         if ($first =~ m{^\s*https://.*/([^/]+/[^/]+)/actions/runs/(\d+)(?:/attempts/\d+|)\s*$}) {
