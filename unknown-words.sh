@@ -2065,7 +2065,7 @@ get_action_log_overview() {
 }
 
 get_has_errors() {
-  if jq -r 'keys | .[]' "$counter_summary_file" | grep -E -v "$warnings_list" | grep -q .; then
+  if [ -z "$has_errors" ] && [ -s "$counter_summary_file" ] && jq -r 'keys | .[]' "$counter_summary_file" | grep -E -v "$warnings_list" 2> /dev/null | grep -q .; then
     has_errors=1
   fi
 }
