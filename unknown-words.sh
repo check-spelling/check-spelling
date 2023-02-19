@@ -1060,6 +1060,13 @@ check_inputs() {
     MESSAGE='Warning - use_sarif is incompatible with only_check_changed_files - unsupported configuration (unsupported-configuration)' \
     check_yaml_key_value "$workflow_path"
   fi
+  if [ -n "$ACT" ] &&
+    to_boolean "$INPUT_POST_COMMENT" ; then
+    KEY=post_comment \
+    VALUE="$INPUT_POST_COMMENT" \
+    MESSAGE='Warning - Unsupported configuration: post_comment is not compatible with nektos/act. (unsupported-configuration)' \
+    check_yaml_key_value "$workflow_path"
+  fi
   if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
     ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.A-Za-z0-9]+/[-_.A-Za-z0-9]+(?:|\@[-_./A-Za-z0-9]+)$};'; then
     KEY=spell_check_this \
@@ -2392,8 +2399,12 @@ quit() {
     (
       cd "$data_dir"
       zip -q "$artifact.zip" *
-      if [ -n "$ACT" ] && to_boolean "$INPUT_POST_COMMENT"; then
-        encode_artifact "$artifact.zip"
+      if [ -n "$ACT" ]; then
+        if to_boolean "$INPUT_POST_COMMENT"; then
+          encode_artifact "$artifact.zip"
+        else
+          echo "::warning ::input_post_comment is suppressed -- if you're looking for the complete comment archive, you probably should disable that suppression."
+        fi
       fi
       rm *
       if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
