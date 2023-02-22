@@ -2382,7 +2382,7 @@ trim_commit_comment() {
   previous_payload_size="$payload_size"
   payload_size="$("$file_size" "$PAYLOAD")"
   if [ "$payload_size" -lt "$previous_payload_size" ]; then
-    echo "::warning ::Comment payload ($previous_payload_size) is likely to exceed GitHub size limit ($github_comment_size_limit) -- trimming: $1 (=>$payload_size)"
+    echo "::warning ::Trimming '$1' ($previous_payload_size=>$payload_size) to get comment payload under GitHub size limit ($github_comment_size_limit)"
     cat "$stripped"
     rm "$stripped"
   elif ! diff -q "$BODY.raw" "$BODY" > /dev/null; then
