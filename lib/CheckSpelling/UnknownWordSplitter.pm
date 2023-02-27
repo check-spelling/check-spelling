@@ -401,7 +401,6 @@ sub split_file {
     }
     # This is to make it easier to deal w/ rules:
     s/^/ /;
-    while (s/([^\\])\\[rtn]/$1 /g) {}
     my %unrecognized_line_items = ();
     my ($new_words, $new_unrecognized) = split_line($_, \%unique, \%unique_unrecognized, \%unrecognized_line_items);
     $words += $new_words;
