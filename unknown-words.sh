@@ -2431,6 +2431,23 @@ update_would_change_things() {
   [ -s "$should_exclude_file" ]
 }
 
+add_talk_to_bot_message() {
+  if offer_quote_reply && update_would_change_things; then
+    jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
+    quote_reply_insertion="$(mktemp)"
+    (
+      if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+        apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
+      fi
+      echo
+      echo "To have the bot do this for you, reply quoting the following line:"
+      echo "@check-spelling-bot apply [updates]($jobs_summary_link)$apply_changes_suffix."
+    )> "$quote_reply_insertion"
+    perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$1"
+    no_patch=
+  fi
+}
+
 post_summary() {
   if [ -z "$GITHUB_STEP_SUMMARY" ]; then
     echo 'The $GITHUB_STEP_SUMMARY environment variable is unavailable'
@@ -2445,20 +2462,9 @@ post_summary() {
     return
   fi
 
-  jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
   step_summary_draft=$(mktemp)
   echo "$OUTPUT" >> "$step_summary_draft"
-  if offer_quote_reply && update_would_change_things; then
-    quote_reply_insertion=$(mktemp)
-    (
-      if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
-        apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
-      fi
-      echo
-      echo "To have the bot do this for you, comment with the following line:"
-      echo "@check-spelling-bot apply [updates]($jobs_summary_link)$apply_changes_suffix."
-    )>> "$step_summary_draft"
-  fi
+  add_talk_to_bot_message "$step_summary_draft"
   cat "$step_summary_draft" >> "$GITHUB_STEP_SUMMARY"
 }
 post_commit_comment() {
@@ -2512,20 +2518,7 @@ post_commit_comment() {
             rm "$BODY.orig"
           fi
           if [ -n "$COMMENT_URL" ]; then
-            if offer_quote_reply && update_would_change_things; then
-              jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
-              quote_reply_insertion="$(mktemp)"
-              (
-                if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
-                  apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
-                fi
-                echo
-                echo "To have the bot do this for you, reply quoting the following line:"
-                echo "@check-spelling-bot apply [updates]($jobs_summary_link)$apply_changes_suffix."
-              )> "$quote_reply_insertion"
-              perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$BODY"
-              no_patch=
-            fi
+            add_talk_to_bot_message "$BODY"
             if [ -z "$no_patch" ]; then
               body_to_payload
               comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > "$response" || res=$?
