@@ -2596,6 +2596,8 @@ add_talk_to_bot_message() {
         apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
       fi
       echo
+      echo "**OR**"
+      echo
       echo "To have the bot do this for you, reply quoting the following line:"
       echo "@check-spelling-bot apply [updates]($jobs_summary_link)$apply_changes_suffix."
     )> "$quote_reply_insertion"
