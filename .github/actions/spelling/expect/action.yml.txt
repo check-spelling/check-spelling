@@ -5,3 +5,4 @@ installsitearch
 installsitelib
 jsoref
 stdbuf
+tmp
