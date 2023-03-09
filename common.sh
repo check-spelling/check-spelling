@@ -36,6 +36,6 @@ if [ "$INITIALIZED" != defined ]; then
     end_group() {
       :
     }
-    INITIALIZED=defined
   fi
+  INITIALIZED=defined
 fi
