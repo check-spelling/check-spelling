@@ -23,19 +23,12 @@ if [ "$INITIALIZED" != defined ]; then
   export temp=$(mktemp -d)
   if to_boolean "$DEBUG"; then
     set -x
-    begin_group() {
-      echo "::group::$1"
-    }
-    end_group() {
-      echo '::end_group::'
-    }
-  else
-    begin_group() {
-      echo "(...$1...)"
-    }
-    end_group() {
-      :
-    }
   fi
+  begin_group() {
+    echo "::group::$1"
+  }
+  end_group() {
+    echo '::endgroup::'
+  }
   INITIALIZED=defined
 fi
