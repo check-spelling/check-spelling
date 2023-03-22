@@ -348,9 +348,9 @@ sub main {
     close NAME;
     my $is_file_list = $file eq $file_list;
     open WARNINGS, '<:utf8', "$directory/warnings";
-    for $warning (<WARNINGS>) {
-      chomp $warning;
-      if (!$is_file_list) {
+    if (!$is_file_list) {
+      for $warning (<WARNINGS>) {
+        chomp $warning;
         if ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:$1:$2, Warning - `$3` is not a recognized word\. \(unrecognized-spelling\)/) {
           my ($line, $range, $item) = ($1, $2, $3);
           next if log_skip_item($item, $file, $warning, $unknown_word_limit);
@@ -361,13 +361,15 @@ sub main {
           count_warning $warning;
         }
         print WARNING_OUTPUT "$file$warning\n";
-      } elsif ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:1:$2, Warning - `$3` is not a recognized word\. \(check-file-path\)/) {
-        my ($line, $range, $item) = ($1, $2, $3);
-        $file = $check_file_paths[$line];
-        next if log_skip_item($item, $file, $warning, $unknown_word_limit);
-        print WARNING_OUTPUT "$file$warning\n";
-        count_warning $warning;
-      } else {
+      }
+    } else {
+      for $warning (<WARNINGS>) {
+        chomp $warning;
+        next unless $warning =~ s/^:(\d+)/:1/;
+        $file = $check_file_paths[$1];
+        if ($warning =~ s/:(\d+ \.\.\. \d+): '(.*)'/:$1, Warning - `$2` is not a recognized word\. \(check-file-path\)/) {
+          next if skip_item($2);
+        }
         print WARNING_OUTPUT "$file$warning\n";
         count_warning $warning;
       }
