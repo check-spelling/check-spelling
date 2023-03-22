@@ -1834,7 +1834,6 @@ get_file_list() {
 run_spell_check() {
   echo "internal_state_directory=$data_dir" >> "$output_variables"
 
-  begin_group 'Spell check files'
   synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
   echo "^\Q$synthetic_base/\E" >> "$patterns"
   mkdir -p "$synthetic_base"
@@ -1910,10 +1909,8 @@ run_spell_check() {
     fi
   fi
   count="$(perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print $count;' $file_list)"
-  echo "Checking $count files"
-  if [ -n "$DEBUG" ]; then
-    get_file_list
-  fi
+  begin_group "Spell checking ($count) files"
+  get_file_list
   end_group
   queue_size="$(($count / $job_count / 4))"
   if [ "$queue_size" -lt 4 ]; then
