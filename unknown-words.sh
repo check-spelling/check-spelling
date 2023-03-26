@@ -1340,9 +1340,9 @@ call_curl() {
   response_body="$(mktemp)"
   until [ "$curl_attempt" -ge 3 ]
   do
-    response_code=$(
-      curl -D "$response_headers" -w "%{http_code}" -A "$curl_ua" -s -H "$(curl_auth)" "$@" -o "$response_body"
-    )
+    curl -D "$response_headers" -A "$curl_ua" -s -H "$(curl_auth)" "$@" -o "$response_body"
+    echo >> "$response_headers"
+    response_code=$(perl -e '$_=<>; $_=0 unless s#^HTTP/[\d.]+ (\d+).*#$1#;print;' "$response_headers")
     if [ "$response_code" -ne 429 ]; then
       cat "$response_body"
       rm -f "$response_body"
@@ -1398,8 +1398,8 @@ get_extra_dictionary() {
   if [ "$url" = "${url#https://raw.githubusercontent.com/*}" ]; then
     no_curl_auth=1
   fi
-  keep_headers=1 call_curl "$url" > "$extra_dictionaries_dir"/"$dest"
-  if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ] 2> /dev/null; then
+  keep_headers=1 call_curl "$url" > "$dest"
+  if ([ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ]) 2> /dev/null; then
     (
       echo "::error ::Failed to retrieve $extra_dictionary_url -- $url (dictionary-not-found)"
       cat "$response_headers"
