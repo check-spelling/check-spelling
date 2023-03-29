@@ -442,7 +442,7 @@ sub split_file {
         $_ = $previous_line_state;
         for my $i (0 .. $#candidates_re_list) {
           my $candidate_re = $candidates_re_list[$i];
-          next unless $candidate_re =~ /./;
+          next unless $candidate_re =~ /./ && $raw_line =~ /$candidate_re/;
           if (($_ =~ s/($candidate_re)/"="x length($1)/e)) {
             my ($begin, $end) = ($-[0] + 1, $+[0] + 1);
             my $hit = "$.:$begin:$end";
