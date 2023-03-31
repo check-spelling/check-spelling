@@ -338,6 +338,24 @@ pr_head_sha_task() {
   quit
 }
 
+get_action_repo_info() {
+  workflow="$workflow_path" perl -e '
+    exit if defined $ENV{ACT};
+    exit unless $ENV{GITHUB_WORKSPACE} =~ m{(.*?)(?:/[^/]+){2}$};
+    my $base = "$1/_actions/";
+    exit unless $ENV{GITHUB_ACTION_PATH} =~ m{\Q$base\E(.*)};
+    my @parts = split m{/}, $1;
+    exit unless scalar @parts == 3;
+    my $action = "$parts[0]/$parts[1]\@$parts[2]";
+    exit unless open WORKFLOW, "<", $ENV{workflow };
+    while (<WORKFLOW>) {
+      next unless /^\s*uses:\s*\Q$action\E/;
+      print $action;
+      exit;
+    }
+  '
+}
+
 get_workflow_path() {
   if [ -s "$action_workflow_path_file" ]; then
     cat "$action_workflow_path_file"
@@ -538,6 +556,7 @@ show_github_actions_push_disclaimer() {
   get_job_info_and_step_info > /dev/null
   update_job_name="${job_name:-update}"
 
+  action_ref=$(get_action_repo_info)
   if to_boolean "$INPUT_CHECKOUT"; then
     workflow_ssh_key_hint='`check-spelling`/`with`/`ssh_key`, then add them:
 
@@ -547,7 +566,7 @@ show_github_actions_push_disclaimer() {
       steps:
       ...
       - name: apply spelling updates
-        uses: check-spelling/check-spelling@...
+        uses: ${action_ref:-check-spelling/check-spelling@...}
         with:
           checkout: '"$INPUT_CHECKOUT"'
   +       ssh_key: "${{ secrets.CHECK_SPELLING }}"
@@ -2241,6 +2260,18 @@ spelling_body() {
       if [ -n "$workflow_path" ]; then
         workflow_path_hint=" (in $b$workflow_path$b)"
       fi
+      action_ref=$(get_action_repo_info)
+      if [ -n "$action_ref" ]; then
+        action_ref_hint=" for ${b}uses: ${action_ref}${b}"
+        inline_with_hint=" in its ${b}with${b}"
+      fi
+      if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
+        extra_dictionaries_hint=' to `extra_dictionaries`'
+      else
+        with_hint='
+              with:
+                extra_dictionaries:'
+      fi
       output_dictionaries="$(echo "
         <details><summary>Available :books: dictionaries could cover words not in the :blue_book: dictionary</summary>
 
@@ -2250,18 +2281,15 @@ spelling_body() {
         -|-|-|-
         $(perl -pe 's/ \((\d+)\) covers (\d+) of them \((\d+) uniquely\)/|$1|$2|$3|/ || s/ \((\d+)\) covers (\d+) of them/|$1|$2||/' "$extra_dictionaries_cover_entries_limited")
 
-        Consider adding them using$workflow_path_hint:
-        $B yml
-              with:
-                extra_dictionaries:$n$(
+        Consider adding them$workflow_path_hint$action_ref_hint$inline_with_hint$extra_dictionaries_hint:
+        $B yml$with_hint$n$(
           cat "$extra_dictionaries_cover_entries_limited" |
           perl -pe 's/\s.*//;s/^/                  /;s{\[(.*)\]\(.*}{$1}'
         )
         $B
-        To stop checking additional dictionaries, add:
+        To stop checking additional dictionaries, add$workflow_path_hint$action_ref_hint$inline_with_hint:
         $B yml
-              with:
-                check_extra_dictionaries: ''
+        check_extra_dictionaries: ''
         $B
 
         </details>
