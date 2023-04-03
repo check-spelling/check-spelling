@@ -344,6 +344,11 @@ get_workflow_path() {
   elif [ -e "$GITHUB_WORKFLOW" ]; then
     echo "$GITHUB_WORKFLOW" | tee "$action_workflow_path_file"
   else
+    workflow_path_from_env=$(perl -e 'my $workflow = $ENV{GITHUB_WORKFLOW_REF}; $workflow =~ s!(?:[^/]+/){2}!!; $workflow =~ s!\@.*!!; print $workflow')
+    if [ -e "$workflow_path_from_env" ]; then
+      echo "$workflow_path_from_env" | tee "$action_workflow_path_file"
+      return
+    fi
     action_run="$(mktemp_json)"
     if call_curl \
       "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$action_run"; then
