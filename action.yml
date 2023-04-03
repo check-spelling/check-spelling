@@ -81,7 +81,6 @@ inputs:
       cspell:cpp/src/compiler-clang-attributes.txt
       cspell:cpp/src/compiler-gcc.txt
       cspell:cpp/src/compiler-msvc.txt
-      cspell:cpp/src/cpp.txt
       cspell:cpp/src/ecosystem.txt
       cspell:cpp/src/lang-jargon.txt
       cspell:cpp/src/lang-keywords.txt
@@ -138,7 +137,6 @@ inputs:
       cspell:sql/src/tsql.txt
       cspell:swift/src/swift.txt
       cspell:typescript/typescript.txt
-      cspell:win32/src/win32.txt
   extra_dictionary_limit:
     description: 'Limit the number of suggested extra dictionaries.'
     required: false
