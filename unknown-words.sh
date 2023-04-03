@@ -2335,7 +2335,7 @@ spelling_body() {
       output_candidate_pattern_suggestions="$(echo "
         <details><summary>Pattern suggestions :scissors: ($pattern_suggestion_count)</summary>
 
-        You could add these patterns to $new_patterns_file:
+        You could add these patterns to $b$new_patterns_file$b:
         $B
         # Automatically suggested patterns
         $(
