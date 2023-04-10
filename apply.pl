@@ -41,7 +41,12 @@ sub check_basic_tools {
 sub download_with_curl {
     my ($url, $dest, $flags) = @_;
     $flags = '-fsL' unless defined $flags;
-    `curl -A '$ua' $flags -o '$dest' '$url'`;
+    system('curl',
+        '-A', $ua,
+        $flags,
+        '-o', $dest,
+        $url
+    );
 }
 
 sub strip_comments {
@@ -61,7 +66,13 @@ sub compare_files {
     my ($one, $two) = @_;
     my $one_stripped = strip_comments($one);
     my $two_stripped = strip_comments($two);
-    `diff -qwB '$one' '$two'`;
+    my $pid = open3(
+        undef, my $output, gensym,
+        'diff',
+        '-qwB',
+        $one, $two
+    );
+    waitpid($pid, 0);
     if ($? == -1) {
         print "could not compare '$one' and '$two': $!\n";
         return 0;
@@ -270,7 +281,7 @@ sub update_repository {
     remove_stale($artifact, $config_ref);
     add_expect($artifact, $config_ref);
     add_to_excludes($artifact, $config_ref);
-    system("git add -u");
+    system('git', 'add', '-u');
 }
 
 sub main {
