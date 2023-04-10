@@ -131,7 +131,7 @@ sub retrieve_spell_check_this {
     $spell_check_this_dir = tempdir();
     system("git clone --depth 1 --no-tags $repo --branch $branch $spell_check_this_dir > /dev/null 2> /dev/null");
     make_path($destination);
-    system("cp -i -R \$(cd '$spell_check_this_dir/$path/'; pwd)/* '$destination'");
+    system('cp', '-i', '-R', glob("$spell_check_this_dir/$path/*"), $destination);
     system('git', 'add', '-f', $destination);
 }
 
