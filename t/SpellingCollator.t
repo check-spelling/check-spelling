@@ -7,7 +7,7 @@ use File::Temp qw/ tempfile tempdir /;
 use IO::Capture::Stderr;
 
 use Test::More;
-plan tests => 29;
+plan tests => 31;
 
 sub fill_file {
   my ($file, $content) = @_;
@@ -238,3 +238,26 @@ check_output_file($warning_output, q<punctuation.txt:1:1 ... 1, Warning - `a'cal
 >);
 check_output_file($counter_summary, '');
 check_output_file($more_warnings, '');
+
+my $file_names;
+($fh, $file_names) = tempfile;
+print $fh 'apple
+pear';
+close $fh;
+$directory = stage_test($file_names, '{}', '', ":1:1 ... 5: 'apple'
+:2:1 ... 4: 'pear'
+:2:1 ... 3, Warning - `pea` matches a line_forbidden.patterns entry: `^pe.`. (forbidden-pattern)
+", 'apple
+pear');
+$ENV{'check_file_names'} = $file_names;
+($output, $error_lines) = run_test($directory);
+delete $ENV{'check_file_names'};
+check_output_file($counter_summary, '{
+"check-file-path": 2
+,"forbidden-pattern": 1
+}
+');
+check_output_file($warning_output, 'apple:1:1 ... 5, Warning - `apple` is not a recognized word. (check-file-path)
+pear:1:1 ... 4, Warning - `pear` is not a recognized word. (check-file-path)
+pear:1:1 ... 3, Warning - `pea` matches a line_forbidden.patterns entry: `^pe.`. (forbidden-pattern)
+');
