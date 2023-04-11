@@ -1,2 +1,4 @@
+catfile
 chdir
+pathext
 SYSTEMROOT
