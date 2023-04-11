@@ -467,9 +467,13 @@ react_comment_and_die() {
   react="$3"
   echo "::error ::$message"
   react "$trigger_comment_url" "$react" > /dev/null
+  report="@check-spelling-bot: ${react_prefix}$message${N}See [log]($(get_action_log)) for details."
+  if [ -n "$GITHUB_STEP_SUMMARY" ]; then
+    echo "$report" >> "$GITHUB_STEP_SUMMARY"
+  fi
   if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
     PAYLOAD="$(mktemp_json)"
-    wrap_in_json 'body' "@check-spelling-bot: ${react_prefix}$message${N}See [log]($(get_action_log)) for details." > "$PAYLOAD"
+    wrap_in_json 'body' "$report" > "$PAYLOAD"
 
     res=0
     comment "$COMMENTS_URL" "$PAYLOAD" > /dev/null || res=$?
