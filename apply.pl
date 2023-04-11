@@ -1,7 +1,8 @@
 #!/usr/bin/env perl
 
-use File::Path qw(make_path);
 use File::Basename qw(dirname);
+use File::Path qw(make_path);
+use File::Spec::Functions qw(catfile path);
 use File::Temp qw/ tempfile tempdir /;
 use JSON::PP;
 use warnings;
@@ -21,8 +22,21 @@ my $ua = 'check-spelling-agent/0.0.1';
 $ENV{'PATH'} = join ':', @safe_path unless defined $ENV{SYSTEMROOT};
 
 sub check_exists_command {
-    my $check = `/bin/sh -c 'command -v $_[0]'`;
-    return $check;
+    my ($program) = @_;
+
+    my @path = path;
+    my @pathext = ('');
+
+    if ($^O eq 'MSWin32') {
+        push @pathext, map { lc } split /;/, $ENV{PATHEXT};
+    }
+
+    for my $dir (@path) {
+        for my $suffix (@pathext) {
+            my $f = catfile $dir, "$program$suffix";
+            return $f if -x $f;
+        }
+    }
 }
 
 sub needs_command_because {
