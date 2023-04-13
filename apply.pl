@@ -312,6 +312,7 @@ sub get_artifacts {
     my ($program, $repo, $run) = @_;
     my $artifact_dir = tempdir(CLEANUP => 1);
     my $gh_err_text;
+    my $artifact_name = 'check-spelling-comment';
     my $out = tempfile_name();
 
     run_program_capture_output($out, $out,
@@ -319,7 +320,7 @@ sub get_artifacts {
         '-D', $artifact_dir,
         '-R', $repo,
         $run,
-        '-n', 'check-spelling-comment'
+        '-n', $artifact_name
     );
     my $ret = $?;
     if (($ret >> 8)) {
@@ -349,8 +350,8 @@ sub get_artifacts {
             exit 2;
         }
         if ($gh_err_text =~ /no artifact matches any of the names or patterns provided/) {
-            print "unexpected error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
-            print $gh_err_text;
+            print "The referenced repository ($repo) run ($run) does not have a corresponding artifact ($artifact_name). If it was deleted, that's unfortunate. Consider pushing a change to the branch to trigger a new run?\n";
+            print "If you don't think anyone deleted the artifact, please file a bug to https://github.com/check-spelling/check-spelling/issues/new including as much information about how you triggered this error as possible.\n";
             exit 3;
         }
         print "unknown error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
