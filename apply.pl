@@ -235,11 +235,11 @@ sub get_artifacts {
         }
         if ($gh_err_text =~ /no artifact matches any of the names or patterns provided/) {
             print "unexpected error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
-            print $gh_err;
+            print $gh_err_text;
             exit 3;
         }
         print "unknown error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
-        print "$gh_err";
+        print $gh_err_text;
         exit 4;
     }
     return glob("$artifact_dir/artifact*.zip");
