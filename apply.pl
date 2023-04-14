@@ -217,6 +217,10 @@ sub retrieve_spell_check_this {
         '--branch', $branch,
         $spell_check_this_dir
     );
+    if ($?) {
+        die "git clone $repo#$branch failed";
+    }
+
     make_path($destination);
     system('cp', '-i', '-R', glob("$spell_check_this_dir/$path/*"), $destination);
     system('git', 'add', '-f', $destination);
