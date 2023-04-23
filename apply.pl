@@ -18,7 +18,7 @@ my @safe_path = qw(
     /sbin
 );
 
-my $ua = 'check-spelling-agent/0.0.1';
+my $ua = 'check-spelling-agent/0.0.2';
 
 $ENV{'PATH'} = join ':', @safe_path unless defined $ENV{SYSTEMROOT};
 
@@ -234,9 +234,12 @@ sub add_to_excludes {
     my ($artifact, $config_ref) = @_;
     my %config = %{$config_ref};
     my $excludes = $config{"excludes_file"};
-    my $should_exclude_patterns = unzip_pipe_string($artifact, 'should_exclude.txt');
-    return unless $should_exclude_patterns =~ /\w/;
-    $should_exclude_patterns =~ s{^(.*)}{^\\Q$1\\E\$}gm;
+    my $should_exclude_patterns = unzip_pipe_string($artifact, 'should_exclude.patterns');
+    unless ($should_exclude_patterns =~ /\w/) {
+        $should_exclude_patterns = unzip_pipe_string($artifact, 'should_exclude.txt');
+        return unless $should_exclude_patterns =~ /\w/;
+        $should_exclude_patterns =~ s{^(.*)}{^\\Q$1\\E\$}gm;
+    }
     open EXCLUDES, '<', $excludes;
     my %excludes;
     while (<EXCLUDES>) {
