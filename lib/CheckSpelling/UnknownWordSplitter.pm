@@ -478,6 +478,7 @@ sub split_file {
   if ($@) {
     die unless $@ eq "alarm\n";
     print WARNINGS ":$.:1 ... 1, Warning - Timed out parsing file. (slow-file)\n";
+    skip_file($temp_dir, "timed out parsing file. (slow-file)\n");
   }
 
   close FILE;

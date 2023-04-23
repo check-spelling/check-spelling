@@ -805,7 +805,7 @@ handle_comment() {
     (
       patch_add=1
       patch_remove=1
-      should_exclude_patterns=1
+      should_exclude_patterns=$(mktemp)
       patch_variables $comment_body > $instructions_head
     )
     git restore -- $bucket/$project 2> /dev/null || true
@@ -1670,6 +1670,8 @@ set_up_files() {
   spelling_config="${spelling_config:-"$bucket/$project/"}" \
   "$spellchecker/generate-apply.pl" > "$data_dir/apply.json"
   should_exclude_file=$data_dir/should_exclude.txt
+  should_exclude_patterns=$data_dir/should_exclude.patterns
+  remove_exclude_patterns=$data_dir/remove_exclude.patterns
   counter_summary_file=$data_dir/counter_summary.json
   candidate_summary="$data_dir/candidate_summary.txt"
   if [ "$INPUT_TASK" = 'spelling' ]; then
@@ -1875,13 +1877,7 @@ get_file_list() {
   cat "$file_list" | tr "\0" "\n"
 }
 
-run_spell_check() {
-  echo "internal_state_directory=$data_dir" >> "$output_variables"
-
-  synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
-  echo "^\Q$synthetic_base/\E" >> "$patterns"
-  mkdir -p "$synthetic_base"
-
+build_file_list() {
   (
     if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
       get_before
@@ -1896,7 +1892,17 @@ run_spell_check() {
   ) |\
     exclude_file="$excludes" \
     only_file="$only" \
-      "$scope_files" > "$file_list"
+      "$scope_files" > "$1"
+}
+
+run_spell_check() {
+  echo "internal_state_directory=$data_dir" >> "$output_variables"
+
+  synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
+  echo "^\Q$synthetic_base/\E" >> "$patterns"
+  mkdir -p "$synthetic_base"
+
+  build_file_list "$file_list"
   if to_boolean "$INPUT_CHECK_FILE_NAMES"; then
     if [ -s "$file_list" ]; then
       check_file_names="$synthetic_base/paths-of-checked-files.txt"
@@ -2093,6 +2099,26 @@ to_publish_expect() {
       fi
       ;;
   esac
+}
+
+calculate_exclude_patterns() {
+  to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES" ] || \
+  [ -s "$should_exclude_patterns" ] || \
+  [ ! -s "$should_exclude_file" ] && \
+    return
+  if [ -s "$file_list" ]; then
+    calculate_exclude_file_list="$file_list"
+  else
+    calculate_exclude_file_list=$(mktemp)
+    build_file_list "$calculate_exclude_file_list" 2>/dev/null
+  fi
+  file_list="$calculate_exclude_file_list" \
+  should_exclude_file="$should_exclude_file" \
+  remove_excludes_file="$remove_exclude_patterns" \
+  should_exclude_patterns="$should_exclude_patterns" \
+  current_exclude_patterns="$excludes" \
+    "$spellchecker/suggest-excludes.pl" ||
+    echo "::error title=Excludes generation failed::Please file a bug (excludes-generation-failed)" >&2
 }
 
 remove_items() {
@@ -2324,35 +2350,40 @@ spelling_body() {
     if [ -s "$should_exclude_file" ]; then
       calculate_exclude_patterns
       echo "skipped_files=$should_exclude_file" >> "$output_variables"
-      exclude_files_text=" and update file exclusions"
-      if [ -n "$add_spell_check_this_text" ]; then
-        exclude_files_text=",$exclude_files_text"
+      if ! grep -qE '\w' "$should_exclude_patterns"; then
+        echo '::error title=Excludes generation failed::Please file a bug (excludes-generation-failed)' >&2
+      else
+        echo "should_exclude_patterns=$should_exclude_patterns" >> "$output_variables"
+        exclude_files_text=" and update file exclusions"
+        if [ -n "$add_spell_check_this_text" ]; then
+          exclude_files_text=",$exclude_files_text"
+        fi
+        output_excludes="$(echo "
+          <details><summary>Some files were automatically ignored :see_no_evil:</summary>
+
+          These sample patterns would exclude them:
+          $B
+          $(cat "$should_exclude_patterns")
+          $B"| strip_lead)"
+        if [ "$(wc -l "$should_exclude_file" |perl -pe 's/(\d+)\s+.*/$1/')" -gt 10 ]; then
+          output_excludes_large="$(echo "
+            "'You should consider excluding directory paths (e.g. `(?:^|/)vendor/`), filenames (e.g. `(?:^|/)yarn\.lock$`), or file extensions (e.g. `\.gz$`)
+            '| strip_lead)"
+        fi
+        output_excludes_suffix="$(echo "
+
+          You should consider adding them to:
+          $B$n" | strip_lead
+
+          )$n$(echo "$excludes_files" |
+          xargs -n1 echo)$n$B$(echo '
+
+          File matching is via Perl regular expressions.
+
+          To check these files, more of their words need to be in the dictionary than not. You can use `patterns.txt` to exclude portions, add items to the dictionary (e.g. by adding them to `allow.txt`), or fix typos.
+          </details>
+        ' | strip_lead)"
       fi
-      output_excludes="$(echo "
-        <details><summary>Some files were automatically ignored :see_no_evil:</summary>
-
-        These sample patterns would exclude them:
-        $B
-        $should_exclude_patterns
-        $B"| strip_lead)"
-      if [ "$(wc -l "$should_exclude_file" |perl -pe 's/(\d+)\s+.*/$1/')" -gt 10 ]; then
-        output_excludes_large="$(echo "
-          "'You should consider excluding directory paths (e.g. `(?:^|/)vendor/`), filenames (e.g. `(?:^|/)yarn\.lock$`), or file extensions (e.g. `\.gz$`)
-          '| strip_lead)"
-      fi
-      output_excludes_suffix="$(echo "
-
-        You should consider adding them to:
-        $B$n" | strip_lead
-
-        )$n$(echo "$excludes_files" |
-        xargs -n1 echo)$n$B$(echo '
-
-        File matching is via Perl regular expressions.
-
-        To check these files, more of their words need to be in the dictionary than not. You can use `patterns.txt` to exclude portions, add items to the dictionary (e.g. by adding them to `allow.txt`), or fix typos.
-        </details>
-      ' | strip_lead)"
     fi
     if [ -s "$counter_summary_file" ]; then
       get_has_errors
