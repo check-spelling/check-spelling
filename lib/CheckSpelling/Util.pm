@@ -27,6 +27,11 @@ sub get_val_from_env {
 sub case_biased :prototype($$) ($a, $b) {
   lc($a) cmp lc($b) || $a cmp $b;
 }
+
+sub list_with_terminator {
+  my ($terminator, @list) = @_;
+  return join "", map { "$_$terminator" } @list;
+}
   
 sub read_file {
   my ($name) = @_;
