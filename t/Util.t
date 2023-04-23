@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 
-plan tests => 16;
+plan tests => 17;
 use_ok('CheckSpelling::Util');
 
 $ENV{'EMPTY_VAR'}='';
@@ -80,3 +80,6 @@ is(CheckSpelling::Util::calculate_delay(
 is(CheckSpelling::Util::calculate_delay(
     'expires: MT'
 ), 5);
+is(CheckSpelling::Util::list_with_terminator(
+    '-', 1, 2
+), '1-2-');
