@@ -22,7 +22,7 @@ jobs:
     env:
       workflow_check_commit_messages: commits
     runs-on: ubuntu-latest
-    if: "contains(github.event_name, 'pull_request') || github.event_name == 'push'"
+    if: ${{ contains(github.event_name, 'pull_request') || github.event_name == 'push' }}
     concurrency:
       group: spelling-${{ github.event.pull_request.number || github.ref }}
       # note: If you use only_check_changed_files, you do not want cancel-in-progress
@@ -38,7 +38,7 @@ jobs:
         cp -R . ../introspected/;
         mv ../introspected .
     - name: test-merge
-      if: "contains(github.event_name, 'pull_request')"
+      if: ${{ contains(github.event_name, 'pull_request') }}
       uses: check-spelling/checkout-merge@v0.0.3
       with:
         path: introspected
