@@ -1,6 +1,5 @@
 apps
 bdc
-cbeaff
 codeql
 cpanm
 cpanminus
