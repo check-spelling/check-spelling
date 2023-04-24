@@ -1,4 +1,3 @@
-://github.com/\w+/\w+
 ^(?:https\??|data):\S*[*+]$
 ^..:0.Xx\S*}\\b$
 catching 'templatesz'
@@ -15,7 +14,7 @@ catching 'templatesz'
 ^\s*cspell:.*\.txt$
 # githubusercontent
 /[-a-z0-9]+\.githubusercontent\.com/[-a-zA-Z0-9?&=_\/.]*
-\bgithub\.com/[^/]+/[^/]+/(?:blob|commit)/[0-9a-f]+(?:/|$)
+\bgithub\.com/[^/]+/[^/]+/(?:blob|commit|tree|releases)/\w+(?:/|$)
 
 # regex
 \\b
