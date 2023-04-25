@@ -425,6 +425,32 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "slow-file",
+              "name": "SlowFile",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#slow-file",
+              "shortDescription": {
+                "text": "Slow file"
+              },
+              "fullDescription": {
+                "text": "Parsing the file exceeded the parsing timeout."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Adjust [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- Adjust the [timeout](https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Parsing-Timeouts#configuration)\n- See [Feature: Parsing Timeouts](https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Parsing-Timeouts)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }

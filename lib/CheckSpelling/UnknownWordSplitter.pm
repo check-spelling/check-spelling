@@ -177,6 +177,7 @@ sub init {
   my ($configuration) = @_;
   our ($word_match, %unique, $patterns_re, @forbidden_re_list, $forbidden_re, @candidates_re_list, $candidates_re);
   our $hunspell_dictionary_path = CheckSpelling::Util::get_file_from_env('hunspell_dictionary_path', '');
+  our $timeout = CheckSpelling::Util::get_val_from_env('splitter_timeout', 30);
   if ($hunspell_dictionary_path) {
     our @hunspell_dictionaries = ();
     if (eval 'use Text::Hunspell; 1') {
@@ -356,116 +357,130 @@ sub split_file {
   };
 
   open(WARNINGS, '>:utf8', "$temp_dir/warnings");
-  while (<FILE>) {
-    $_ = decode_utf8($_, FB_DEFAULT);
-    if (/[\x{D800}-\x{DFFF}]/) {
-      open SKIPPED, '>:utf8', "$temp_dir/skipped";
-      print SKIPPED "file contains a UTF-16 surrogate. This is not supported. (utf16-surrogate)\n";
-      close SKIPPED;
-      last;
-    }
-    s/\R$//;
-    next unless /./;
-    my $raw_line = $_;
-    # hook for custom line based text exclusions:
-    if (defined $patterns_re) {
-      s/($patterns_re)/"="x length($1)/ge;
-    }
-    my $previous_line_state = $_;
-    my $line_flagged;
-    if ($forbidden_re) {
-      while (s/($forbidden_re)/"="x length($1)/e) {
-        $line_flagged = 1;
-        my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
-        my $found_trigger_re;
-        for my $forbidden_re_singleton (@forbidden_re_list) {
-          my $test_line = $previous_line_state;
-          if ($test_line =~ s/($forbidden_re_singleton)/"="x length($1)/e) {
-            next unless $test_line eq $_;
-            my ($begin_test, $end_test, $match_test) = ($-[0] + 1, $+[0] + 1, $1);
-            next unless $begin == $begin_test;
-            next unless $end == $end_test;
-            next unless $match eq $match_test;
-            $found_trigger_re = $forbidden_re_singleton;
-            last;
-          }
-        }
-        if ($found_trigger_re) {
-          $found_trigger_re =~ s/^\(\?:(.*)\)$/$1/;
-          print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry: `$found_trigger_re`. (forbidden-pattern)\n";
-        } else {
-          print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
-        }
-        $previous_line_state = $_;
-      }
-    }
-    # This is to make it easier to deal w/ rules:
-    s/^/ /;
-    my %unrecognized_line_items = ();
-    my ($new_words, $new_unrecognized) = split_line($_, \%unique, \%unique_unrecognized, \%unrecognized_line_items);
-    $words += $new_words;
-    $unrecognized += $new_unrecognized;
-    my $line_length = length($raw_line);
-    for my $token (sort CheckSpelling::Util::case_biased keys %unrecognized_line_items) {
-      my $found_token = 0;
-      my $raw_token = $token;
-      $token =~ s/'/(?:'|$rsqm|\&apos;|\&#39;)+/g;
-      my $before;
-      if ($token =~ /^$upper_pattern$lower_pattern/) {
-        $before = '(?<=.)';
-      } elsif ($token =~ /^$upper_pattern/) {
-        $before = "(?<!$upper_pattern)";
-      } else {
-        $before = "(?<=$not_lower_pattern)";
-      }
-      my $after = ($token =~ /$upper_pattern$/) ? "(?=$not_upper_or_lower_pattern)|(?=$upper_pattern$lower_pattern)" : "(?=$not_lower_pattern)";
-      while ($raw_line =~ /(?:\b|$before)($token)(?:\b|$after)/g) {
-        $line_flagged = 1;
-        $found_token = 1;
-        my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
-        next unless $match =~ /./;
-        print WARNINGS ":$.:$begin ... $end: '$match'\n";
-      }
-      unless ($found_token) {
-        if ($raw_line !~ /$token.*$token/ && $raw_line =~ /($token)/) {
-          my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
-          print WARNINGS ":$.:$begin ... $end: '$match'\n";
-        } else {
-          print WARNINGS ":$.:1 ... $line_length, Warning - Could not identify whole word `$raw_token` in line. (token-is-substring)\n";
-        }
-      }
-    }
-    if ($line_flagged && $candidates_re) {
-      $_ = $previous_line_state;
-      s/($candidates_re)/"="x length($1)/ge;
-      if ($_ ne $previous_line_state) {
-        $_ = $previous_line_state;
-        for my $i (0 .. $#candidates_re_list) {
-          my $candidate_re = $candidates_re_list[$i];
-          next unless $candidate_re =~ /./ && $raw_line =~ /$candidate_re/;
-          if (($_ =~ s/($candidate_re)/"="x length($1)/e)) {
-            my ($begin, $end) = ($-[0] + 1, $+[0] + 1);
-            my $hit = "$.:$begin:$end";
-            $_ = $previous_line_state;
-            my $replacements = ($_ =~ s/($candidate_re)/"="x length($1)/ge);
-            $candidates_re_hits[$i] += $replacements;
-            $candidates_re_lines[$i] = $hit unless $candidates_re_lines[$i];
-            $_ = $previous_line_state;
-          }
-        }
-      }
-    }
-    unless ($disable_minified_file) {
-      my $offset = tell FILE;
-      my $ratio = $offset / $.;
-      my $ratio_threshold = 1000;
-      if ($ratio > $ratio_threshold) {
+  our $timeout;
+  eval {
+    local $SIG{ALRM} = sub { die "alarm\n" }; # NB: \n required
+    alarm $timeout;
+
+    while (<FILE>) {
+      $_ = decode_utf8($_, FB_DEFAULT);
+      if (/[\x{D800}-\x{DFFF}]/) {
         open SKIPPED, '>:utf8', "$temp_dir/skipped";
-        print SKIPPED "average line width ($ratio) exceeds the threshold ($ratio_threshold). (minified-file)\n";
+        print SKIPPED "file contains a UTF-16 surrogate. This is not supported. (utf16-surrogate)\n";
         close SKIPPED;
+        last;
+      }
+      s/\R$//;
+      next unless /./;
+      my $raw_line = $_;
+
+      # hook for custom line based text exclusions:
+      if (defined $patterns_re) {
+        s/($patterns_re)/"="x length($1)/ge;
+      }
+      my $previous_line_state = $_;
+      my $line_flagged;
+      if ($forbidden_re) {
+        while (s/($forbidden_re)/"="x length($1)/e) {
+          $line_flagged = 1;
+          my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
+          my $found_trigger_re;
+          for my $forbidden_re_singleton (@forbidden_re_list) {
+            my $test_line = $previous_line_state;
+            if ($test_line =~ s/($forbidden_re_singleton)/"="x length($1)/e) {
+              next unless $test_line eq $_;
+              my ($begin_test, $end_test, $match_test) = ($-[0] + 1, $+[0] + 1, $1);
+              next unless $begin == $begin_test;
+              next unless $end == $end_test;
+              next unless $match eq $match_test;
+              $found_trigger_re = $forbidden_re_singleton;
+              last;
+            }
+          }
+          if ($found_trigger_re) {
+            $found_trigger_re =~ s/^\(\?:(.*)\)$/$1/;
+            print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry: `$found_trigger_re`. (forbidden-pattern)\n";
+          } else {
+            print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
+          }
+          $previous_line_state = $_;
+        }
+      }
+      # This is to make it easier to deal w/ rules:
+      s/^/ /;
+      my %unrecognized_line_items = ();
+      my ($new_words, $new_unrecognized) = split_line($_, \%unique, \%unique_unrecognized, \%unrecognized_line_items);
+      $words += $new_words;
+      $unrecognized += $new_unrecognized;
+      my $line_length = length($raw_line);
+      for my $token (sort CheckSpelling::Util::case_biased keys %unrecognized_line_items) {
+        my $found_token = 0;
+        my $raw_token = $token;
+        $token =~ s/'/(?:'|$rsqm|\&apos;|\&#39;)+/g;
+        my $before;
+        if ($token =~ /^$upper_pattern$lower_pattern/) {
+          $before = '(?<=.)';
+        } elsif ($token =~ /^$upper_pattern/) {
+          $before = "(?<!$upper_pattern)";
+        } else {
+          $before = "(?<=$not_lower_pattern)";
+        }
+        my $after = ($token =~ /$upper_pattern$/) ? "(?=$not_upper_or_lower_pattern)|(?=$upper_pattern$lower_pattern)" : "(?=$not_lower_pattern)";
+        while ($raw_line =~ /(?:\b|$before)($token)(?:\b|$after)/g) {
+          $line_flagged = 1;
+          $found_token = 1;
+          my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
+          next unless $match =~ /./;
+          print WARNINGS ":$.:$begin ... $end: '$match'\n";
+        }
+        unless ($found_token) {
+          if ($raw_line !~ /$token.*$token/ && $raw_line =~ /($token)/) {
+            my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
+            print WARNINGS ":$.:$begin ... $end: '$match'\n";
+          } else {
+            print WARNINGS ":$.:1 ... $line_length, Warning - Could not identify whole word `$raw_token` in line. (token-is-substring)\n";
+          }
+        }
+      }
+      if ($line_flagged && $candidates_re) {
+        $_ = $previous_line_state;
+        s/($candidates_re)/"="x length($1)/ge;
+        if ($_ ne $previous_line_state) {
+          $_ = $previous_line_state;
+          for my $i (0 .. $#candidates_re_list) {
+            my $candidate_re = $candidates_re_list[$i];
+            next unless $candidate_re =~ /./ && $raw_line =~ /$candidate_re/;
+            if (($_ =~ s/($candidate_re)/"="x length($1)/e)) {
+              my ($begin, $end) = ($-[0] + 1, $+[0] + 1);
+              my $hit = "$.:$begin:$end";
+              $_ = $previous_line_state;
+              my $replacements = ($_ =~ s/($candidate_re)/"="x length($1)/ge);
+              $candidates_re_hits[$i] += $replacements;
+              $candidates_re_lines[$i] = $hit unless $candidates_re_lines[$i];
+              $_ = $previous_line_state;
+            }
+          }
+        }
+      }
+      unless ($disable_minified_file) {
+        my $offset = tell FILE;
+        my $ratio = $offset / $.;
+        my $ratio_threshold = 1000;
+        if ($ratio > $ratio_threshold) {
+          open SKIPPED, '>:utf8', "$temp_dir/skipped";
+          print SKIPPED "average line width ($ratio) exceeds the threshold ($ratio_threshold). (minified-file)\n";
+          close SKIPPED;
+        }
       }
     }
+
+    alarm 0;
+  };
+  if ($@) {
+    die unless $@ eq "alarm\n";
+    print WARNINGS ":$.:1 ... 1, Warning - Timed out parsing file. (slow-file)\n";
   }
+
   close FILE;
   close WARNINGS;
 
