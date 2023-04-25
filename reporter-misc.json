@@ -49,6 +49,28 @@
                     "code": 2
                 }
             ]
+        },
+        {
+            "owner": "check-spelling-perl-not-enough-arguments",
+            "pattern": [
+                {
+                    "regexp": "^(Not enough arguments for.* at (.*?) line (\\d+))",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
+            "owner": "check-spelling-perl-compilation-failed",
+            "pattern": [
+                {
+                    "regexp": "^(Compilation failed in.* at (.*?) line (\\d+))",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
         }
     ]
 }
