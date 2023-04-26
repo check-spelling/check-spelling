@@ -1073,19 +1073,19 @@ check_inputs() {
   if to_boolean "$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE"; then
     KEY=use_sarif \
     VALUE="$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE" \
-    MESSAGE='Warning - use_sarif needs security-events: write - unsupported configuration (unsupported-configuration)' \
+    MESSAGE='Warning - Unsupported configuration: use_sarif needs security-events: write. (unsupported-configuration)' \
     check_yaml_key_value "$workflow_path"
   fi
   if to_boolean "$WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY"; then
     KEY=use_sarif \
     VALUE="$WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY" \
-    MESSAGE='Warning - use_sarif needs GitHub Advanced Security to be enabled - see https://docs.github.com/get-started/learning-about-github/about-github-advanced-security (unsupported-configuration)' \
+    MESSAGE='Warning - Unsupported configuration: use_sarif needs GitHub Advanced Security to be enabled - see <https://docs.github.com/get-started/learning-about-github/about-github-advanced-security>. (unsupported-configuration)' \
     check_yaml_key_value "$workflow_path"
   fi
   if to_boolean "$WARN_USE_SARIF_ONLY_CHANGED_FILES"; then
     KEY=use_sarif \
     VALUE="$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE" \
-    MESSAGE='Warning - use_sarif is incompatible with only_check_changed_files - unsupported configuration (unsupported-configuration)' \
+    MESSAGE='Warning - Unsupported configuration: use_sarif is incompatible with only_check_changed_files. (unsupported-configuration)' \
     check_yaml_key_value "$workflow_path"
   fi
   if [ -n "$ACT" ] &&
@@ -1099,7 +1099,7 @@ check_inputs() {
     ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.A-Za-z0-9]+/[-_.A-Za-z0-9]+(?:|\@[-_./A-Za-z0-9]+)$};'; then
     KEY=spell_check_this \
     VALUE="$INPUT_SPELL_CHECK_THIS" \
-    MESSAGE='Warning - spell_check_this - unsupported repository (unsupported-repo-notation)' \
+    MESSAGE='Warning - Unsupported repository: spell_check_this. (unsupported-repo-notation)' \
     check_yaml_key_value "$workflow_path"
     INPUT_SPELL_CHECK_THIS=''
   fi
@@ -1137,7 +1137,7 @@ check_pattern_file() {
       $err =~ s{^.*? in regex; marked by <-- HERE in m/(.*) <-- HERE.*$}{$1};
       my $start = $+[1] - $-[1];
       my $end = $start + 1;
-      print WARNINGS "$ARGV:$.:$start ... $end, Warning - bad regex: $@ (bad-regex)\n";
+      print WARNINGS "$ARGV:$.:$start ... $end, Warning - Bad regex: $@ (bad-regex)\n";
       print "^\$\n";
     }
   }
@@ -1151,7 +1151,7 @@ check_for_newline_at_eof() {
     line="$(( $(cat "$maybe_missing_eol" | wc -l) + 1 ))"
     start="$(tail -1 "$maybe_missing_eol" | wc -c)"
     stop="$(( $start + 1 ))"
-    echo "$maybe_missing_eol:$line:$start ... $stop, Warning - no newline at eof (no-newline-at-eof)" >> "$early_warnings"
+    echo "$maybe_missing_eol:$line:$start ... $stop, Warning - No newline at eof. (no-newline-at-eof)" >> "$early_warnings"
     echo >> "$maybe_missing_eol"
   fi
 }
@@ -1599,9 +1599,9 @@ set_up_files() {
       if [ ! -d "$spell_check_this_repo/$spell_check_this_config" ]; then
         (
           if [ -n "$workflow_path" ]; then
-            spell_check_this_config="$spell_check_this_config" perl -e '$pattern=quotemeta($ENV{INPUT_SPELL_CHECK_THIS}); while (<>) { next unless /$pattern/; $start=$-[0]+1; print "$ARGV:$.:$start ... $+[0], Warning - spell_check_this - could not find $ENV{spell_check_this_config} (spell-check-this-error)\n" }' "$workflow_path"
+            spell_check_this_config="$spell_check_this_config" perl -e '$pattern=quotemeta($ENV{INPUT_SPELL_CHECK_THIS}); while (<>) { next unless /$pattern/; $start=$-[0]+1; print "$ARGV:$.:$start ... $+[0], Warning - Could not find spell_check_this: $ENV{spell_check_this_config} (spell-check-this-error)\n" }' "$workflow_path"
           else
-            echo "?:0:1, Warning - spell_check_this - could not find $spell_check_this_config (spell-check-this-error)"
+            echo "?:0:1, Warning - Could not find spell_check_this: $spell_check_this_config (spell-check-this-error)"
           fi
         ) >> "$early_warnings"
       else
