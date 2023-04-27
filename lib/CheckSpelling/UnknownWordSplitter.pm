@@ -291,6 +291,13 @@ sub split_line {
     return ($words, $unrecognized);
 }
 
+sub skip_file {
+  my ($temp_dir, $reason) = @_;
+  open(SKIPPED, '>:utf8', "$temp_dir/skipped");
+  print SKIPPED $reason;
+  close SKIPPED;
+}
+
 sub split_file {
   my ($file) = @_;
   our (
@@ -314,9 +321,7 @@ sub split_file {
     unless ($check_file_names eq $file) {
       my $file_size = -s $file;
       if ($file_size > $largest_file) {
-        open(SKIPPED, '>:utf8', "$temp_dir/skipped");
-        print SKIPPED "size `$file_size` exceeds limit `$largest_file`. (large-file)\n";
-        close SKIPPED;
+        skip_file($temp_dir, "size `$file_size` exceeds limit `$largest_file`. (large-file)\n");
         return $temp_dir;
       }
     }
@@ -336,9 +341,7 @@ sub split_file {
       my $file_kind = <$file_fh>;
       close $file_fh;
       if ($file_kind =~ /^(.*?); charset=binary/) {
-        open(SKIPPED, '>:utf8', "$temp_dir/skipped");
-        print SKIPPED "appears to be a binary file ('$1'). (binary-file)\n";
-        close SKIPPED;
+        skip_file($temp_dir, "appears to be a binary file ('$1'). (binary-file)\n");
         return $temp_dir;
       }
     }
@@ -365,9 +368,7 @@ sub split_file {
     while (<FILE>) {
       $_ = decode_utf8($_, FB_DEFAULT);
       if (/[\x{D800}-\x{DFFF}]/) {
-        open SKIPPED, '>:utf8', "$temp_dir/skipped";
-        print SKIPPED "file contains a UTF-16 surrogate. This is not supported. (utf16-surrogate)\n";
-        close SKIPPED;
+        skip_file($temp_dir, "file contains a UTF-16 surrogate. This is not supported. (utf16-surrogate)\n");
         last;
       }
       s/\R$//;
@@ -467,9 +468,7 @@ sub split_file {
         my $ratio = $offset / $.;
         my $ratio_threshold = 1000;
         if ($ratio > $ratio_threshold) {
-          open SKIPPED, '>:utf8', "$temp_dir/skipped";
-          print SKIPPED "average line width ($ratio) exceeds the threshold ($ratio_threshold). (minified-file)\n";
-          close SKIPPED;
+          skip_file($temp_dir, "average line width ($ratio) exceeds the threshold ($ratio_threshold). (minified-file)\n");
         }
       }
     }
