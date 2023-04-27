@@ -896,7 +896,12 @@ handle_comment() {
                     "|strip_lead)" ||
     confused_comment "$trigger_comment_url" "Did not generate a commit.${N}Perhaps there was a merge conflict or an object changed from being a directory to a file or vice versa? (Please file a bug including a link to this comment.)"
   git push request "HEAD:$pull_request_ref" ||
+  {
+    {
+      git show HEAD
+    } || true
     confused_comment "$trigger_comment_url" "Generated a commit, but the $pull_request_repo rejected the commit.${N}Maybe this task lost a race with another push?"
+  }
 
   react "$trigger_comment_url" 'eyes' > /dev/null
 
