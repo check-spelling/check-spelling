@@ -1031,6 +1031,7 @@ define_variables() {
   summary_tables="$spellchecker/summary-tables.pl"
   generate_sarif="$spellchecker/generate-sarif.pl"
   get_commits_for_check_commit_message="$spellchecker/get-commits-for-check-commit-message.pl"
+  scope_files="$spellchecker/exclude.pl"
   run_output="$temp/unknown.words.txt"
   run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
@@ -1889,7 +1890,9 @@ run_spell_check() {
       git 'ls-files' -z 2> /dev/null
     fi
   ) |\
-    "$spellchecker/exclude.pl" > "$file_list"
+    exclude_file="$excludes" \
+    only_file="$only" \
+      "$scope_files" > "$file_list"
   if to_boolean "$INPUT_CHECK_FILE_NAMES"; then
     if [ -s "$file_list" ]; then
       check_file_names="$synthetic_base/paths-of-checked-files.txt"
