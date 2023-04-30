@@ -71,7 +71,15 @@
                     "line": 3
                 }
             ]
+        },
+        {
+            "owner": "github-internal-server-error",
+            "pattern": [
+                {
+                    "regexp": "^(.*Please include `(?:[0-9A-F]{4}:){2}(?:[0-9A-F]{6}:){2}[0-9A-F]{8}`.*)$",
+                    "message": 1
+                }
+            ]
         }
     ]
 }
-
