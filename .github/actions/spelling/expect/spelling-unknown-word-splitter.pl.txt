@@ -3,9 +3,6 @@ fileformat
 ies
 misspellled
 rsqm
-rtn
 tempdir
 tempfile
-unicode
-usr
 woord
