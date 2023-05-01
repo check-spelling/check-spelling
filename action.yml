@@ -112,6 +112,7 @@ inputs:
       cspell:k8s/dict/k8s.txt
       cspell:latex/dict/latex.txt
       cspell:latex/samples/sample-words.txt
+      cspell:lisp/lisp.txt
       cspell:lorem-ipsum/dictionary.txt
       cspell:lua/dict/lua.txt
       cspell:mnemonics/src/mnemonics.txt
