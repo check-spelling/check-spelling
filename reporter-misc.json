@@ -84,6 +84,17 @@
             ]
         },
         {
+            "owner": "check-spelling-perl-undefined-value-failed",
+            "pattern": [
+                {
+                    "regexp": "^(.*Can't use an undefined value.* at (.*?) line (\\d+))",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
             "owner": "github-internal-server-error",
             "pattern": [
                 {
