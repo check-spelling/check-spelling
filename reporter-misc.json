@@ -73,6 +73,17 @@
             ]
         },
         {
+            "owner": "check-spelling-perl-taint-failed",
+            "pattern": [
+                {
+                    "regexp": "^(.* while running with -T switch at (.*?) line (\\d+))",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
             "owner": "github-internal-server-error",
             "pattern": [
                 {
