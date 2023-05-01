@@ -848,7 +848,7 @@ handle_comment() {
       next unless m{$ENV{GITHUB_SERVER_URL}/($ENV{GITHUB_REPOSITORY}/actions/runs/\d+(?:/attempts/\d+|))};
       print "/repos/$1";
     ')
-    [ -n "$summary_url_api" ] || confused_comment "$trigger_comment_url" "Failed to retrieve api url -- this should never happen, please file a bug."
+    [ -n "$summary_url_api" ] || confused_comment "$trigger_comment_url" "Failed to retrieve api url -- this should never happen. Please file a bug."
     gh_api_fault=$(mktemp)
     gh_api_err=$(mktemp)
     if ! GH_TOKEN="$GITHUB_TOKEN" gh api /repos/$GITHUB_REPOSITORY/actions/cache/usage > "$gh_api_fault" 2> "$gh_api_err"; then
