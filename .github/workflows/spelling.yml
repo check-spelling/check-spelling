@@ -126,8 +126,9 @@ jobs:
         extra_dictionary_limit: 10
         # this repository doesn't use php, but the dictionary has fairly good coverage
         extra_dictionaries:
-          cspell:software-terms/src/software-terms.txt
-          cspell:php/php.txt
+          cspell:software-terms/dict/softwareTerms.txt
+          cspell:php/dict/php.txt
+          cspell:node/node.txt
         check_commit_messages: ${{ env.workflow_check_commit_messages }}
         ignore-pattern: '[^\p{Ll}\p{Lm}\p{Lt}\p{Lu}]'
         upper-pattern: '[\p{Lu}\p{Lt}\p{Lm}]'

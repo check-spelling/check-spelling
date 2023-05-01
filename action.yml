@@ -64,7 +64,7 @@ inputs:
   dictionary_source_prefixes:
     description: 'JSON map of prefixes for dictionary urls'
     required: false
-    default: '{"cspell": "https://raw.githubusercontent.com/check-spelling/cspell-dicts/v20220816/dictionaries/"}'
+    default: '{"cspell": "https://raw.githubusercontent.com/check-spelling/cspell-dicts/v20230509/dictionaries/"}'
   extra_dictionaries:
     description: 'Space delimited list of URLs (or `prefix:`+path) to additional word lists'
     required: false
@@ -73,9 +73,8 @@ inputs:
     description: 'Compare unknown tokens against these dictionaries and suggest if applicable'
     required: false
     default:
-      cspell:ada/ada.txt
+      cspell:ada/dict/ada.txt
       cspell:aws/aws.txt
-      cspell:bash/bash-words.txt
       cspell:clojure/src/clojure.txt
       cspell:companies/src/companies.txt
       cspell:cpp/src/compiler-clang-attributes.txt
@@ -92,33 +91,36 @@ inputs:
       cspell:cpp/src/template-strings.txt
       cspell:cryptocurrencies/cryptocurrencies.txt
       cspell:csharp/csharp.txt
-      cspell:css/css.txt
+      cspell:css/dict/css.txt
       cspell:dart/src/dart.txt
-      cspell:django/django.txt
+      cspell:django/dict/django.txt
       cspell:django/requirements.txt
       cspell:docker/src/docker-words.txt
-      cspell:dotnet/dotnet.txt
-      cspell:elixir/elixir.txt
+      cspell:dotnet/dict/dotnet.txt
+      cspell:elixir/dict/elixir.txt
       cspell:filetypes/filetypes.txt
       cspell:fonts/fonts.txt
-      cspell:fullstack/fullstack.txt
-      cspell:golang/go.txt
-      cspell:haskell/haskell.txt
+      cspell:fullstack/dict/fullstack.txt
+      cspell:gaming-terms/dict/gaming-terms.txt
+      cspell:golang/dict/go.txt
+      cspell:haskell/dict/haskell.txt
       cspell:html-symbol-entities/entities.txt
-      cspell:html/html.txt
-      cspell:java/java.txt
-      cspell:latex/latex.txt
+      cspell:html/dict/html.txt
+      cspell:html/src/svg.txt
+      cspell:java/src/java-terms.txt
+      cspell:java/src/java.txt
+      cspell:k8s/dict/k8s.txt
+      cspell:latex/dict/latex.txt
       cspell:latex/samples/sample-words.txt
       cspell:lorem-ipsum/dictionary.txt
-      cspell:lua/lua.txt
+      cspell:lua/dict/lua.txt
       cspell:mnemonics/src/mnemonics.txt
       cspell:monkeyc/src/monkeyc_keywords.txt
       cspell:node/additional_words.txt
-      cspell:node/node.txt
-      cspell:node/src/node-old.txt
-      cspell:npm/npm.txt
-      cspell:php/php.txt
-      cspell:powershell/powershell.txt
+      cspell:node/dict/node.txt
+      cspell:npm/dict/npm.txt
+      cspell:php/dict/php.txt
+      cspell:powershell/dict/powershell.txt
       cspell:public-licenses/src/additional-licenses.txt
       cspell:public-licenses/src/generated/public-licenses.txt
       cspell:python/src/additional_words.txt
@@ -126,17 +128,18 @@ inputs:
       cspell:python/src/python/python-lib.txt
       cspell:python/src/python/python.txt
       cspell:r/src/r.txt
-      cspell:ruby/ruby.txt
-      cspell:rust/rust.txt
-      cspell:scala/scala.txt
-      cspell:software-terms/src/network-os.txt
-      cspell:software-terms/src/network-protocols.txt
-      cspell:software-terms/src/software-terms.txt
-      cspell:software-terms/src/software-tools.txt
+      cspell:redis/dict/redis.txt
+      cspell:ruby/dict/ruby.txt
+      cspell:rust/dict/rust.txt
+      cspell:scala/dict/scala.txt
+      cspell:shell/dict/shell-all-words.txt
+      cspell:software-terms/dict/softwareTerms.txt
+      cspell:software-terms/dict/webServices.txt
       cspell:sql/src/sql.txt
       cspell:sql/src/tsql.txt
+      cspell:svelte/dict/svelte.txt
       cspell:swift/src/swift.txt
-      cspell:typescript/typescript.txt
+      cspell:typescript/dict/typescript.txt
   extra_dictionary_limit:
     description: 'Limit the number of suggested extra dictionaries.'
     required: false

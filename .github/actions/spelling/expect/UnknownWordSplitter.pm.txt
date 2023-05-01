@@ -1,5 +1,4 @@
 ALRM
-csv
 dic
 hunspell
 xge

@@ -1,8 +1,5 @@
 cpan
 cpanmin
-cspell
 installsitearch
 installsitelib
-jsoref
 stdbuf
-tmp
