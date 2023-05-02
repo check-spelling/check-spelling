@@ -1101,6 +1101,12 @@ check_inputs() {
     MESSAGE='Warning - Unsupported configuration: post_comment is not compatible with nektos/act. (unsupported-configuration)' \
     check_yaml_key_value "$workflow_path"
   fi
+  if [ -n "$ACT" ] &&
+    to_boolean "$INPUT_USE_SARIF" &&
+    [ "$GITHUB_REPOSITORY" = '.' ]; then
+    INPUT_USE_SARIF=
+    echo '::warning ::Disabling sarif under act without repository'
+  fi
   if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
     ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.A-Za-z0-9]+/[-_.A-Za-z0-9]+(?:|\@[-_./A-Za-z0-9]+)$};'; then
     KEY=spell_check_this \
