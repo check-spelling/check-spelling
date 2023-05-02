@@ -524,6 +524,7 @@ git_commit() {
                 $commit_reason
 
                 Signed-off-by: check-spelling-bot <check-spelling-bot@users.noreply.github.com>
+                on-behalf-of: @check-spelling <check-spelling-bot@check-spelling.dev>
                 " | strip_lead)"
 }
 
