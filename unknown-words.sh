@@ -34,9 +34,13 @@ dispatcher() {
         echo 'check-spelling does not know what to do because GITHUB_EVENT_NAME is empty.'
         echo
         echo 'This could be because of a configuration error with event_aliases.'
-        echo 'It could be because you are using act or a similar GitHub Runner shim,'
+        echo 'It could be because you are using `act` or a similar GitHub Runner shim,'
         echo 'and its configuration is incorrect.'
       ) >&2
+      github_step_summary_likely_fatal \
+        'GITHUB_EVENT_NAME is empty' \
+        'Please see the log for more information.' \
+        'Is `event_aliases` misconfigured? Are you using `act` or a similar shim?'
       exit 1
       ;;
     push)
@@ -111,6 +115,10 @@ dispatcher() {
             set_up_reporter
           fi
           echo '::error title=Unsafe-Permissions::This workflow configuration is unsafe. Please see https://github.com/check-spelling/check-spelling/wiki/Feature:-Restricted-Permissions'
+          github_step_summary_likely_fatal \
+            'Unsafe Permissions' \
+            'This workflow configuration is unsafe.' \
+            ':information_source: Please see https://github.com/check-spelling/check-spelling/wiki/Feature:-Restricted-Permissions'
           quit 5
         fi
       fi
@@ -128,22 +136,25 @@ dispatcher() {
       handle_comment
       ;;
     pull_request_review_comment)
+      body="$(echo '
+        If you are trying to ask @check-spelling-bot to update a PR,
+        please quote the comment link as a top level comment instead
+        of in a comment on a block of code.
+
+        Future versions may support this feature.
+        For the time being, early adopters should remove the
+        `pull_request_review_comment` event from their workflow.
+        workflow.
+      ' | strip_lead)"
       ( echo 'check-spelling does not currently support comments on code.
-
-          If you are trying to ask @check-spelling-bot to update a PR,
-          please quote the comment link as a top level comment instead
-          of in a comment on a block of code.
-
-          Future versions may support this feature.
-          For the time being, early adopters should remove the
-          `pull_request_review_comment` event from their workflow.
-          workflow.' \
+        '"$body" \
         | strip_lead
       ) >&2
+      github_step_summary_likely_fatal_event 'Handling comments on code is not supported by check-spelling' "$body" 'unsupported-configuration-review-comment'
       quit 0
       ;;
     *)
-      ( echo "
+      body="$(echo "
           check-spelling does not currently support the GitHub $b$GITHUB_EVENT_NAME$b event.
 
           If you think it can, consider using:
@@ -153,7 +164,9 @@ dispatcher() {
 
           Future versions may support this feature." \
         | perl -pe 's/^ {10}//'
-      ) >&2
+      )"
+      echo "$body" >&2
+      github_step_summary_likely_fatal_event 'Unsupported event name' "$body" 'unsupported-configuration-event'
       exit 1
       ;;
   esac
@@ -1287,11 +1300,34 @@ download() {
   return "$exit_value"
 }
 
+github_step_summary_likely_fatal() {
+  head="$1"
+  body="$2"
+  hint="$3"
+  (
+    echo "# :stop_sign: $head"
+    echo
+    echo "$body"
+    echo
+    echo "$hint"
+    echo
+  ) >> "$GITHUB_STEP_SUMMARY"
+}
+
+github_step_summary_likely_fatal_event() {
+  category="$3"
+  github_step_summary_likely_fatal "$1" "$2" ":warning: For more information, see [$category](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#$category)."
+}
+
 download_or_quit_with_error() {
   exit_code="$(mktemp)"
   download "$1" "$2" || (
     echo "$?" > "$exit_code"
     echo "Could not download $1 (to $2) (required-download-failed)" >&2
+    github_step_summary_likely_fatal_event \
+      'Required download failed' \
+      "Could not download $1 (to $2)." \
+      'required-download-failed'
   )
   if [ -s "$exit_code" ]; then
     exit_value="$(cat "$exit_code")"
@@ -1723,6 +1759,21 @@ set_up_files() {
       extra_dictionaries_dir="$(get_extra_dictionaries extra "$INPUT_EXTRA_DICTIONARIES")"
       if [ -n "$extra_dictionaries_dir" ]; then
         if [ "$extra_dictionaries_dir" = fail ]; then
+          message="Problems were encountered retrieving extra dictionaries ($INPUT_EXTRA_DICTIONARIES)."
+          if [ "$GITHUB_EVENT_NAME" = 'pull_request_target' ]; then
+            message=$(echo "
+            $message
+
+            This workflow is running from a ${b}pull_request_target${b} event. In order to test changes to
+            dictionaries, you will need to use a workflow that is **not** associated with a ${b}pull_request${b} as
+            pull_request_target relies on the configuration of the destination branch, not the branch which
+            you are changing.
+            " | strip_lead)
+          fi
+          github_step_summary_likely_fatal_event \
+            'Dictionary not found' \
+            "$message" \
+            'dictionary-not-found'
           quit 4
         fi
         if find "$extra_dictionaries_dir" -type f -name '*.aff' -o -name '*.dic' | grep -q .; then
