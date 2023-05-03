@@ -2772,12 +2772,16 @@ post_summary() {
   cat "$step_summary_draft" >> "$GITHUB_STEP_SUMMARY"
 }
 post_commit_comment() {
-  if [ -n "$OUTPUT" ]; then
+  if [ -z "$OUTPUT" ]; then
+    return
+  fi
+  if to_boolean "$INPUT_POST_COMMENT"; then
     echo "Preparing a comment for $GITHUB_EVENT_NAME"
     set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
     if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
       if [ ! -s "$BODY" ]; then
         echo "$OUTPUT" > "$BODY"
+        add_talk_to_bot_message "$BODY"
         body_to_payload
         payload_size="$("$file_size" "$PAYLOAD")"
         github_comment_size_limit=65000
@@ -2785,82 +2789,50 @@ post_commit_comment() {
       else
         body_to_payload
       fi
-      if to_boolean "$INPUT_POST_COMMENT"; then
-        response="$(mktemp_json)"
 
-        res=0
-        unlock_pr
-        keep_headers=1 comment "$COMMENTS_URL" "$PAYLOAD" > "$response"
-        if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] 2> /dev/null; then
-          if ! to_boolean "$DEBUG"; then
-            echo "::error ::Failed posting to $COMMENTS_URL"
-            cat "$PAYLOAD"
-            echo " -- response -- "
-            echo "Response code: $response_code"
-            echo "Headers:"
-            cat "$response_headers"
-            rm -f "$response_headers"
-            echo "Body:"
-            cat "$response"
-            echo " //// "
-            if [ "$response_code" -eq 403 ]; then
-              if grep -q '#create-a-commit-comment' "$response"; then
-                echo "Consider adding:"
-                echo
-                echo "permissions:"
-                echo "  contents: write"
-              elif grep -q '#create-an-issue-comment' "$response"; then
-                echo "Consider adding:"
-                echo
-                echo "permissions:"
-                echo "  pull-requests: write"
-              fi
+      response="$(mktemp_json)"
+
+      res=0
+      unlock_pr
+      keep_headers=1 comment "$COMMENTS_URL" "$PAYLOAD" > "$response" || res=$?
+      lock_pr
+      if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] 2> /dev/null; then
+        if ! to_boolean "$DEBUG"; then
+          echo "::error ::Failed posting to $COMMENTS_URL"
+          cat "$PAYLOAD"
+          echo " -- response -- "
+          echo "Response code: $response_code"
+          echo "Headers:"
+          cat "$response_headers"
+          rm -f "$response_headers"
+          echo "Body:"
+          cat "$response"
+          echo " //// "
+          if [ "$response_code" -eq 403 ]; then
+            if grep -q '#create-a-commit-comment' "$response"; then
+              echo "Consider adding:"
+              echo
+              echo "permissions:"
+              echo "  contents: write"
+            elif grep -q '#create-an-issue-comment' "$response"; then
+              echo "Consider adding:"
+              echo
+              echo "permissions:"
+              echo "  pull-requests: write"
             fi
           fi
-          no_patch=1
-        else
-          if to_boolean "$DEBUG"; then
-            cat "$response"
-          fi
-          COMMENT_URL="$(jq -r '.url // empty' "$response")"
-          if [ -z "$COMMENT_URL" ]; then
-            echo "Could not find comment url in:"
-            cat "$response"
-            no_patch=1
-          else
-            perl -p -i.orig -e 's<COMMENT_URL><'"$COMMENT_URL"'>' "$BODY"
-            if diff -q "$BODY.orig" "$BODY" > /dev/null; then
-              no_patch=1
-          fi
-            rm "$BODY.orig"
-          fi
-          if [ -n "$COMMENT_URL" ]; then
-            add_talk_to_bot_message "$BODY"
-            if [ -z "$no_patch" ]; then
-              body_to_payload
-              comment "$COMMENT_URL" "$PAYLOAD" "PATCH" > "$response" || res=$?
-              if [ "$res" -gt 0 ]; then
-                if ! to_boolean "$DEBUG"; then
-                  echo "Failed to patch $COMMENT_URL"
-                fi
-              fi
-              if to_boolean "$DEBUG"; then
-                cat "$response"
-              fi
-            fi
-            track_comment "$response"
-          else
-            cat "$BODY"
-          fi
-          lock_pr
         fi
+        no_patch=1
       else
-        echo "$OUTPUT"
+        if to_boolean "$DEBUG"; then
+          cat "$response"
+        fi
+        track_comment "$response"
       fi
-    else
-      echo "$OUTPUT"
+      return
     fi
   fi
+  echo "$OUTPUT"
 }
 
 strip_lines() {
