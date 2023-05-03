@@ -95,6 +95,21 @@
             ]
         },
         {
+            "owner": "check-spelling-perl-experimental-regex",
+            "severity": "warning",
+            "pattern": [
+                {
+                    "regexp": "^(.*is experimental in regex.*)",
+                    "message": 1
+                },
+                {
+                    "regexp": "line \\d+, (.+) line (\\d+)\\.$",
+                    "file": 1,
+                    "line": 2
+                }
+            ]
+        },
+        {
             "owner": "github-internal-server-error",
             "pattern": [
                 {
