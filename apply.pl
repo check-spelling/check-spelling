@@ -371,7 +371,7 @@ sub update_repository {
             "expect_files": [".github/actions/spelling/expect.txt"],
             "new_expect_file": ".github/actions/spelling/expect.txt",
             "excludes_file": ".github/actions/spelling/excludes.txt",
-            "config": ".github/actions/spelling"
+            "spelling_config": ".github/actions/spelling"
         }';
     }
     my $config_ref;
