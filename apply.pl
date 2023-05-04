@@ -387,7 +387,7 @@ sub update_repository {
     remove_stale($artifact, $config_ref);
     add_expect($artifact, $config_ref);
     add_to_excludes($artifact, $config_ref);
-    system('git', 'add', '-u');
+    system('git', 'add', '-u', '--', $config_ref->{'spelling_config'});
 }
 
 sub main {
