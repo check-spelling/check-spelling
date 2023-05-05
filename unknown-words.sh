@@ -1040,6 +1040,7 @@ define_variables() {
   file_size="$spellchecker/file-size.pl"
   check_dictionary="$spellchecker/check-dictionary.pl"
   check_yaml_key_value="$spellchecker/check-yaml-key-value.pl"
+  get_yaml_value="$spellchecker/get-yaml-value.pl"
   quote_meta="$spellchecker/quote-meta.pl"
   summary_tables="$spellchecker/summary-tables.pl"
   generate_sarif="$spellchecker/generate-sarif.pl"
