@@ -3054,8 +3054,14 @@ more_misspellings() {
     fi
   fi
   if [ -s "$extra_dictionaries_cover_entries" ]; then
+    cover_log=$(mktemp)
     perl -pe 's/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+) of them \((\d+) uniquely\).*/{"$1":[$3, $2, $4]}/ || s/^.*?\[(\S+)\]\([^)]*\) \((\d+)\).* covers (\d+).*/{"$1":[$3, $2]}/' < "$extra_dictionaries_cover_entries" |
-    jq -s '.' > "$extra_dictionaries_json"
+    tee "$cover_log" |
+    jq -s '.' > "$extra_dictionaries_json" ||
+    (
+      echo "jq -s failed collecting extra_dictionaries_cover_entries from:"
+      cat "$cover_log"
+    ) >&2
     echo "suggested_dictionaries=$extra_dictionaries_json" >> "$output_variables"
   fi
 
