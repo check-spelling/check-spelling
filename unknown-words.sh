@@ -1511,11 +1511,12 @@ get_extra_dictionary() {
   fi
   keep_headers=1 call_curl "$check_etag" "$check_etag_value" "$url" > "$dest"
   if ([ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ]) 2> /dev/null; then
+    echo "::error ::Failed to retrieve $extra_dictionary_url -- $url (dictionary-not-found)" >> "$early_warnings"
     (
-      echo "::error ::Failed to retrieve $extra_dictionary_url -- $url (dictionary-not-found)"
+      echo "Failed to retrieve $extra_dictionary_url ($url)"
       cat "$response_headers"
     ) >&2
-    rm -f "$extra_dictionaries_canary"
+    rm -f "$dictionaries_canary"
     return
   fi
   if [ "$response_code" -eq 304 ]; then
@@ -1528,7 +1529,7 @@ get_extra_dictionary() {
   fi
   echo "$extra_dictionary_url" > "$source_link"
   perl -ne 'next unless s/^etag: //; chomp; print' "$response_headers" > "$dest.etag"
-  touch "$CACHE_DICTIONARIES"
+  [ -s "$CACHE_DICTIONARIES" ] || echo 1 > "$CACHE_DICTIONARIES"
 }
 
 get_hunspell_stem() {
@@ -1538,7 +1539,7 @@ get_hunspell_stem() {
 get_extra_dictionaries() {
   dictionaries_dir="$spellchecker/dictionaries/$1"
   extra_dictionaries="$(echo "$2" | words_to_lines)"
-  extra_dictionaries_canary="$(mktemp)"
+  dictionaries_canary="$3"
   mkdir -p "$dictionaries_dir"
   response_headers="$(mktemp)"
   if [ -n "$extra_dictionaries" ]; then
@@ -1556,12 +1557,7 @@ get_extra_dictionaries() {
     done
   fi
   rm -f "$response_headers"
-  if [ -e "$extra_dictionaries_canary" ]; then
-    rm "$extra_dictionaries_canary"
-    echo "$dictionaries_dir"
-  else
-    echo 'fail'
-  fi
+  echo "$dictionaries_dir"
 }
 
 set_up_reporter() {
@@ -1753,14 +1749,36 @@ set_up_files() {
       eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
     fi
     CACHE_DICTIONARIES=$(mktemp)
-    rm -f "$CACHE_DICTIONARIES"
+    if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
+      begin_group 'Retrieving check extra dictionaries'
+      build_dictionary_alias_pattern
+      check_extra_dictionaries="$(
+        echo "$INPUT_EXTRA_DICTIONARIES $INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" |
+        words_to_lines |
+        sort |
+        uniq -u
+      )"
+      if [ -n "$check_extra_dictionaries" ]; then
+        check_extra_dictionaries_canary=$(mktemp)
+        export check_extra_dictionaries_dir="$(get_extra_dictionaries check "$check_extra_dictionaries" "$check_extra_dictionaries_canary")"
+        if [ ! -e "$check_extra_dictionaries_canary" ]; then
+          echo 0 > "$CACHE_DICTIONARIES"
+        else
+          :
+          # should handle hunspell
+        fi
+      fi
+      end_group
+    fi
     if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
       begin_group 'Retrieving extra dictionaries'
       build_dictionary_alias_pattern
-      extra_dictionaries_dir="$(get_extra_dictionaries extra "$INPUT_EXTRA_DICTIONARIES")"
+      extra_dictionaries_canary=$(mktemp)
+      extra_dictionaries_dir="$(get_extra_dictionaries extra "$INPUT_EXTRA_DICTIONARIES" "$extra_dictionaries_canary")"
       if [ -n "$extra_dictionaries_dir" ]; then
-        if [ "$extra_dictionaries_dir" = fail ]; then
+        if [ ! -e "$extra_dictionaries_canary" ]; then
           message="Problems were encountered retrieving extra dictionaries ($INPUT_EXTRA_DICTIONARIES)."
+          echo 0 > "$CACHE_DICTIONARIES"
           if [ "$GITHUB_EVENT_NAME" = 'pull_request_target' ]; then
             message=$(echo "
             $message
@@ -1775,40 +1793,56 @@ set_up_files() {
             'Dictionary not found' \
             "$message" \
             'dictionary-not-found'
-          quit 4
-        fi
-        if find "$extra_dictionaries_dir" -type f -name '*.aff' -o -name '*.dic' | grep -q .; then
-          hunspell_dictionary_path=$(mktemp -d)
-        fi
-        (
-          cd "$extra_dictionaries_dir"
-          if [ -d "$hunspell_dictionary_path" ]; then
-            mv *.aff *.dic "$hunspell_dictionary_path" 2>/dev/null || true
+          if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
+            end_group
+            begin_group 'Check default extra dictionaries'
+            check_extra_dictionaries="$(
+              "$get_yaml_value" "$GITHUB_ACTION_PATH/action.yml" inputs.check_extra_dictionaries.default |
+              words_to_lines |
+              sort |
+              uniq -u
+            )"
+            if [ -n "$check_extra_dictionaries" ]; then
+              INPUT_DICTIONARY_SOURCE_PREFIXES=$(
+              "$get_yaml_value" "$GITHUB_ACTION_PATH/action.yml" inputs.dictionary_source_prefixes.default)
+              dictionary_alias_pattern=
+              build_dictionary_alias_pattern
+              fallback_extra_dictionaries_canary=$(mktemp)
+              fallback_extra_dictionaries_dir="$(get_extra_dictionaries fallback "$check_extra_dictionaries" "$fallback_extra_dictionaries_canary")"
+              if [ ! -e "$fallback_extra_dictionaries_canary" ]; then
+                fallback_extra_dictionaries_dir=
+                echo 0 > "$CACHE_DICTIONARIES"
+              fi
+              if [ -d "$fallback_extra_dictionaries_dir" ]; then
+                # should handle hunspell
+                if [ -n "$check_extra_dictionaries_dir" ] && [ -d "$check_extra_dictionaries_dir" ]; then
+                  (cd "$fallback_extra_dictionaries_dir"; mv * "$check_extra_dictionaries_dir")
+                else
+                  check_extra_dictionaries_dir="$fallback_extra_dictionaries_dir"
+                  fallback_extra_dictionaries_dir=
+                fi
+                extra_dictionary_limit=100
+              fi
+            fi
           fi
-          # Items that aren't proper should be moved to patterns instead
-          "$spellchecker/dictionary-word-filter.pl" * | sort -u >> "$dict"
-        )
-      fi
-      end_group
-    fi
-    if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
-      begin_group 'Retrieving check extra dictionaries'
-      build_dictionary_alias_pattern
-      check_extra_dictionaries="$(
-        echo "$INPUT_EXTRA_DICTIONARIES $INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES" |
-        words_to_lines |
-        sort |
-        uniq -u
-      )"
-      if [ -n "$check_extra_dictionaries" ]; then
-        export check_extra_dictionaries_dir="$(get_extra_dictionaries check "$check_extra_dictionaries")"
-        if [ "$check_extra_dictionaries_dir" = 'fail' ]; then
-          check_extra_dictionaries_dir=
+        fi
+        if [ -d "$extra_dictionaries_dir" ]; then
+          if find "$extra_dictionaries_dir" -type f -name '*.aff' -o -name '*.dic' | grep -q .; then
+            hunspell_dictionary_path=$(mktemp -d)
+          fi
+          (
+            cd "$extra_dictionaries_dir"
+            if [ -d "$hunspell_dictionary_path" ]; then
+              mv *.aff *.dic "$hunspell_dictionary_path" 2>/dev/null || true
+            fi
+            # Items that aren't proper should be moved to patterns instead
+            "$spellchecker/dictionary-word-filter.pl" * | sort -u >> "$dict"
+          )
         fi
       fi
       end_group
     fi
-    if [ -e "$CACHE_DICTIONARIES" ]; then
+    if [ -s "$CACHE_DICTIONARIES" ] && grep -q 1 "$CACHE_DICTIONARIES"; then
       echo "CACHE_DICTIONARIES=1" >> "$output_variables"
     fi
     get_project_files dictionary_additions.words "$allow_path"
