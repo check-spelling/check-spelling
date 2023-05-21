@@ -3,6 +3,4 @@ fileformat
 ies
 misspellled
 rsqm
-tempdir
-tempfile
 woord

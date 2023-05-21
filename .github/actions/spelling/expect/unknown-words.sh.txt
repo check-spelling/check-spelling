@@ -13,7 +13,6 @@ gsutil
 keyring
 maxdepth
 mindepth
-mktemp
 nektos
 noreply
 notest
