@@ -30,3 +30,6 @@ https://perldoc\.perl\.org/.*
 
 # Refresh cspell dictionaries commit message
 ^\* [a-z/.]+$
+
+# Perl warnings
+\bexperimental::[a-z_]+\b
