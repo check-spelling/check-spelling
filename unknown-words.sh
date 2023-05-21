@@ -2396,6 +2396,7 @@ spelling_body() {
       if [ "$expected_item_count" -gt 0 ]; then
         expect_details="This includes both **expected items** ($expected_item_count) from $expect_files and **unrecognized words** ($unknown_count)
         "
+        expect_head=" (expected and unrecognized)"
       fi
 
       extra_dictionaries_cover_entries_limited="$(mktemp)"
@@ -2416,7 +2417,7 @@ spelling_body() {
                 extra_dictionaries:'
       fi
       output_dictionaries="$(echo "
-        <details><summary>Available :books: dictionaries could cover words not in the :blue_book: dictionary</summary>
+        <details><summary>Available :books: dictionaries could cover words$expect_head not in the :blue_book: dictionary</summary>
 
         $expect_details
 
