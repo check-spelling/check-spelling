@@ -366,6 +366,7 @@ sub split_file {
     local $SIG{ALRM} = sub { die "alarm\n" }; # NB: \n required
     alarm $timeout;
 
+    my $offset = 0;
     while (<FILE>) {
       $_ = decode_utf8($_, FB_DEFAULT);
       if (/[\x{D800}-\x{DFFF}]/) {
@@ -465,7 +466,8 @@ sub split_file {
         }
       }
       unless ($disable_minified_file) {
-        my $offset = tell FILE;
+        s/={3,}//g;
+        $offset += length;
         my $ratio = $offset / $.;
         my $ratio_threshold = 1000;
         if ($ratio > $ratio_threshold) {
