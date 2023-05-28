@@ -13,6 +13,11 @@ sub encode_low_ascii {
     return $_;
 }
 
+sub double_slash_escape {
+    $_ = shift;
+    s/(["()\]\\])/\\\\$1/g;
+    return $_;
+}
 sub parse_warnings {
     my ($warnings) = @_;
     my @results;
@@ -23,10 +28,10 @@ sub parse_warnings {
         my ($file, $line, $column, $endColumn, $severity, $message, $code) = ($1, $2, $3, $4, $5, $6, $7);
         # single-slash-escape `"` and `\`
         $message =~ s/(["\\])/\\$1/g;
-        # double-slash-escape `"`, `(`, `)`, `]`
-        $message =~ s/(["()\]])/\\\\$1/g;
-        # encode `message` and `file` to protect against low ascii`
         $message = encode_low_ascii $message;
+        # double-slash-escape `"`, `(`, `)`, `]`
+        $message = double_slash_escape $message;
+        # encode `message` and `file` to protect against low ascii`
         $file = encode_low_ascii $file;
         # hack to make the first `...` identifier a link (that goes nowhere, but is probably blue and underlined) in GitHub's sarif view
         $message =~ s/(^|[^\\])\`([^`]+[^`\\])\`/${1}[${2}](#security-tab)/;
