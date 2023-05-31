@@ -12,14 +12,9 @@ $ENV{comment_char} = '$^' unless $ENV{comment_char} =~ /\S/;
 my $first_end = undef;
 my $messy = 0;
 $. = 0;
-while ($content =~ s/([^\r\n\x0b\f\x85\x{2028}\x{2029}]*)(\r\n|\n|\r|\x0b|\f|\x85|\x{2028}|\x{2029})//m) {
-    ++$.;
-    my ($line, $end) = ($1, $2);
-    unless (defined $first_end) {
-        $first_end = $end;
-    } elsif ($end ne $first_end) {
-        print WARNINGS "$file:$.:$-[0] ... $+[0], Warning - entry has inconsistent line ending (unexpected-line-ending)\n";
-    }
+
+sub process_line {
+    my ($file, $line) = @_;
     if ($line =~ /^.*?($ENV{expected_chars}+)/) {
         my ($left, $right) = ($-[1] + 1, $+[1] + 1);
         my $column_range="$left ... $right";
@@ -28,7 +23,26 @@ while ($content =~ s/([^\r\n\x0b\f\x85\x{2028}\x{2029}]*)(\r\n|\n|\r|\x0b|\f|\x8
         }
         $line = "";
     }
+    return $line;
+}
+
+my $remainder;
+if ($content !~ /(?:\r\n|\n|\r|\x0b|\f|\x85|\x{2028}|\x{2029})$/) {
+    $remainder = $1 if $content =~ /([^\r\n\x0b\f\x85\x{2028}\x{2029}]+)$/;
+}
+while ($content =~ s/([^\r\n\x0b\f\x85\x{2028}\x{2029}]*)(\r\n|\n|\r|\x0b|\f|\x85|\x{2028}|\x{2029})//m) {
+    ++$.;
+    my ($line, $end) = ($1, $2);
+    unless (defined $first_end) {
+        $first_end = $end;
+    } elsif ($end ne $first_end) {
+        print WARNINGS "$file:$.:$-[0] ... $+[0], Warning - Entry has inconsistent line ending. (unexpected-line-ending)\n";
+    }
+    $line = process_line($file, $line);
     print FILE "$line\n";
 }
-print FILE $content;
+if ($remainder ne '') {
+    $remainder = process_line($file, $remainder);
+    print FILE $remainder;
+}
 close WARNINGS;
