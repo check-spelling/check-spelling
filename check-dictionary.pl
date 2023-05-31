@@ -12,7 +12,7 @@ $ENV{comment_char} = '$^' unless $ENV{comment_char} =~ /\S/;
 my $first_end = undef;
 my $messy = 0;
 $. = 0;
-while ($content =~ s/([^\r\n\x0b\f\x85\x2028\x2029]*)(\r\n|\n|\r|\x0b|\f|\x85|\x2028|\x2029)//m) {
+while ($content =~ s/([^\r\n\x0b\f\x85\x{2028}\x{2029}]*)(\r\n|\n|\r|\x0b|\f|\x85|\x{2028}|\x{2029})//m) {
     ++$.;
     my ($line, $end) = ($1, $2);
     unless (defined $first_end) {
