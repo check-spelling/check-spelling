@@ -246,6 +246,31 @@
               }
             },
             {
+              "id": "non-alpha-in-dictionary",
+              "name": "NonAlphaInDictionary",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#non-alpha-in-dictionary",
+              "shortDescription": {
+                "text": "Non-alpha in dictionary"
+              },
+              "fullDescription": {
+                "text": "The dictionary entry has non-alpha characters."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove non-alpha characters\n- Place each word on its own line\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "recommendation",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },            {
               "id": "check-file-path",
               "name": "CheckFilePath",
               "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#check-file-path",
