@@ -24,7 +24,7 @@ while ($content =~ s/([^\r\n\x0b\f\x85\x{2028}\x{2029}]*)(\r\n|\n|\r|\x0b|\f|\x8
         my ($left, $right) = ($-[1] + 1, $+[1] + 1);
         $column_range="$left ... $right";
         unless ($line =~ /^$ENV{comment_char}/) {
-            print WARNINGS "$file:$.:$column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
+            print WARNINGS "$file:$.:$column_range, Warning - ignoring entry because it contains non-alpha characters (non-alpha-in-dictionary)\n";
         }
         $line = "";
     }
