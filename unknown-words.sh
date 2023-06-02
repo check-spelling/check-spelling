@@ -1126,15 +1126,18 @@ check_pattern_file() {
   perl -i -e 'open WARNINGS, ">>", $ENV{early_warnings};
   while (<>) {
     next if /^#/;
+    my $line = $_;
+    chomp;
     next unless /./;
     if (eval {qr/$_/}) {
-      print;
+      print $line;
     } else {
       $@ =~ s/(.*?)\n.*/$1/m;
-      chomp $@;
       my $err = $@;
       $err =~ s{^.*? in regex; marked by <-- HERE in m/(.*) <-- HERE.*$}{$1};
-      print WARNINGS "$ARGV:$.:$-[0] ... $-[0], Warning - bad regex (bad-regex)\n$@\n";
+      my $start = $+[1] - $-[1];
+      my $end = $start + 1;
+      print WARNINGS "$ARGV:$.:$start ... $end, Warning - bad regex: $@ (bad-regex)\n";
       print "^\$\n";
     }
   }
