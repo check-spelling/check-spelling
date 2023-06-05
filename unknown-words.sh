@@ -1510,7 +1510,7 @@ get_extra_dictionary() {
     check_etag_value=Ignore:1
     real_dest=
   fi
-  if [ "$url" = "${url#https://raw.githubusercontent.com/*}" ]; then
+  if [ "$url" != "${url#${GITHUB_SERVER_URL}/*}" ]; then
     no_curl_auth=1
   fi
   keep_headers=1 call_curl "$check_etag" "$check_etag_value" "$url" > "$dest"
