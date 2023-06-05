@@ -501,7 +501,7 @@ runs:
       shell: bash
     - name: save-dictionaries
       uses: actions/cache/save@v3
-      if: (success() || failure()) && steps.spelling.outputs.CACHE_DICTIONARIES
+      if: (success() || failure()) && steps.spelling.outputs.CACHE_DICTIONARIES == '1'
       with:
         path: ${{ env.THIS_ACTION_PATH }}/dictionaries
         key: check-spelling-dictionaries-${{ env.DICTIONARY_URLS_HASH }}-${{ github.sha}}
