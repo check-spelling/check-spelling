@@ -2093,6 +2093,13 @@ run_spell_check() {
     "$word_collator" |\
   "$strip_word_collator_suffix" > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
+  check_file_names_warning="$(perl -i -e 'while (<>) { if (/\(noisy-file-list\)$/) { s/.*, Warning/Warning/; print STDERR; } else { print; } }' "$warning_output")"
+  if [ -n "$check_file_names_warning" ]; then
+    KEY=check_file_names \
+    VALUE="$INPUT_CHECK_FILE_NAMES" \
+    MESSAGE="$check_file_names_warning" \
+    check_yaml_key_value "$workflow_path" >> "$more_warnings"
+  fi
   cat "$more_warnings" >> "$warning_output"
   rm "$more_warnings"
   commit_messages="$commit_messages" \
