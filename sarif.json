@@ -90,6 +90,32 @@
               }
             },
             {
+              "id": "noisy-file-list",
+              "name": "NoisyFile",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#noisy-file-list",
+              "shortDescription": {
+                "text": "Noisy File List"
+              },
+              "fullDescription": {
+                "text": "There were more non-words than dictionary words in the file list"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Disable [`check_file_names`](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Add more words from file paths/names to the dictionary\n- Use patterns to mask tokens.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "recommendation",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
               "id": "large-file",
               "name": "LargeFile",
               "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#large-file",
