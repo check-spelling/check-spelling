@@ -477,6 +477,32 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "ignored-expect-variant",
+              "name": "IgnoredExpectVariant",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#ignored-expect-variant",
+              "shortDescription": {
+                "text": "Ignored Expect Variant"
+              },
+              "fullDescription": {
+                "text": "Multiple related word variants listed in expect"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove the entry from [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }
