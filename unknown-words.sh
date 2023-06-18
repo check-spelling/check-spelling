@@ -1033,6 +1033,7 @@ define_variables() {
   advice_path_txt="$temp/advice.txt"
   word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
   word_collator="$spellchecker/spelling-collator.pl"
+  expect_collator="$spellchecker/expect-collator.pl"
   strip_word_collator_suffix="$spellchecker/strip-word-collator-suffix.pl"
   find_token="$spellchecker/find-token.pl"
   output_covers="$spellchecker/output-covers.pl"
@@ -1682,7 +1683,16 @@ set_up_files() {
   get_project_files_deprecated word_expectations.words whitelist.txt "$expect_path"
   expect_files="$from_expanded"
   expect_file="$from"
-  touch "$expect_path"
+  if [ -n "$expect_files" ]; then
+    expect_notes="$(mktemp)"
+    expect_collated="$(mktemp)"
+    echo "$expect_files" | xargs env INPUT_USE_SARIF= "$word_splitter" 2> /dev/null |
+    INPUT_USE_SARIF= INPUT_DISABLE_CHECKS=noisy-file "$word_collator" 2> "$expect_notes" > "$expect_collated"
+    perl -pe 's/ \(.*\)//' "$expect_collated" > "$expect_path"
+    "$expect_collator" "$expect_collated" "$expect_notes" >> "$early_warnings"
+  else
+    touch "$expect_path"
+  fi
   new_expect_file="$append_to"
   new_expect_file_new="$append_to_generated"
   get_project_files file_ignore.patterns "$excludelist_path"
