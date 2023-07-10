@@ -318,12 +318,12 @@ runs:
       if: inputs.alternate_engine
       shell: bash
       run: |
-        rsync --delete --exclude=.git -a alternate-engine/ "${{ github.action_path }}"
+        rsync --delete --exclude=.git -a alternate-engine/ "$GITHUB_ACTION_PATH"/
         rm -rf alternate-engine/
     - name: check-actions
       id: check-actions
       env:
-        spellchecker: ${{ github.action_path }}
+        spellchecker: ${{ env.GITHUB_ACTION_PATH }}
         GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
         GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
       run:
@@ -379,11 +379,11 @@ runs:
       env:
         INPUTS: ${{ toJSON(inputs) }}
         DEBUG: ${{ inputs.debug }}
-        spellchecker: ${{ github.action_path }}
+        spellchecker: ${{ env.GITHUB_ACTION_PATH }}
         GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
         GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
       run:
-        stdbuf -i0 -o0 -e0 "${{ github.action_path }}/unknown-words.sh"
+        stdbuf -i0 -o0 -e0 "${{ env.GITHUB_ACTION_PATH }}/unknown-words.sh"
       shell: bash
     - name: store-comment
       if: (contains(github.event_name, 'pull_request') ||
