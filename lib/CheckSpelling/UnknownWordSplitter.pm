@@ -315,6 +315,7 @@ sub split_file {
   my @candidates_re_hits = (0) x scalar @candidates_re_list;
   my @candidates_re_lines = (0) x scalar @candidates_re_list;
   my $temp_dir = tempdir();
+  print STDERR "checking file: $file\n" if defined $ENV{'DEBUG'};
   open(NAME, '>:utf8', "$temp_dir/name");
     print NAME $file;
   close NAME;
