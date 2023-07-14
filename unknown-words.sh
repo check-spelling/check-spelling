@@ -2239,7 +2239,7 @@ remove_items() {
     if [ -s "$remove_words" ]; then
       echo "
         <details><summary>Previously acknowledged words that are now absent
-        </summary>$(cat "$remove_words")$N:arrow_right:$N</details>
+        </summary>$(cat "$remove_words")$N🫥$N</details>
       " | strip_lead_and_blanks
       echo "stale_words=$remove_words" >> "$output_variables"
     else
