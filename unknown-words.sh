@@ -86,7 +86,7 @@ dispatcher() {
             else
               workflow='workflow'
             fi
-            echo "::notice title=Workflow skipped::See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR #$open_pr_number. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number"
+            echo "::notice title=Workflow skipped::See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR #$open_pr_number. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number/checks"
             if [ -n "$ACT" ]; then
               echo
               echo 'You appear to be running nektos/act, you should probably comment out:'
