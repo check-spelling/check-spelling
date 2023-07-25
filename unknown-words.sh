@@ -634,7 +634,7 @@ show_github_actions_push_disclaimer() {
 
   <!--$n$report_header$n-->
   To trigger another validation round and hopefully a :white_check_mark:, please add a blank line, e.g. to [$expect_file]($GITHUB_SERVER_URL/$repository_edit_branch/$expect_file?pr=$pr_path_escaped) and commit the change."
-  echo "$OUTPUT" > "$BODY"
+  echo "$OUTPUT" | tee -a "$GITHUB_STEP_SUMMARY" > "$BODY"
   body_to_payload
   COMMENTS_URL="$(jq -r '.issue.comments_url' "$GITHUB_EVENT_PATH")"
   response="$(mktemp)"
@@ -927,7 +927,16 @@ handle_comment() {
 
   if git remote get-url origin | grep -q ^https://; then
     show_github_actions_push_disclaimer
+  else
+    echo "### :white_check_mark: check-spelling changes applied" >> "$GITHUB_STEP_SUMMARY"
   fi
+  echo "
+  #### Metadata updates
+
+  $B
+  $(git diff HEAD~..HEAD --stat)
+  $B
+  " | strip_lead >> "$GITHUB_STEP_SUMMARY"
   echo "# end"
   quit 0
 }
