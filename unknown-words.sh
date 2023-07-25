@@ -579,8 +579,8 @@ show_github_actions_push_disclaimer() {
     workflow_ssh_key_hint='`check-spelling`/`with`/`ssh_key`, then add them:
 
   ``` diff
-    '"${update_job_name}"':
-    ...
+      name: '"${update_job_name}"'
+      ...
       steps:
       ...
       - name: apply spelling updates
@@ -593,8 +593,8 @@ show_github_actions_push_disclaimer() {
     workflow_ssh_key_hint='`checkout`/`with`/`ssh-key`, then add them:
 
   ``` diff
-    '"${update_job_name}"':
-    ...
+      name: '"${update_job_name}"'
+      ...
       steps:
       ...
       - name: checkout
