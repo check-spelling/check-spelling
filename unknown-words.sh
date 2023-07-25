@@ -638,6 +638,7 @@ show_github_actions_push_disclaimer() {
   body_to_payload
   COMMENTS_URL="$(jq -r '.issue.comments_url' "$GITHUB_EVENT_PATH")"
   response="$(mktemp)"
+  res=0
   comment "$COMMENTS_URL" "$PAYLOAD" > "$response" || res=$?
   if [ $res -eq 0 ]; then
     track_comment "$response"
