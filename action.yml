@@ -392,6 +392,13 @@ runs:
         ssh-key: ${{ inputs.ssh_key }}
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
         token: ${{ inputs.GITHUB_TOKEN }}
+        ref: |
+          ${{
+            github.event_name == 'issue_comment' &&
+            github.event.issue.pull_request &&
+            github.event.pull_request.head.sha ||
+            ''
+          }}
     - name: checkout
       if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !env.replace_v3_actions_checkout
       uses: actions/checkout@v3
@@ -400,6 +407,13 @@ runs:
         ssh-key: ${{ inputs.ssh_key }}
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
         token: ${{ inputs.GITHUB_TOKEN }}
+        ref: |
+          ${{
+            github.event_name == 'issue_comment' &&
+            github.event.issue.pull_request &&
+            github.event.pull_request.head.sha ||
+            ''
+          }}
     - name: checkout-merge
       id: checkout-merge
       if: github.event.pull_request.number && (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task)

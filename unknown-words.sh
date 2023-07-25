@@ -697,8 +697,6 @@ handle_comment() {
     quit 0
   fi
 
-  set_up_files
-
   comment="$(mktemp_json)"
   jq -r '.comment // empty' "$GITHUB_EVENT_PATH" > "$comment"
   body="$(mktemp)"
@@ -756,6 +754,9 @@ handle_comment() {
   git config advice.detachedHead false
   git reset --hard
   git checkout "$pull_request_sha"
+
+  set_up_files
+  git reset --hard
 
   number_filter() {
     perl -pe 's<\{.*\}></(\\d+)>'
