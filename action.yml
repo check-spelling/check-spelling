@@ -117,7 +117,6 @@ inputs:
       cspell:lua/dict/lua.txt
       cspell:mnemonics/src/mnemonics.txt
       cspell:monkeyc/src/monkeyc_keywords.txt
-      cspell:node/additional_words.txt
       cspell:node/dict/node.txt
       cspell:npm/dict/npm.txt
       cspell:php/dict/php.txt
