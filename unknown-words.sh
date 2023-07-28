@@ -1559,7 +1559,11 @@ get_extra_dictionaries() {
   mkdir -p "$dictionaries_dir"
   response_headers="$(mktemp)"
   if [ -n "$extra_dictionaries" ]; then
+    parallel_task_list=$(mktemp -d)
+    (cd "$parallel_task_list"; touch $(seq $(echo "$extra_dictionaries"|wc -l)))
+    parallel_task=0
     for extra_dictionary in $extra_dictionaries; do
+    parallel_task=$(($parallel_task + 1))
     (
       dictionary_base="$(basename "$extra_dictionary")"
       if [ "$dictionary_base" = index.dic ]; then
@@ -1569,8 +1573,10 @@ get_extra_dictionaries() {
       if echo "$extra_dictionary" | grep -q '\.dic$'; then
         get_extra_dictionary "$(echo "$extra_dictionary" | sed -e 's/\.dic$/.aff/')" "$(echo "$dictionary_base" | sed -e 's/\.dic$/.aff/')"
       fi
-    )
+      rm "$parallel_task_list/$parallel_task"
+    ) &
     done
+    while find "$parallel_task_list/" -mindepth 1 -print -quit |grep -q .; do sleep 1; done
   fi
   rm -f "$response_headers"
   echo "$dictionaries_dir"
