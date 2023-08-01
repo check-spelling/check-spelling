@@ -1343,7 +1343,7 @@ call_curl() {
     curl -D "$response_headers" -A "$curl_ua" -s -H "$(curl_auth)" "$@" -o "$response_body"
     echo >> "$response_headers"
     response_code=$(perl -e '$_=<>; $_=0 unless s#^HTTP/[\d.]+ (\d+).*#$1#;print;' "$response_headers")
-    if [ "$response_code" -ne 429 ]; then
+    if [ "$response_code" -ne 429 ] && [ "$response_code" -ne 503 ]; then
       cat "$response_body"
       rm -f "$response_body"
       if [ -z "$keep_headers" ]; then
@@ -1352,7 +1352,7 @@ call_curl() {
       return
     fi
     delay="$("$spellchecker/calculate-delay.pl" "$response_headers")"
-    (echo "call_curl received a 429 and will wait for ${delay}s:"; grep -E -i 'x-github-request-id|x-rate-limit-|retry-after' "$response_headers") >&2
+    (echo "call_curl received a $response_code and will wait for ${delay}s:"; grep -E -i 'x-github-request-id|x-rate-limit-|retry-after' "$response_headers") >&2
     sleep "$delay"
     curl_attempt="$(($curl_attempt + 1))"
   done
