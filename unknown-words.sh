@@ -1231,7 +1231,26 @@ get_project_files() {
   if [ ! -e "$dest" ] && [ -n "$bucket" ] && [ -n "$project" ]; then
     from="$(project_file_path "$file"."$ext")"
     case "$from" in
-      .*)
+      ssh://git@*|git@*)
+        (
+          echo "Retrieving $file from $from"
+          cd "$temp"
+          repo="$(echo "$bucket" | perl -pe 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')"
+          [ -d metadata ] || git clone --depth 1 "$repo" --single-branch --branch "$project" metadata
+          cleanup_file metadata/"$file".txt "$type"
+          cp metadata/"$file".txt "$dest" 2> /dev/null || touch "$dest"
+        );;
+      gs://*)
+        echo "Retrieving $file from $from"
+        gsutil cp -Z "$from" "$dest" >/dev/null 2>/dev/null || touch "$dest"
+        cleanup_file "$dest" "$type"
+        ;;
+      *://*)
+        echo "Retrieving $file from $from"
+        download "$from" "$dest" || touch "$dest"
+        cleanup_file "$dest" "$type"
+        ;;
+      *)
         append_to="$from"
         append_to_generated=""
         if [ -f "$from" ]; then
@@ -1261,25 +1280,6 @@ get_project_files() {
             from="$from_expanded"
           fi
         fi;;
-      ssh://git@*|git@*)
-        (
-          echo "Retrieving $file from $from"
-          cd "$temp"
-          repo="$(echo "$bucket" | perl -pe 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')"
-          [ -d metadata ] || git clone --depth 1 "$repo" --single-branch --branch "$project" metadata
-          cleanup_file metadata/"$file".txt "$type"
-          cp metadata/"$file".txt "$dest" 2> /dev/null || touch "$dest"
-        );;
-      gs://*)
-        echo "Retrieving $file from $from"
-        gsutil cp -Z "$from" "$dest" >/dev/null 2>/dev/null || touch "$dest"
-        cleanup_file "$dest" "$type"
-        ;;
-      *://*)
-        echo "Retrieving $file from $from"
-        download "$from" "$dest" || touch "$dest"
-        cleanup_file "$dest" "$type"
-        ;;
     esac
   fi
 }
