@@ -376,7 +376,7 @@ runs:
     - name: check-actions
       id: check-actions
       env:
-        spellchecker: ${{ env.GITHUB_ACTION_PATH }}
+        spellchecker: ${{ env.THIS_ACTION_PATH }}
         GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
         GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
       run: |
@@ -518,7 +518,7 @@ runs:
       env:
         INPUTS: ${{ toJSON(inputs) }}
         DEBUG: ${{ inputs.debug }}
-        spellchecker: ${{ env.GITHUB_ACTION_PATH }}
+        spellchecker: ${{ env.THIS_ACTION_PATH }}
         GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
         GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
       run:
