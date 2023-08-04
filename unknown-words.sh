@@ -1338,9 +1338,13 @@ call_curl() {
   curl_attempt=0
   response_headers="$(mktemp)"
   response_body="$(mktemp)"
+  curl_output="$(mktemp)"
   until [ "$curl_attempt" -ge 3 ]
   do
-    curl -D "$response_headers" -A "$curl_ua" -s -H "$(curl_auth)" "$@" -o "$response_body"
+    curl -D "$response_headers" -A "$curl_ua" -s -H "$(curl_auth)" "$@" -o "$response_body" > "$curl_output"
+    if [ ! -s "$response_body" ] && [ -s "$curl_output" ]; then
+      mv "$curl_output" "$response_body"
+    fi
     echo >> "$response_headers"
     response_code=$(perl -e '$_=<>; $_=0 unless s#^HTTP/[\d.]+ (\d+).*#$1#;print;' "$response_headers")
     if [ "$response_code" -ne 429 ] && [ "$response_code" -ne 503 ]; then
