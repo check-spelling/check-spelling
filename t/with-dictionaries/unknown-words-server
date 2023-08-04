@@ -1,0 +1,11 @@
+#!/bin/sh
+if [ "$INPUT_TASK" != 'hash-dictionaries' ]; then
+  (cd $THIS_ACTION_PATH/t/with-dictionaries; /usr/bin/env php -S '[::]':8123 )&
+  php_pid=$!
+fi
+stdbuf -i0 -o0 -e0 $THIS_ACTION_PATH/unknown-words.sh
+result=$?
+if [ -n "$php_pid" ]; then
+  kill $php_pid
+fi
+exit $result

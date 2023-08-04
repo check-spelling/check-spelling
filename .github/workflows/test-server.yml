@@ -1,0 +1,46 @@
+name: Test dictionaries
+
+on:
+  push:
+    branches:
+    - "**"
+    tags-ignore:
+    - "**"
+  pull_request_target:
+    branches:
+    - "**"
+    types:
+    - 'opened'
+    - 'reopened'
+    - 'synchronize'
+
+jobs:
+  dictionaries:
+    name: Flaky Dictionaries
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    concurrency:
+      group: dictionaries-${{ github.event.pull_request.number || github.ref }}
+      # note: If you use only_check_changed_files, you do not want cancel-in-progress
+      cancel-in-progress: true
+    steps:
+    - name: checkout
+      uses: actions/checkout@v3
+    - name: shim dictionary service
+      run: |
+        cp t/with-dictionaries/unknown-words-server wrappers/unknown-words
+    - name: check-spelling
+      id: spelling
+      uses: ./
+      with:
+        checkout: false
+        post_comment: 0
+        config: t/with-dictionaries/config
+        dictionary_url: http://localhost:8123/basic.txt
+        cache-dictionaries: 0
+        check_extra_dictionaries:
+        extra_dictionaries:
+          http://localhost:8123/429.php
+          http://localhost:8123/503.php
+          http://localhost:8123/sample.txt
