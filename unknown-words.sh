@@ -1849,7 +1849,9 @@ set_up_files() {
       fi
       end_group
     fi
-    if [ -s "$CACHE_DICTIONARIES" ] && grep -q 1 "$CACHE_DICTIONARIES"; then
+    if to_boolean "$INPUT_CACHE_DICTIONARIES" &&
+        [ -s "$CACHE_DICTIONARIES" ] &&
+        grep -q 1 "$CACHE_DICTIONARIES"; then
       echo "CACHE_DICTIONARIES=1" >> "$output_variables"
     fi
     get_project_files dictionary_additions.words "$allow_path"
@@ -3094,6 +3096,9 @@ $B
 }
 
 hash_dictionaries() {
+  if ! to_boolean "$INPUT_CACHE_DICTIONARIES"; then
+    exit
+  fi
   if [ -n "$INPUT_EXTRA_DICTIONARIES$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
     build_dictionary_alias_pattern
     dictionary_list=$(mktemp)
@@ -3117,6 +3122,7 @@ hash_dictionaries() {
 }
 
 if [ "$INPUT_TASK" = hash-dictionaries ]; then
+  . "$spellchecker/common.sh"
   hash_dictionaries
 fi
 basic_setup

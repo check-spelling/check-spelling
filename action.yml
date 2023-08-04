@@ -296,6 +296,10 @@ inputs:
     description: 'Report processing time for files'
     required: false
     default: ''
+  cache-dictionaries:
+    description: 'Cache dictionaries'
+    required: false
+    default: 1
 
 outputs:
   unknown_words:
