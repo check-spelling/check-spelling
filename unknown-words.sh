@@ -2079,6 +2079,9 @@ run_spell_check() {
     fi
   fi
   count="$(perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print $count;' $file_list)"
+  if [ "$count" = "0" ]; then
+    echo ":0:0 ... 0, Warning - No files to check. (no-files-to-check)" >> "$early_warnings"
+  fi
   begin_group "Spell checking ($count) files"
   get_file_list
   end_group

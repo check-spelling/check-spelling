@@ -503,6 +503,32 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "no-files-to-check",
+              "name": "NoFilesToCheck",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#no-files-to-check",
+              "shortDescription": {
+                "text": "No files to check"
+              },
+              "fullDescription": {
+                "text": "After applying any excludes and only patterns, no files were found to check."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove or fix patterns in [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Remove or broaden patterns in [only](https://github.com/check-spelling/check-spelling/wiki/Configuration#only)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }
