@@ -217,6 +217,7 @@ sub main {
 
     # stats isn't written if all words in the file are in the dictionary
     unless (-s "$directory/stats") {
+      push @directories, $directory;
       report_timing($file, $start_time, $directory, 'warnings') if ($timing_report);
       next;
     }
@@ -276,12 +277,12 @@ sub main {
           push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because there seems to be more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). (noisy-file)\n";
           print SHOULD_EXCLUDE "$file\n";
         }
-        push @cleanup_directories, $directory;
+        push @directories, $directory;
         next;
       }
     }
     unless (-s "$directory/unknown") {
-      push @cleanup_directories, $directory;
+      push @directories, $directory;
       next;
     }
     open UNKNOWN, '<:utf8', "$directory/unknown";
