@@ -103,6 +103,8 @@ sub collate_key {
     $key = lc $key;
     $key =~ s/''+/'/g;
     $key =~ s/'[sd]$//;
+    $key =~ s/^[^Ii]?'+(.*)/$1/;
+    $key =~ s/(.*?)'$/$1/;
     $char = substr $key, 0, 1;
   }
   return ($key, $char);
@@ -303,8 +305,6 @@ sub main {
     open UNKNOWN, '<:utf8', "$directory/unknown";
     for $token (<UNKNOWN>) {
       $token =~ s/\R//;
-      $token =~ s/^[^Ii]?'+(.*)/$1/;
-      $token =~ s/(.*?)'+$/$1/;
       next unless $token =~ /./;
       my ($key, $char) = collate_key $token;
       $letter_map{$char} = () unless defined $letter_map{$char};

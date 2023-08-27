@@ -230,7 +230,7 @@ malloc
 malloc'd
 >);
 ($output, $error_lines) = run_test($directory);
-is($output, "calloc (calloc, calloc'd)
+is($output, "calloc (calloc, a'calloc, calloc'd)
 malloc (malloc, malloc'd)
 ");
 is($error_lines, '');
