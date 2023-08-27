@@ -8,6 +8,7 @@ use File::Path qw(remove_tree);
 use CheckSpelling::Util;
 
 my %letter_map;
+my $disable_word_collating;
 
 sub get_field {
   my ($record, $field) = @_;
@@ -93,6 +94,20 @@ sub log_skip_item {
   return 0;
 }
 
+sub collate_key {
+  my ($key) = @_;
+  our $disable_word_collating;
+  if ($disable_word_collating) {
+    $char = lc substr $key, 0, 1;
+  } else {
+    $key = lc $key;
+    $key =~ s/''+/'/g;
+    $key =~ s/'[sd]$//;
+    $char = substr $key, 0, 1;
+  }
+  return ($key, $char);
+}
+
 sub load_expect {
   my ($expect) = @_;
   our %expected;
@@ -139,7 +154,7 @@ sub main {
   my $candidate_example_limit = CheckSpelling::Util::get_file_from_env('INPUT_CANDIDATE_EXAMPLE_LIMIT', '3');
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
   my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
-  my $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
+  our $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
   my $file_list = CheckSpelling::Util::get_file_from_env('check_file_names', '');
   my $timing_report = CheckSpelling::Util::get_file_from_env('timing_report', '');
   my ($start_time, $end_time);
@@ -291,17 +306,7 @@ sub main {
       $token =~ s/^[^Ii]?'+(.*)/$1/;
       $token =~ s/(.*?)'+$/$1/;
       next unless $token =~ /./;
-      my $key;
-      my $char;
-      if ($disable_word_collating) {
-        $key = $token;
-        $char = lc substr $key, 0, 1;
-      } else {
-        $key = lc $token;
-        $key =~ s/''+/'/g;
-        $key =~ s/'[sd]$//;
-        $char = substr $key, 0, 1;
-      }
+      my ($key, $char) = collate_key $token;
       $letter_map{$char} = () unless defined $letter_map{$char};
       my %word_map = ();
       %word_map = %{$letter_map{$char}{$key}} if defined $letter_map{$char}{$key};
