@@ -140,6 +140,27 @@ sub load_expect {
   }
 }
 
+sub group_related_words {
+  our %letter_map;
+  our $disable_word_collating;
+  unless ($disable_word_collating) {
+    # group related words
+    for my $char (sort keys %letter_map) {
+      for my $plural_key (sort keys(%{$letter_map{$char}})) {
+        my $key = stem_word $plural_key;
+        next if $key eq $plural_key;
+        next unless defined $letter_map{$char}{$key};
+        my %word_map = %{$letter_map{$char}{$key}};
+        for $word (keys(%{$letter_map{$char}{$plural_key}})) {
+          $word_map{$word} = 1;
+        }
+        $letter_map{$char}{$key} = \%word_map;
+        delete $letter_map{$char}{$plural_key};
+      }
+    }
+  }
+}
+
 sub count_warning {
   my ($warning) = @_;
   our %counters;
@@ -160,8 +181,6 @@ sub main {
   my @directories;
   my @cleanup_directories;
   my @check_file_paths;
-
-  my %unknown;
 
   my $early_warnings = CheckSpelling::Util::get_file_from_env('early_warnings', '/dev/null');
   my $warning_output = CheckSpelling::Util::get_file_from_env('warning_output', '/dev/stderr');
@@ -214,7 +233,7 @@ sub main {
   my @candidate_file_counts = (0) x scalar @candidates;
 
   my @delayed_warnings;
-  %letter_map = ();
+  our %letter_map = ();
 
   for my $directory (<>) {
     chomp $directory;
@@ -432,22 +451,7 @@ sub main {
   }
   close COUNTER_SUMMARY;
 
-  unless ($disable_word_collating) {
-    # group related words
-    for my $char (sort keys %letter_map) {
-      for my $plural_key (sort keys(%{$letter_map{$char}})) {
-        my $key = stem_word $plural_key;
-        next if $key eq $plural_key;
-        next unless defined $letter_map{$char}{$key};
-        my %word_map = %{$letter_map{$char}{$key}};
-        for $word (keys(%{$letter_map{$char}{$plural_key}})) {
-          $word_map{$word} = 1;
-        }
-        $letter_map{$char}{$key} = \%word_map;
-        delete $letter_map{$char}{$plural_key};
-      }
-    }
-  }
+  group_related_words;
 
   # display the current unknown
   for my $char (sort keys %letter_map) {
