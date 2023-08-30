@@ -94,6 +94,23 @@ sub log_skip_item {
   return 0;
 }
 
+sub stem_word {
+  my ($key) = @_;
+  our $disable_word_collating;
+  return $key if $disable_word_collating;
+
+  if ($key =~ /.s$/) {
+    if ($key =~ /ies$/) {
+      $key =~ s/ies$/y/;
+    } else {
+      $key =~ s/s$//;
+    }
+  } elsif ($key =~ /.[^aeiou]ed$/) {
+    $key =~ s/ed$//;
+  }
+  return $key;
+}
+
 sub collate_key {
   my ($key) = @_;
   our $disable_word_collating;
@@ -419,18 +436,8 @@ sub main {
     # group related words
     for my $char (sort keys %letter_map) {
       for my $plural_key (sort keys(%{$letter_map{$char}})) {
-        my $key = $plural_key;
-        if ($key =~ /.s$/) {
-          if ($key =~ /ies$/) {
-            $key =~ s/ies$/y/;
-          } else {
-            $key =~ s/s$//;
-          }
-        } elsif ($key =~ /.[^aeiou]ed$/) {
-          $key =~ s/ed$//;
-        } else {
-          next;
-        }
+        my $key = stem_word $plural_key;
+        next if $key eq $plural_key;
         next unless defined $letter_map{$char}{$key};
         my %word_map = %{$letter_map{$char}{$key}};
         for $word (keys(%{$letter_map{$char}{$plural_key}})) {
