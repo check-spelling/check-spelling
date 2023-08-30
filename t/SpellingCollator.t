@@ -148,8 +148,8 @@ nnnnnnnnns
 xxxpaz (xxxpaz, xxxpazs)
 ");
 is($error_lines, '');
-check_output_file($warning_output, "$file_name:2:3 ... 8, Warning - `something` is not a recognized word. (unrecognized-spelling)
-");
+check_output_file($warning_output, q<test.txt:2:3 ... 8, Warning - `something` is not a recognized word. (unrecognized-spelling)
+>);
 check_output_file($counter_summary, '');
 check_output_file($more_warnings, 'test.txt:10:4 ... 10, Warning - `something` is not a recognized word. (unrecognized-spelling)
 ');
@@ -159,7 +159,7 @@ Bbb
 ccc
 DDD
 Eee
-fff
+Fff
 GGG
 Hhh
 iii
@@ -177,14 +177,15 @@ Ddd
 ddd
 Eee
 eee
-Fff
-fff
+FFF
 GGG
 Ggg
 HHH
 Hhh
 III
 Iii
+Jjj
+lll
 );
 $directory = stage_test('case.txt', '{words: 1000, unique: 1000}', '',
 (join "\n", map { ":1:1 ... 1: '$_'" } @word_variants),
@@ -195,10 +196,12 @@ bbb (BBB, Bbb, bbb)
 ccc (CCC, Ccc, ccc)
 ddd (Ddd, ddd)
 eee (Eee, eee)
-fff (Fff, fff)
+FFF
 ggg (GGG, Ggg)
 hhh (HHH, Hhh)
 iii (III, Iii)
+Jjj
+lll
 ");
 is($error_lines, '');
 check_output_file($warning_output, q<case.txt:1:1 ... 1, Warning - `Aaa` is not a recognized word. (unrecognized-spelling)
@@ -207,7 +210,10 @@ case.txt:1:1 ... 1, Warning - `bbb` is not a recognized word. (unrecognized-spel
 case.txt:1:1 ... 1, Warning - `Ddd` is not a recognized word. (unrecognized-spelling)
 case.txt:1:1 ... 1, Warning - `ddd` is not a recognized word. (unrecognized-spelling)
 case.txt:1:1 ... 1, Warning - `eee` is not a recognized word. (unrecognized-spelling)
+case.txt:1:1 ... 1, Warning - `FFF` is not a recognized word. (unrecognized-spelling)
 case.txt:1:1 ... 1, Warning - `Ggg` is not a recognized word. (unrecognized-spelling)
+case.txt:1:1 ... 1, Warning - `Jjj` is not a recognized word. (unrecognized-spelling)
+case.txt:1:1 ... 1, Warning - `lll` is not a recognized word. (unrecognized-spelling)
 >);
 check_output_file($counter_summary, '');
 check_output_file($more_warnings, '');

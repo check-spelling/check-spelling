@@ -140,6 +140,26 @@ sub load_expect {
   }
 }
 
+sub harmonize_expect {
+  our $disable_word_collating;
+  our %letter_map;
+  our %expected;
+
+  for my $word (keys %expected) {
+    my ($key, $char) = collate_key $word;
+    my %word_map = ();
+    next unless defined $letter_map{$char}{$key};
+    %word_map = %{$letter_map{$char}{$key}};
+    next if defined $word_map{$word};
+    my $words = scalar keys %word_map;
+    next if $words > 2;
+    if ($word eq $key) {
+      next if ($words > 1);
+    }
+    delete $expected{$word};
+  }
+}
+
 sub group_related_words {
   our %letter_map;
   our $disable_word_collating;
@@ -367,9 +387,12 @@ sub main {
   }
   close CANDIDATE_SUMMARY;
 
+  group_related_words;
+
   if (defined $ENV{'expect'}) {
     $ENV{'expect'} =~ /(.*)/;
     load_expect $1;
+    harmonize_expect;
   }
 
   my %seen = ();
@@ -450,8 +473,6 @@ sub main {
     print COUNTER_SUMMARY "}\n";
   }
   close COUNTER_SUMMARY;
-
-  group_related_words;
 
   # display the current unknown
   for my $char (sort keys %letter_map) {
