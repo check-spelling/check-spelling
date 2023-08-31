@@ -1099,8 +1099,8 @@ check_for_newline_at_eof() {
 
 check_dictionary() {
   file="$1"
-  expected_chars="a-zA-Z'"
-  comment_char="#"
+  expected_chars="a-zA-Z'" \
+  comment_char="#" \
   "$check_dictionary" "$file"
 }
 
