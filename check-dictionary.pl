@@ -21,7 +21,7 @@ while ($content =~ s/([^\r\n\x0b\f\x85\x2028\x2029]*)(\r\n|\n|\r|\x0b|\f|\x85|\x
     if ($line =~ '"/^[${expected_chars}]*([^${expected_chars}]+)/"') {
         $column_range="$-[1] ... $+[1]";
         unless ($line =~ '"/^${comment_char}/"') {
-        print WARNINGS "$file:$.:$column_range, Warning - ignoring entry because it contains non alpha characters (non-alpha-in-dictionary)\n";
+        print WARNINGS "$file:$.:$column_range, Warning - ignoring entry because it contains non-alpha characters (non-alpha-in-dictionary)\n";
         }
         $line = "";
     }
