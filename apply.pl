@@ -148,12 +148,30 @@ sub check_current_script {
     }
 }
 
-sub gh_is_happy {
-    my (@output, $output, $gh_status);
-    $gh_status = tempfile_name();
+sub gh_is_happy_internal {
+    my ($gh_status) = @_;
     run_program_capture_output($gh_status, $gh_status, 'gh', 'auth', 'status');
-    my $gh_auth_status = $?;
+    return $?;
+}
+
+sub gh_is_happy {
+    my ($program) = @_;
+    my $gh_status = tempfile_name();
+    my $gh_auth_status = gh_is_happy_internal($gh_status);
     return 1 if $gh_auth_status == 0;
+    my @problematic_env_variables;
+    for my $variable (qw(GH_TOKEN GITHUB_TOKEN)) {
+        if (defined $ENV{$variable}) {
+            delete $ENV{$variable};
+            push @problematic_env_variables, $variable;
+            $gh_auth_status = gh_is_happy_internal($gh_status);
+            return 1 if $gh_auth_status == 0;
+
+            print STDERR "$0: gh program did not like these environment variables: ".join(', ', @problematic_env_variables)." -- consider unsetting them.\n";
+            return 1;
+        }
+    }
+
     if ($gh_auth_status != 0) {
         if ($gh_auth_status >> 8) {
             open my $fh, '<', $gh_status;
@@ -167,7 +185,7 @@ sub gh_is_happy {
 
 sub tools_are_ready {
     my ($program) = @_;
-    unless (gh_is_happy) {
+    unless (gh_is_happy($program)) {
         die "$program requires a happy gh, please try 'gh auth login'\n";
     }
 }
