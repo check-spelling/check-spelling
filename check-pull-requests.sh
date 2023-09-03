@@ -115,7 +115,7 @@ if [ -s "$escaped" ]; then
 fi
 end_group
 
-for a in "$(cat "$escaped")"; do
+for a in $(cat "$escaped"); do
   echo "$a" | base64 --decode | jq -r . > "$pull"
   url="$(jq -r .commits_url "$pull" | perl -pe 's{://api.github.com/repos/(.*/pull)s}{://github.com/$1}')"
   begin_group "Considering $url"
