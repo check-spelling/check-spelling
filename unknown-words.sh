@@ -105,7 +105,7 @@ dispatcher() {
       if [ -z "$INPUT_TASK" ]; then
         INPUT_TASK=spelling
       fi
-      if [ "$INPUT_TASK" = spelling ] && [ $(are_head_and_base_in_same_repo "$GITHUB_EVENT_PATH" '.pull_request') != 'true' ]; then
+      if [ "$INPUT_TASK" = spelling ] && [ "$(are_head_and_base_in_same_repo "$GITHUB_EVENT_PATH" '.pull_request')" != 'true' ]; then
         api_output=$(mktemp)
         api_error=$(mktemp)
         GH_TOKEN="$GITHUB_TOKEN" gh api --method POST -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/branches/${GITHUB_BASE_REF:-$GITHUB_REF_NAME}/rename" > "$api_output" 2> "$api_error" || true
@@ -401,8 +401,8 @@ get_workflow_path() {
           xargs -0 grep -l --null "^\s\s*uses\s*:\s*$GH_ACTION_REPOSITORY@$GH_ACTION_REF" |
           xargs -0 grep -l --null "^name\s*:\s*$GITHUB_WORKFLOW\s*$" |
           xargs -0 grep -l --null "$github_job_pattern" > "$possible_workflows"
-        if [ $(tr -cd '\000' < "$possible_workflows" | wc -c) -eq 1 ]; then
-          cat "$possible_workflows" | xargs -0 echo | tee "$action_workflow_path_file"
+        if [ "$(tr -cd '\000' < "$possible_workflows" | char_count)" -eq 1 ]; then
+          xargs -0 < "$possible_workflows" | tee "$action_workflow_path_file"
         fi
       fi
     fi
@@ -463,11 +463,6 @@ offer_quote_reply() {
     offer_quote_reply_cached=1
   fi
   return "$offer_quote_reply_cached"
-}
-
-repo_is_private() {
-  private="$(jq -r 'if .repository.private != null then .repository.private else "" end' "$GITHUB_EVENT_PATH")"
-  [ "$private" != "false" ]
 }
 
 command_v() {
@@ -550,16 +545,16 @@ mktemp_json() {
 show_github_actions_push_disclaimer() {
   pr_number="$(jq -r '.issue.number' "$GITHUB_EVENT_PATH")"
   pr_path_escaped="$(echo "$GITHUB_REPOSITORY/pull/$pr_number" | perl -pe 's{/}{\%2F}g')"
-  pr_query=$(echo '{
-      repository(owner:"'${GITHUB_REPOSITORY%/*}'", name:"'${GITHUB_REPOSITORY#*/}'") {
-        pullRequest(number:'$pr_number') {
+  pr_query=$(echo "{
+      repository(owner:$Q${GITHUB_REPOSITORY%/*}$Q, name:$Q${GITHUB_REPOSITORY#*/}$Q) {
+        pullRequest(number:$pr_number) {
           headRepository {
             nameWithOwner
           }
           headRefName
         }
       }
-    }' |
+    }" |
     strip_lead_and_blanks
   )
   pr_query_json="$(wrap_in_json 'query' "$pr_query")"
@@ -622,7 +617,7 @@ show_github_actions_push_disclaimer() {
     cd "$(mktemp -d)"
     ssh-keygen -f "./$brand" -q -N "" -C "$brand key for $repo"
     gh repo deploy-key add "./$brand.pub" -R "$repo" -w -t "$brand-talk-to-bot"
-    cat "./$brand" | gh secret -R "$repo" set "$SECRET_NAME"
+    gh secret -R "$repo" set "$SECRET_NAME" < "./$brand"
   )'"
   $B
 
@@ -646,7 +641,7 @@ show_github_actions_push_disclaimer() {
 }
 
 are_head_and_base_in_same_repo() {
-  jq -r '('$2'.head.repo.full_name // "head") == ('$2'.base.repo.full_name // "base")' "$1"
+  jq -r '('"$2"'.head.repo.full_name // "head") == ('"$2"'.base.repo.full_name // "base")' "$1"
 }
 
 are_issue_head_and_base_in_same_repo() {
@@ -661,9 +656,9 @@ report_if_bot_comment_is_minimized() {
   call_curl \
   -H "Content-Type: application/json" \
   --data-binary "$(echo '{}' | jq --arg query "query { node(id: $Q$bot_comment_node_id$Q) { ... on IssueComment { isMinimized minimizedReason } } }" '.query = $query')" \
-  $GITHUB_GRAPHQL_URL > "$minimized_info"
+  "$GITHUB_GRAPHQL_URL" > "$minimized_info"
 
-  if [ $(jq '.data.node.isMinimized' "$minimized_info") == 'true' ]; then
+  if [ "$(jq '.data.node.isMinimized' "$minimized_info")" == 'true' ]; then
     minimized_reason=$(jq -r '.data.node.minimizedReason | ascii_downcase // empty' "$minimized_info")
     decorated_reason=" (_${minimized_reason}_)"
     minimized_reason_suffix='.'
@@ -684,8 +679,16 @@ report_if_bot_comment_is_minimized() {
       *)
         minimized_reason="$decorated_reason";;
     esac
-    confused_comment "$trigger_comment_url" "The referenced report comment $(comment_url_to_html_url $comment_url) is hidden$minimized_reason$minimized_reason_suffix"
+    confused_comment "$trigger_comment_url" "The referenced report comment $(comment_url_to_html_url "$comment_url") is hidden$minimized_reason$minimized_reason_suffix"
   fi
+}
+
+char_count() {
+  wc -c | xargs
+}
+
+line_count() {
+  wc -l | xargs
 }
 
 handle_comment() {
@@ -711,7 +714,6 @@ handle_comment() {
 
   trigger_comment_url="$(jq -r '.url // empty' "$comment")"
   sender_login="$(jq -r '.sender.login // empty' "$GITHUB_EVENT_PATH")"
-  issue_user_login="$(jq -r '.issue.user.login // empty' "$GITHUB_EVENT_PATH")"
   pull_request_head_info="$(mktemp_json)"
   jq .head "$pull_request_info" > "$pull_request_head_info"
   pull_request_sha="$(jq -r '.sha // empty' "$pull_request_head_info")"
@@ -741,7 +743,6 @@ handle_comment() {
       ;;
   esac
 
-  number="$(jq -r '.number // empty' "$issue")"
   created_at="$(jq -r '.created_at // empty' "$comment")"
   issue_url="$(jq -r '.url // empty' "$issue")"
   pull_request_ref="$(jq -r '.ref // empty' "$pull_request_head_info")"
@@ -787,7 +788,7 @@ handle_comment() {
   else
     [ -n "$comment_url" ] ||
       confused_comment "$trigger_comment_url" "Did not find match for _/_$b$comments_url${b}_/_ in comment."
-    [ $(echo "$comment_url" | wc -l) -gt 1 ] &&
+    [ "$(echo "$comment_url" | line_count)" -gt 1 ] &&
       confused_comment "$trigger_comment_url" "Found more than one _/_$b$comments_url${b}_/_ match in comment:$n$B$n$comment_url$n$B"
   fi
 
@@ -801,9 +802,9 @@ handle_comment() {
     bot_comment_url=$(jq -r '.issue_url // .comment.url' "$comment")
     github_actions_bot="github-actions[bot]"
     [ -n "$bot_comment_author" ] ||
-      confused_comment "$trigger_comment_url" "Could not retrieve author of $(comment_url_to_html_url $comment_url)."
+      confused_comment "$trigger_comment_url" "Could not retrieve author of $(comment_url_to_html_url "$comment_url")."
     [ "$bot_comment_author" = "$github_actions_bot" ] ||
-      confused_comment "$trigger_comment_url" "Expected @$github_actions_bot to be author of $(comment_url_to_html_url $comment_url) (found @$bot_comment_author)."
+      confused_comment "$trigger_comment_url" "Expected @$github_actions_bot to be author of $(comment_url_to_html_url "$comment_url") (found @$bot_comment_author)."
     [ "$issue_url" = "$bot_comment_url" ] ||
       confused_comment "$trigger_comment_url" "Referenced comment was for a different object: $bot_comment_url"
 
@@ -811,7 +812,7 @@ handle_comment() {
     jq -r '.body // empty' "$comment" > "$comment_body"
     rm "$comment"
     grep -q '@check-spelling-bot Report' "$comment_body" ||
-      confused_comment "$trigger_comment_url" "$(comment_url_to_html_url $comment_url) does not appear to be a @check-spelling-bot report"
+      confused_comment "$trigger_comment_url" "$(comment_url_to_html_url "$comment_url") does not appear to be a @check-spelling-bot report"
 
     report_if_bot_comment_is_minimized
     skip_wrapping=1
@@ -821,30 +822,30 @@ handle_comment() {
       patch_add=1
       patch_remove=1
       should_exclude_patterns=$(mktemp)
-      patch_variables $comment_body > $instructions_head
+      patch_variables "$comment_body" > "$instructions_head"
     )
-    git restore -- $bucket/$project 2> /dev/null || true
+    git restore -- "$bucket/$project" 2> /dev/null || true
 
     res=0
-    . $instructions_head || res=$?
+    . "$instructions_head" || res=$?
     if [ $res -gt 0 ]; then
       echo "instructions_head failed ($res)"
-      cat $instructions_head
-      confused_comment "$trigger_comment_url" "Failed to set up environment to apply changes for $(comment_url_to_html_url $comment_url)."
+      cat "$instructions_head"
+      confused_comment "$trigger_comment_url" "Failed to set up environment to apply changes for $(comment_url_to_html_url "$comment_url")."
     fi
-    rm $comment_body $instructions_head
+    rm "$comment_body" "$instructions_head"
     instructions=$(generate_instructions)
 
-    react_prefix="${react_prefix}[Instructions]($(comment_url_to_html_url $comment_url)) "
-    . $instructions || res=$?
+    react_prefix="${react_prefix}[Instructions]($(comment_url_to_html_url "$comment_url")) "
+    . "$instructions" || res=$?
     if [ $res -gt 0 ]; then
       echo "instructions failed ($res)"
-      cat $instructions
+      cat "$instructions"
       res=0
       confused_comment "$trigger_comment_url" "Failed to apply changes."
     fi
-    rm $instructions
-    update_note="per $(comment_url_to_html_url $comment_url)"
+    rm "$instructions"
+    update_note="per $(comment_url_to_html_url "$comment_url")"
   elif [ -n "$summary_url" ]; then
     if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
       title_suffix_re='.*'"$("$quote_meta" "$INPUT_REPORT_TITLE_SUFFIX")"
@@ -866,7 +867,7 @@ handle_comment() {
     [ -n "$summary_url_api" ] || confused_comment "$trigger_comment_url" "Failed to retrieve api url -- this should never happen. Please file a bug."
     gh_api_fault=$(mktemp)
     gh_api_err=$(mktemp)
-    if ! GH_TOKEN="$GITHUB_TOKEN" gh api /repos/$GITHUB_REPOSITORY/actions/cache/usage > "$gh_api_fault" 2> "$gh_api_err"; then
+    if ! GH_TOKEN="$GITHUB_TOKEN" gh api "/repos/$GITHUB_REPOSITORY/actions/cache/usage" > "$gh_api_fault" 2> "$gh_api_err"; then
       if [ "$(jq -r .message "$gh_api_fault")" = 'Resource not accessible by integration' ]; then
         confused_comment "$trigger_comment_url" "In order for this job to handle $summary_url, it needs:$(echo "
 
@@ -906,9 +907,9 @@ handle_comment() {
   git status --u=no --porcelain | grep -q . ||
     confused_comment "$trigger_comment_url" "Request did not change repository content.${N}Maybe someone already applied these changes?"
   react_prefix="$react_prefix_base"
-  github_user_and_email $sender_login
+  github_user_and_email "$sender_login"
   git_commit "$(echo "Update $update_note
-                      Accepted in $(comment_url_to_html_url $trigger_comment_url)
+                      Accepted in $(comment_url_to_html_url "$trigger_comment_url")
                     "|strip_lead)" ||
     confused_comment "$trigger_comment_url" "Did not generate a commit.${N}Perhaps there was a merge conflict or an object changed from being a directory to a file or vice versa? (Please file a bug including a link to this comment.)"
   git push request "HEAD:$pull_request_ref" ||
@@ -923,7 +924,7 @@ handle_comment() {
 
   react "${comment_url:-$trigger_comment_url}" 'rocket' > /dev/null
   trigger_node=$(jq -r '.comment.node_id // empty' "$GITHUB_EVENT_PATH")
-  collapse_comment $trigger_node $bot_comment_node_id
+  collapse_comment "$trigger_node" "$bot_comment_node_id"
 
   if git remote get-url origin | grep -q ^https://; then
     show_github_actions_push_disclaimer
@@ -1007,7 +1008,7 @@ define_variables() {
   fi
   bucket="${INPUT_BUCKET:-"$bucket"}"
   project="${INPUT_PROJECT:-"$project"}"
-  if to_boolean "$junit" || to_boolean "$INPUT_QUIT_WITHOUT_ERROR"; then
+  if to_boolean ${junit:+"$junit"} || to_boolean "$INPUT_QUIT_WITHOUT_ERROR"; then
     quit_without_error=1
   fi
   if [ -z "$bucket" ] && [ -z "$project" ] && [ -n "$INPUT_CONFIG" ]; then
@@ -1059,7 +1060,6 @@ define_variables() {
   get_commits_for_check_commit_message="$spellchecker/get-commits-for-check-commit-message.pl"
   scope_files="$spellchecker/exclude.pl"
   run_output="$temp/unknown.words.txt"
-  run_files="$temp/reporter-input.txt"
   diff_output="$temp/output.diff"
   tokens_file="$data_dir/tokens.txt"
   remove_words="$data_dir/remove_words.txt"
@@ -1094,7 +1094,7 @@ check_yaml_key_value() {
   if [ -n "$1" ]; then
     KEY="$KEY" \
     VALUE="$VALUE" \
-    MESSAGE="$MESSAGE" \
+    MESSAGE=${MESSAGE:+"$MESSAGE"} \
     "$check_yaml_key_value" "$1"
   else
     echo "?:0:1, $MESSAGE"
@@ -1143,18 +1143,19 @@ check_inputs() {
     INPUT_SPELL_CHECK_THIS=''
   fi
   if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
-    for duplicated_dictionary in $(echo $INPUT_EXTRA_DICTIONARIES | words_to_lines | sort | uniq -d); do
+    INPUT_EXTRA_DICTIONARIES="$(echo "$INPUT_EXTRA_DICTIONARIES" | words_to_lines | sort)"
+    for duplicated_dictionary in $(echo "$INPUT_EXTRA_DICTIONARIES" | uniq -d); do
       KEY=extra_dictionaries \
       VALUE="$duplicated_dictionary" \
       MESSAGE="Warning - \`$duplicated_dictionary\` appears multiple times in 'extra_dictionaries' (duplicate-extra-dictionary)" \
       check_yaml_key_value "$workflow_path"
     done
-    INPUT_EXTRA_DICTIONARIES=$(echo $INPUT_EXTRA_DICTIONARIES | sort -u)
+    INPUT_EXTRA_DICTIONARIES="$(echo "$INPUT_EXTRA_DICTIONARIES" | uniq)"
   fi
 }
 
 sort_unique() {
-  sort -u -f "$@" | perl -ne 'next unless /./; print'
+  sort -u -f | perl -ne 'next unless /./; print'
 }
 
 project_file_path() {
@@ -1186,10 +1187,10 @@ check_pattern_file() {
 
 check_for_newline_at_eof() {
   maybe_missing_eol="$1"
-  if [ -s "$maybe_missing_eol" ] && [ "$(tail -1 "$maybe_missing_eol" | wc -l)" -eq 0 ]; then
-    line="$(( $(cat "$maybe_missing_eol" | wc -l) + 1 ))"
-    start="$(tail -1 "$maybe_missing_eol" | wc -c)"
-    stop="$(( $start + 1 ))"
+  if [ -s "$maybe_missing_eol" ] && [ "$(tail -1 "$maybe_missing_eol" | line_count)" -eq 0 ]; then
+    line="$(( $(line_count < "$maybe_missing_eol") + 1 ))"
+    start="$(tail -1 "$maybe_missing_eol" | char_count)"
+    stop="$(( start + 1 ))"
     echo "$maybe_missing_eol:$line:$start ... $stop, Warning - No newline at eof. (no-newline-at-eof)" >> "$early_warnings"
     echo >> "$maybe_missing_eol"
   fi
@@ -1252,7 +1253,6 @@ get_project_files() {
         ;;
       *)
         append_to="$from"
-        append_to_generated=""
         if [ -f "$from" ]; then
           echo "Retrieving $file from $from"
           cleanup_file "$from" "$type"
@@ -1265,7 +1265,6 @@ get_project_files() {
           if [ -d "$from" ]; then
             from_expanded="$(find "$from" -mindepth 1 -maxdepth 1 -name "*$ext" ! -name "*$n*" |sort)"
             append_to="$from"/"$(git rev-parse --revs-only HEAD || date '+%Y%M%d%H%m%S')"."$ext"
-            append_to_generated=new
             touch "$dest"
             echo "Retrieving $file from $from_expanded"
             while IFS= read -r item; do
@@ -1290,7 +1289,7 @@ get_project_files_deprecated() {
     get_project_files "$2" "$3"
     if [ -s "$3" ]; then
       example="$(echo "$from_expanded"|head -1)"
-      if [ "$(basename $(dirname "$example"))" = "$2" ]; then
+      if [ "$(basename "$(dirname "$example")")" = "$2" ]; then
         note=" directory"
       else
         note=""
@@ -1362,20 +1361,20 @@ install_tools() {
   if [ -n "$apps" ]; then
     if command_v apt-get; then
       export DEBIAN_FRONTEND=noninteractive
-      $SUDO apt-get -qq install --no-install-recommends -y $apps >/dev/null 2>/dev/null ||
-      $SUDO apt-get -qq update &&
-      $SUDO apt-get -qq install --no-install-recommends -y $apps >/dev/null 2>/dev/null
+      echo "$apps" | xargs ${SUDO:+"$SUDO"} apt-get -qq install --no-install-recommends -y >/dev/null 2>/dev/null ||
+      ${SUDO:+"$SUDO"} apt-get -qq update &&
+      echo "$apps" | xargs ${SUDO:+"$SUDO"} apt-get -qq install --no-install-recommends -y >/dev/null 2>/dev/null
       echo "Installed:$apps" >&2
       apps=
     elif command_v brew; then
-      brew install $apps
+      echo "$apps" | xargs brew install
       apps=
     else
       echo "missing $apps -- things will fail" >&2
     fi
   fi
   if [ -n "$perl_libs" ]; then
-    perl `command -v cpanm` --notest $perl_libs
+    echo "$perl_libs" | xargs perl "$(command -v cpanm)" --notest
     perl_libs=''
   fi
 }
@@ -1471,7 +1470,7 @@ call_curl() {
     delay="$("$spellchecker/calculate-delay.pl" "$response_headers")"
     (echo "call_curl received a $response_code and will wait for ${delay}s:"; grep -E -i 'x-github-request-id|x-rate-limit-|retry-after' "$response_headers") >&2
     sleep "$delay"
-    curl_attempt="$(($curl_attempt + 1))"
+    curl_attempt="$(( curl_attempt + 1 ))"
   done
 }
 
@@ -1488,7 +1487,7 @@ set_up_jq() {
 }
 
 words_to_lines() {
-  cat | tr " " "\n"
+  xargs -n1
 }
 
 build_dictionary_alias_pattern() {
@@ -1522,11 +1521,11 @@ get_extra_dictionary() {
     check_etag_value=Ignore:1
     real_dest=
   fi
-  if [ "$url" != "${url#${GITHUB_SERVER_URL}/*}" ]; then
+  if [ "$url" != "${url#"${GITHUB_SERVER_URL}"/*}" ]; then
     no_curl_auth=1
   fi
   keep_headers=1 call_curl "$check_etag" "$check_etag_value" "$url" > "$dest"
-  if ([ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ]) 2> /dev/null; then
+  if { [ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ] ; } 2> /dev/null; then
     echo "::error ::Failed to retrieve $extra_dictionary_url -- $url (dictionary-not-found)" >> "$early_warnings"
     (
       echo "Failed to retrieve $extra_dictionary_url ($url)"
@@ -1560,10 +1559,10 @@ get_extra_dictionaries() {
   response_headers="$(mktemp)"
   if [ -n "$extra_dictionaries" ]; then
     parallel_task_list=$(mktemp -d)
-    (cd "$parallel_task_list"; touch $(seq $(echo "$extra_dictionaries"|wc -l)))
+    (cd "$parallel_task_list"; touch $(seq "$(echo "$extra_dictionaries"|line_count)"))
     parallel_task=0
     for extra_dictionary in $extra_dictionaries; do
-    parallel_task=$(($parallel_task + 1))
+    parallel_task=$(( parallel_task + 1 ))
     (
       dictionary_base="$(basename "$extra_dictionary")"
       if [ "$dictionary_base" = index.dic ]; then
@@ -1660,10 +1659,7 @@ set_up_files() {
     ;;
   esac
   if [ -n "$spelling_config" ]; then
-    if [ -n "$spell_check_this_repo_branch" ]; then
-      spell_check_this_repo_with_branch="--branch $spell_check_this_repo_branch"
-    fi
-    if git clone --depth 1 "https://github.com/$spell_check_this_repo_name" $spell_check_this_repo_with_branch "$spell_check_this_repo" > /dev/null 2> /dev/null; then
+    if git clone --depth 1 "https://github.com/$spell_check_this_repo_name" ${spell_check_this_repo_branch:+--branch "$spell_check_this_repo_branch"} "$spell_check_this_repo" > /dev/null 2> /dev/null; then
       if [ ! -d "$spell_check_this_repo/$spell_check_this_config" ]; then
         (
           if [ -n "$workflow_path" ]; then
@@ -1680,7 +1676,7 @@ set_up_files() {
           echo "mkdir -p '$spelling_config'"
           echo 'cp -i -R $('
           echo 'cd $(mktemp -d)'
-          echo "git clone --depth 1 --no-tags $spell_check_this_repo_url $spell_check_this_repo_with_branch . > /dev/null 2> /dev/null"
+          echo "git clone --depth 1 --no-tags $spell_check_this_repo_url ${spell_check_this_repo_branch:+--branch "$spell_check_this_repo_branch"} . > /dev/null 2> /dev/null"
           echo "cd '$spell_check_this_config'; pwd"
           echo ")/* '$spelling_config'"
           echo "git add '$spelling_config'"
@@ -1707,15 +1703,14 @@ set_up_files() {
   if [ -n "$expect_files" ]; then
     expect_notes="$(mktemp)"
     expect_collated="$(mktemp)"
-    echo "$expect_files" | xargs env INPUT_USE_SARIF= "$word_splitter" 2> /dev/null |
-    INPUT_USE_SARIF= INPUT_DISABLE_CHECKS=noisy-file "$word_collator" 2> "$expect_notes" > "$expect_collated"
+    echo "$expect_files" | xargs env INPUT_USE_SARIF='' "$word_splitter" 2> /dev/null |
+    INPUT_USE_SARIF='' INPUT_DISABLE_CHECKS=noisy-file "$word_collator" 2> "$expect_notes" > "$expect_collated"
     perl -pe 's/ \(.*\)//' "$expect_collated" > "$expect_path"
     "$expect_collator" "$expect_collated" "$expect_notes" >> "$early_warnings"
   else
     touch "$expect_path"
   fi
   new_expect_file="$append_to"
-  new_expect_file_new="$append_to_generated"
   get_project_files file_ignore.patterns "$excludelist_path"
   get_project_files excludes.txt "$excludelist_path"
   excludes_files="$from_expanded"
@@ -1847,7 +1842,7 @@ set_up_files() {
               if [ -d "$fallback_extra_dictionaries_dir" ]; then
                 # should handle hunspell
                 if [ -n "$check_extra_dictionaries_dir" ] && [ -d "$check_extra_dictionaries_dir" ]; then
-                  (cd "$fallback_extra_dictionaries_dir"; mv * "$check_extra_dictionaries_dir")
+                  (cd "$fallback_extra_dictionaries_dir"; mv ./* "$check_extra_dictionaries_dir")
                 else
                   check_extra_dictionaries_dir="$fallback_extra_dictionaries_dir"
                   fallback_extra_dictionaries_dir=
@@ -1864,12 +1859,12 @@ set_up_files() {
           (
             cd "$extra_dictionaries_dir"
             if [ -d "$hunspell_dictionary_path" ]; then
-              mv *.aff *.dic "$hunspell_dictionary_path" 2>/dev/null || true
+              mv ./*.aff ./*.dic "$hunspell_dictionary_path" 2>/dev/null || true
             fi
             # Items that aren't proper should be moved to patterns instead
             etag_temp=$(mktemp -d)
-            mv *.etag "$etag_temp"
-            "$spellchecker/dictionary-word-filter.pl" * | sort -u >> "$dict"
+            mv ./*.etag "$etag_temp"
+            "$spellchecker/dictionary-word-filter.pl" ./* | sort -u >> "$dict"
             mv "$etag_temp"/* .
           )
         fi
@@ -1890,8 +1885,8 @@ set_up_files() {
     get_project_files reject.txt "$reject_path"
     if [ -s "$reject_path" ]; then
       dictionary_temp="$(mktemp)"
-      if grep_v_string '^('"$(echo "$(cat "$reject_path")"|tr " " '|')"')$' < "$dict" > $dictionary_temp; then
-        cat $dictionary_temp > "$dict"
+      if grep_v_string '^('"$(xargs < "$reject_path" | tr " " '|')"')$' < "$dict" > "$dictionary_temp"; then
+        cat "$dictionary_temp" > "$dict"
       fi
     fi
     get_project_files file_exclusive.patterns "$only_path"
@@ -1906,7 +1901,6 @@ set_up_files() {
   get_project_files line_masks.patterns "$patterns_path"
   get_project_files patterns.txt "$patterns_path"
   new_patterns_file="$append_to"
-  new_patterns_file_new="$append_to_generated"
   if [ -s "$patterns_path" ]; then
     cp "$patterns_path" "$patterns"
   fi
@@ -1968,8 +1962,8 @@ get_before() {
     fi
     git_fetch_log="$(mktemp)"
     git_fetch_err="$(mktemp)"
-    if ! git fetch -f origin $UNSHALLOW "$BEFORE":refs/private/before "$AFTER:refs/private/after" > "$git_fetch_log" 2> "$git_fetch_err"; then
-      echo "git fetch origin $UNSHALLOW '$BEFORE:refs/private/before' '$AFTER:refs/private/after' -- failed:"
+    if ! git fetch -f origin ${UNSHALLOW:+"$UNSHALLOW"} "$BEFORE":refs/private/before "$AFTER:refs/private/after" > "$git_fetch_log" 2> "$git_fetch_err"; then
+      echo "git fetch origin ${UNSHALLOW:+"$UNSHALLOW"} '$BEFORE:refs/private/before' '$AFTER:refs/private/after' -- failed:"
       cat "$git_fetch_err"
       cat "$git_fetch_log"
       if ! git fetch -f . "$BEFORE":refs/private/before "$AFTER:refs/private/after" > "$git_fetch_log" 2> "$git_fetch_err"; then
@@ -1992,7 +1986,7 @@ append_commit_message_to_file_list() {
 }
 
 get_file_list() {
-  cat "$file_list" | tr "\0" "\n"
+  xargs -0 -n1 < "$file_list"
 }
 
 build_file_list() {
@@ -2004,7 +1998,7 @@ build_file_list() {
       echo "Only checking files changed from $BEFORE" >&2
       git diff -z --name-only refs/private/before
     else
-      INPUT_ONLY_CHECK_CHANGED_FILES=
+      INPUT_ONLY_CHECK_CHANGED_FILES=''
       git 'ls-files' -z 2> /dev/null
     fi
   ) |\
@@ -2040,20 +2034,21 @@ run_spell_check() {
         git blame HEAD -- "$workflow_path" > "$workflow_blame"
         workflow_commits_revs=$(mktemp)
         "$get_commits_for_check_commit_message" "$workflow_blame" | sort -u |xargs -n1 git rev-parse > "$workflow_commits_revs"
-        clip_log=$(for commit_sha in $(cat "$workflow_commits_revs"); do
+        clip_log=$(mktemp)
+        while IFS= read -r commit_sha; do
           grep -q "$commit_sha" "$log_revs" && echo "$commit_sha" || true
-        done)
-        if [ -n "$clip_log" ]; then
+        done < "$workflow_commits_revs" > "$clip_log"
+        if [ -s "$clip_log" ]; then
           clipped_log_revs=$(mktemp)
-          for commit_sha in $(echo "$clip_log"); do
-            git log --format='%H' $commit_sha..refs/private/after >> "$clipped_log_revs"
-          done
+          while IFS= read -r commit_sha; do
+            git log --format='%H' "$commit_sha..refs/private/after" >> "$clipped_log_revs"
+          done < "$clip_log"
           sort -u "$clipped_log_revs" > "$log_revs"
         fi
       fi
-      for commit_sha in $(cat "$log_revs"); do
+      while IFS= read -r commit_sha; do
         append_commit_message_to_file_list "$commit_sha"
-      done
+      done < "$log_revs"
       if [ 1 = "$(echo "$INPUT_CHECK_COMMIT_MESSAGES" | "$find_token" commit)" ]; then
         # warning about duplicate flag
         echo > /dev/null
@@ -2078,16 +2073,16 @@ run_spell_check() {
       fi
     fi
   fi
-  count="$(perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print $count;' $file_list)"
+  count="$(perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print $count;' "$file_list")"
   if [ "$count" = "0" ]; then
     echo ":0:0 ... 0, Warning - No files to check. (no-files-to-check)" >> "$early_warnings"
   fi
   begin_group "Spell checking ($count) files"
   get_file_list
   end_group
-  queue_size="$(($count / $job_count / 4))"
+  queue_size="$((count / job_count / 4))"
   if [ "$queue_size" -lt 4 ]; then
-    queue_size="$(($count / $job_count))"
+    queue_size="$((count / job_count))"
     if [ "$queue_size" -lt 1 ]; then
       queue_size=1
     fi
@@ -2177,11 +2172,6 @@ run_spell_check() {
   fi
 }
 
-printDetails() {
-  echo ''
-  echo 'If you are ok with the output of this run, you will need to'
-}
-
 relative_note() {
   if [ -n "$bucket" ] && [ -n "$project" ]; then
     from="$(project_file_path "$file")"
@@ -2204,28 +2194,6 @@ to_retrieve_expect() {
       echo "gsutil cp -Z '$(project_file_path expect.txt)' expect.txt";;
     *://*)
       echo "curl -L -s '$(project_file_path expect.txt)' -o expect.txt";;
-  esac
-}
-to_publish_expect() {
-  case "$bucket" in
-    '')
-      echo "# no bucket defined -- copy $1 to a bucket and configure it per the README.md";;
-    ssh://git@*|git@*)
-      echo "cp '$1' metadata/expect.txt; (cd metadata; git commit expect.txt -m 'Updating expect'; git push)";;
-    gs://*)
-      echo "gsutil cp -Z '$1' $(project_file_path expect.txt)";;
-    *://*)
-      echo "# command to publish $1 is not known. URL: $(project_file_path expect.txt)";;
-    *)
-      if [ "$2" = new ]; then
-        cmd="git add '$bucket/$project' || echo '... you want to ensure $1 is added to your repository...'"
-        case "$(realpath --relative-base="$bucket" "$1")" in
-          /*)
-            cmd="cp '$1' $(project_file_path expect.txt); $cmd";;
-        esac
-        echo "$cmd"
-      fi
-      ;;
   esac
 }
 
@@ -2321,7 +2289,7 @@ get_action_log() {
       action_log="$(get_action_log_overview)"
 
       job_info_and_step_info="$(get_job_info_and_step_info)"
-      if [ $(echo "$job_info_and_step_info" | wc -l) -eq 4 ]; then
+      if [ "$(echo "$job_info_and_step_info" | line_count)" -eq 4 ]; then
         job_log=$(echo "$job_info_and_step_info" | head -1)
         job_name=$(echo "$job_info_and_step_info" | head -2 | tail -1)
         step_number=$(echo "$job_info_and_step_info" | head -3 | tail -1)
@@ -2378,7 +2346,7 @@ spelling_body() {
     fi
     sarif_report="[:angel: SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+$sarif_report_query)"
     # check-spelling here corresponds to the uses github/codeql-action/upload-sarif / with / category
-    code_scanning_results_run=$(GH_TOKEN="$GITHUB_TOKEN" gh api /repos/$GITHUB_REPOSITORY/commits/${GITHUB_HEAD_SHA:-$GITHUB_SHA}/check-runs -q '.check_runs|map(select(.app.id==57789 and .name=="check-spelling"))[0].url // empty' || true)
+    code_scanning_results_run=$(GH_TOKEN="$GITHUB_TOKEN" gh api "/repos/$GITHUB_REPOSITORY/commits/${GITHUB_HEAD_SHA:-$GITHUB_SHA}/check-runs" -q '.check_runs|map(select(.app.id==57789 and .name=="check-spelling"))[0].url // empty' || true)
     if [ -n "$code_scanning_results_run" ]; then
       code_scanning_results_url=$(GH_TOKEN="$GITHUB_TOKEN" gh api "$code_scanning_results_run" -q '.html_url // empty')
       sarif_report=", $sarif_report or [:mag_right:]($code_scanning_results_url)"
@@ -2429,7 +2397,7 @@ spelling_body() {
     fi
     remote_ref=${remote_ref#refs/heads/}
     if [ -s "$extra_dictionaries_cover_entries" ]; then
-      expected_item_count="$(wc -l "$expect_path"|sed -e 's/ .*//')"
+      expected_item_count="$(line_count < "$expect_path")"
       if [ "$expected_item_count" -gt 0 ]; then
         expect_details="This includes both **expected items** ($expected_item_count) from $expect_files and **unrecognized words** ($unknown_count)
         "
@@ -2437,7 +2405,7 @@ spelling_body() {
       fi
 
       extra_dictionaries_cover_entries_limited="$(mktemp)"
-      head -$extra_dictionary_limit "$extra_dictionaries_cover_entries" > "$extra_dictionaries_cover_entries_limited"
+      head -"$extra_dictionary_limit" "$extra_dictionaries_cover_entries" > "$extra_dictionaries_cover_entries_limited"
       if [ -n "$workflow_path" ]; then
         workflow_path_hint=" (in $b$workflow_path$b)"
       fi
@@ -2464,8 +2432,7 @@ spelling_body() {
 
         Consider adding them$workflow_path_hint$action_ref_hint$inline_with_hint$extra_dictionaries_hint:
         $B yml$with_hint$n$(
-          cat "$extra_dictionaries_cover_entries_limited" |
-          perl -pe 's/\s.*//;s/^/                  /;s{\[(.*)\]\(.*}{$1}'
+          perl -pe 's/\s.*//;s/^/                  /;s{\[(.*)\]\(.*}{$1}' "$extra_dictionaries_cover_entries_limited"
         )
         $B
         To stop checking additional dictionaries, add$workflow_path_hint$action_ref_hint$inline_with_hint:
@@ -2494,7 +2461,7 @@ spelling_body() {
           $B
           $(cat "$should_exclude_patterns")
           $B"| strip_lead)"
-        if [ "$(wc -l "$should_exclude_file" |perl -pe 's/(\d+)\s+.*/$1/')" -gt 10 ]; then
+        if [ "$(line_count < "$should_exclude_file")" -gt 10 ]; then
           output_excludes_large="$(echo "
             "'You should consider excluding directory paths (e.g. `(?:^|/)vendor/`), filenames (e.g. `(?:^|/)yarn\.lock$`), or file extensions (e.g. `\.gz$`)
             '| strip_lead)"
@@ -2538,7 +2505,7 @@ spelling_body() {
         message="$warnings_details"
       else
         output_warnings="$(echo "
-        <details><summary>$event_title ("$(grep -c ':' "$counter_summary_file")")</summary>
+        <details><summary>$event_title ($(grep -c ':' "$counter_summary_file"))</summary>
 
         $details_note
 
@@ -2548,7 +2515,7 @@ spelling_body() {
       fi
     fi
     if [ -s "$candidate_summary" ]; then
-      pattern_suggestion_count=$(perl -ne 'next if /^#/;next unless /\S/;print' "$candidate_summary"|wc -l|strip_lead)
+      pattern_suggestion_count=$(perl -ne 'next if /^#/;next unless /\S/;print' "$candidate_summary"|line_count)
       output_candidate_pattern_suggestions="$(echo "
         <details><summary>Pattern suggestions :scissors: ($pattern_suggestion_count)</summary>
 
@@ -2573,7 +2540,7 @@ spelling_body() {
         ... in a clone of the [$remote_url_ssh]($remote_url_https) repository
         on the $b$remote_ref$b branch ([:information_source: how do I use this?](
         https://github.com/check-spelling/check-spelling/wiki/Accepting-Suggestions)):
-        "$(relative_note)"
+        $(relative_note)
 
         $B sh
         $err
@@ -2581,7 +2548,7 @@ spelling_body() {
         </details>
         " | strip_lead)"
       if [ -s "$advice_path" ]; then
-        output_advice="$N"`cat "$advice_path"`"$n"
+        output_advice="$N$(cat "$advice_path")$n"
       fi
       if offer_quote_reply; then
         output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
@@ -2595,7 +2562,7 @@ quit() {
   echo "::remove-matcher owner=check-spelling::"
   echo "::remove-matcher owner=check-spelling-https::"
   status="$1"
-  if ([ -z "$status" ] || [ "$status" -eq 0 ]) && [ -n "$has_errors" ]; then
+  if { [ -z "$status" ] || [ "$status" -eq 0 ] ; } && [ -n "$has_errors" ]; then
     status=1
   fi
   case "$status" in
@@ -2608,7 +2575,7 @@ quit() {
   echo "followup=$followup" >> "$GITHUB_OUTPUT"
   echo "$followup" > "$data_dir/followup"
   echo "result_code=$status" >> "$GITHUB_ENV"
-  echo "docker_container=$(cat /proc/self/cgroup | perl -ne 'next unless m{:/docker/(.*)}; print $1;last')" >> "$GITHUB_OUTPUT"
+  echo "docker_container=$(perl -ne 'next unless m{:/docker/(.*)}; print $1;last' /proc/self/cgroup)" >> "$GITHUB_OUTPUT"
   cat "$output_variables" >> "$GITHUB_OUTPUT"
   if [ -n "$GH_OUTPUT_STUB" ]; then
     perl -pe 's/^(\S+)=(.*)/::set-output name=$1::$2/' "$GITHUB_OUTPUT"
@@ -2617,7 +2584,7 @@ quit() {
     artifact="$(mktemp)"
     (
       cd "$data_dir"
-      zip -q "$artifact.zip" *
+      zip -q "$artifact.zip" ./*
       if [ -n "$ACT" ]; then
         if to_boolean "$INPUT_POST_COMMENT"; then
           encode_artifact "$artifact.zip"
@@ -2625,7 +2592,7 @@ quit() {
           echo "::warning ::input_post_comment is suppressed -- if you're looking for the complete comment archive, you probably should disable that suppression."
         fi
       fi
-      rm *
+      rm ./*
       if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
         build_artifact_suffix
       fi
@@ -2635,7 +2602,7 @@ quit() {
   if to_boolean "$quit_without_error"; then
     exit
   fi
-  exit $status
+  exit ${status:+"$status"}
 }
 
 body_to_payload() {
@@ -2703,17 +2670,13 @@ comment() {
   comments_url="$1"
   payload="$2"
   if [ -n "$payload" ]; then
-    payload="--data @$payload"
     method="$3"
-    if [ -n "$method" ]; then
-      method="-X $method"
-    fi
   fi
   call_curl -L -S \
-    $method \
+    ${method:+-X "$method"} \
     -H "Content-Type: application/json" \
     -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
-    $payload \
+    ${payload:+--data "@$payload"} \
     "$comments_url"
 }
 
@@ -2738,7 +2701,7 @@ set_comments_url() {
     pull_request|pull_request_target|pull_request_review_comment)
       COMMENTS_URL="$(jq -r '.pull_request.comments_url // empty' "$file")";;
     push|commit_comment)
-      COMMENTS_URL="$(jq -r '.repository.commits_url // empty' "$file" | perl -pe 's#\{/sha}#/'$sha'/comments#')";;
+      COMMENTS_URL="$(jq -r '.repository.commits_url // empty' "$file" | perl -pe 's#\{/sha}#/'"$sha"'/comments#')";;
   esac
 }
 
@@ -2793,7 +2756,7 @@ minimize_comment_body() {
 }
 
 update_would_change_things() {
-  ([ -n "$INPUT_SPELL_CHECK_THIS" ] && [ ! -d "$bucket/$project/" ]) ||
+  { [ -n "$INPUT_SPELL_CHECK_THIS" ] && [ ! -d "$bucket/$project/" ] ; } ||
   [ -n "$patch_add" ] ||
   [ -n "$patch_remove" ] ||
   [ -s "$should_exclude_file" ]
@@ -2814,7 +2777,6 @@ add_talk_to_bot_message() {
       echo "@check-spelling-bot apply [updates]($jobs_summary_link)$apply_changes_suffix."
     )> "$quote_reply_insertion"
     perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$1"
-    no_patch=
   fi
 }
 
@@ -2838,9 +2800,9 @@ post_summary() {
   if [ -n "$INPUT_SUMMARY_TABLE" ] && [ -s "$warning_output" ]; then
     begin_group 'Building summary table'
     summary_table="$(mktemp)"
-    summary_budget=$((1024*1024 - $(cat "$step_summary_draft" | wc -c) - 100))
+    summary_budget=$((1024*1024 - $(char_count < "$step_summary_draft") - 100))
     summary_budget="$summary_budget" "$summary_tables" "$warning_output" > "$summary_table"
-    if [ $summary_budget -gt $(cat "$summary_table" | wc -c) ]; then
+    if [ $summary_budget -gt "$(char_count < "$summary_table")" ]; then
       cat "$summary_table" >> "$step_summary_draft"
     else
       echo "::warning title=Summary Table skipped::Details too big to include in Step Summary. (summary-table-skipped)"
@@ -2900,7 +2862,6 @@ post_commit_comment() {
             fi
           fi
         fi
-        no_patch=1
       else
         if to_boolean "$DEBUG"; then
           cat "$response"
@@ -3012,10 +2973,6 @@ generate_curl_instructions() {
   echo "$instructions"
 }
 
-skip_curl() {
-  [ -n "$SKIP_CURL" ] || repo_is_private
-}
-
 set_patch_remove_add() {
   patch_remove="$(perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output")"
   begin_group 'New output'
@@ -3024,7 +2981,7 @@ set_patch_remove_add() {
     if [ -z "$patch_add" ]; then
       begin_group 'No misspellings'
       title="No new words with misspellings found"
-        spelling_info "$title" "There are currently $(wc -l "$expect_path"|sed -e 's/ .*//') expected items." ""
+      spelling_info "$title" "There are currently $(line_count < "$expect_path") expected items." ""
       end_group
       should_collapse_previous_and_not_comment
       quit 0
@@ -3043,10 +3000,7 @@ make_instructions() {
 fewer_misspellings() {
   begin_group 'Fewer misspellings'
   title='There are now fewer misspellings than before'
-  SKIP_CURL=1
   if [ -n "$INPUT_EXPERIMENTAL_COMMIT_NOTE" ]; then
-    skip_push_and_pop=1
-
     instructions="$(generate_curl_instructions)"
 
     . "$instructions" &&
@@ -3107,7 +3061,7 @@ more_misspellings() {
     make_instructions
   )
   (echo "$patch_add" | tr " " "\n" | grep . || true) > "$tokens_file"
-  unknown_count="$(cat "$tokens_file" | wc -l | strip_lead)"
+  unknown_count="$(line_count < "$tokens_file")"
   title='Please review'
   begin_group "Unrecognized ($unknown_count)"
   echo "unknown_words=$tokens_file" >> "$output_variables"
@@ -3187,4 +3141,3 @@ if [ -z "$patch_add" ]; then
   fewer_misspellings
 fi
 more_misspellings
-cat "$output_variables" >> "$GITHUB_OUTPUT"

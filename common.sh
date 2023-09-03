@@ -21,7 +21,7 @@ if [ "$INITIALIZED" != defined ]; then
   }
   start=$(now)
   export temp=$(mktemp -d)
-  if to_boolean "$DEBUG"; then
+  if to_boolean ${DEBUG:+"$DEBUG"}; then
     set -x
   fi
   begin_group() {
