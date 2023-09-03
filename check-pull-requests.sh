@@ -21,7 +21,11 @@ pulls="$temp/pulls.json"
 escaped="$temp/escaped.b64"
 pull="$temp/pull.json"
 fake_event="$temp/fake_event.json"
-tree_config="$bucket/$project/"
+if [ -n "$INPUT_BUCKET" ] && [ -n "$INPUT_PROJECT" ]; then
+tree_config="$INPUT_BUCKET/$INPUT_PROJECT/"
+else
+tree_config="$INPUT_CONFIG/"
+fi
 stored_config="$temp/config/"
 
 Q='"'
