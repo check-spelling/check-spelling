@@ -133,13 +133,13 @@ for a in $(cat "$escaped"); do
   fi
   head_sha="$(jq -r .head_sha "$pull")"
   base_sha="$(jq -r .base_sha "$pull")"
-  merge_commit_sha="$(jq -r .merge_commit_sha "$pull")"
+  merge_commit_sha="$(jq -r '.merge_commit_sha // empty' "$pull")"
   comments_url="$(jq -r .comments_url "$pull")"
   commits_url="$(jq -r .commits_url "$pull")"
   clone_url="$(jq -r .clone_url "$pull")"
   clone_url="${clone_url//https:/http:}"
   head_ref="$(jq -r .head_ref "$pull")"
-  echo "do work for $head_repo -> $base_repo: $head_sha as $merge_commit_sha"
+  echo "do work for $head_repo -> $base_repo: $head_sha as ${merge_commit_sha:-(merge commit not available)}"
   export GITHUB_SHA="$head_sha"
   export GITHUB_EVENT_NAME=pull_request
   echo '{}' | jq \
@@ -164,6 +164,7 @@ for a in $(cat "$escaped"); do
       rsync -a "$stored_config" "$tree_config"
       cleanup_tree_config=1
     fi
+    export INPUT_REPORT_TITLE_SUFFIX="$head_repo: $head_ref into -> $base_repo: $base_sha"
     "$spellchecker/unknown-words.sh" || true
     rm -rf "$temp"
     if [ -n "$cleanup_tree_config" ]; then
