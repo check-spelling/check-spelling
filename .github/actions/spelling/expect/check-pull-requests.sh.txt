@@ -1,4 +1,4 @@
-GRAPHQL
+graphql
 spellchecker
 timeframe
 vnd

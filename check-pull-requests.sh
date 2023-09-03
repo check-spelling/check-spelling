@@ -35,7 +35,7 @@ repo=${GITHUB_REPOSITORY#*/}
 length=20
 
 get_open_pulls() {
-query=$(echo "query {
+echo "query {
   repository(owner:${Q}$owner${Q} name:${Q}$repo${Q}) {
     pullRequests(first: $length states: OPEN $continue) {
       totalCount
@@ -70,8 +70,7 @@ query=$(echo "query {
       }
     }
   }
-}")
-echo '{}' | jq --arg query "$query" '.query = $query'
+}"
 }
 
 if [ -e "$pulls.nodes" ]; then
@@ -81,7 +80,7 @@ else
   touch "$pulls.nodes"
   while :
   do
-    curl -s -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" --data-binary "$(get_open_pulls)" "$GITHUB_GRAPHQL_URL" > "$pulls"
+    gh api graphql -f query="$(get_open_pulls)" > "$pulls"
     jq .data.repository.pullRequests "$pulls" > "$pulls.pull_requests"
     jq -c 'try .nodes[]' "$pulls.pull_requests" >> "$pulls.nodes"
     jq .pageInfo "$pulls.pull_requests" > "$pulls.page_info"
