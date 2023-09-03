@@ -124,6 +124,7 @@ dispatcher() {
       fi
       ;;
     schedule)
+      export GH_TOKEN="$GITHUB_TOKEN"
       exec "$spellchecker/check-pull-requests.sh"
       ;;
     issue_comment)
