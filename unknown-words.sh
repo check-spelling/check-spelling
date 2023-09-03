@@ -108,7 +108,7 @@ dispatcher() {
       if [ "$INPUT_TASK" = spelling ] && [ $(are_head_and_base_in_same_repo "$GITHUB_EVENT_PATH" '.pull_request') != 'true' ]; then
         api_output=$(mktemp)
         api_error=$(mktemp)
-        GH_TOKEN="$GITHUB_TOKEN" gh api --method POST -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/branches/$GITHUB_BASE_REF/rename" > "$api_output" 2> "$api_error" || true
+        GH_TOKEN="$GITHUB_TOKEN" gh api --method POST -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/branches/${GITHUB_BASE_REF:-$GITHUB_REF_NAME}/rename" > "$api_output" 2> "$api_error" || true
         if ! grep -Eq 'not authorized|not accessible' "$api_output"; then
           if to_boolean "$INPUT_USE_SARIF"; then
             INPUT_USE_SARIF=
