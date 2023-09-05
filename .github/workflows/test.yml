@@ -15,12 +15,12 @@ jobs:
     steps:
     - name: checkout-merge
       if: contains(github.event_name, 'pull_request')
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: refs/pull/${{github.event.pull_request.number}}/merge
     - name: checkout
       if: github.event_name == 'push'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: perl configuration
       id: perl-config
       run: |

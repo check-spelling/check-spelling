@@ -95,7 +95,7 @@ jobs:
       cancel-in-progress: true
     steps:
     - name: checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: ${{ !contains(env.workflow_check_commit_messages, 'commits') && '1' || '0' }}
     - name: test-clean
@@ -148,7 +148,7 @@ jobs:
     if: (success() || failure()) && needs.spelling.outputs.followup && github.event_name == 'push'
     steps:
     - name: checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: comment
       uses: ./
       with:
@@ -169,7 +169,7 @@ jobs:
     if: (success() || failure()) && needs.spelling.outputs.followup && contains(github.event_name, 'pull_request')
     steps:
     - name: checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: comment
       uses: ./
       with:
@@ -197,7 +197,7 @@ jobs:
       cancel-in-progress: false
     steps:
     - name: checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: apply spelling updates
       uses: ./
       with:

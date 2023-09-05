@@ -354,7 +354,7 @@ runs:
         echo "branch=$(echo '${{ inputs.alternate_engine }}' | perl -ne 'next unless s/.*\@//; print')" >> "$GITHUB_OUTPUT"
     - name: alternate-engine
       if: inputs.alternate_engine
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: alternate-engine
         repository: ${{ steps.parse-alternate-engine.outputs.repo }}
@@ -385,7 +385,7 @@ runs:
     - name: checkout
       id: checkout-replacement
       if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && env.replace_v3_actions_checkout
-      uses: check-spelling/actions-checkout@v3
+      uses: check-spelling/actions-checkout@v4
       with:
         path: ${{ inputs.experimental_path }}
         ssh-key: ${{ inputs.ssh_key }}
@@ -399,8 +399,8 @@ runs:
             ''
           }}
     - name: checkout
-      if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !env.replace_v3_actions_checkout
-      uses: actions/checkout@v3
+      if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !env.replace_v4_actions_checkout
+      uses: actions/checkout@v4
       with:
         path: ${{ inputs.experimental_path }}
         ssh-key: ${{ inputs.ssh_key }}
