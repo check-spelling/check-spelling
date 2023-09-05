@@ -61,7 +61,7 @@ sub compare_files {
     my ($one, $two) = @_;
     my $one_stripped = strip_comments($one);
     my $two_stripped = strip_comments($two);
-    `diff -qwB '$one' '$two'`;
+    `diff -qwB '$one_stripped' '$two_stripped'`;
     if ($? == -1) {
         print "could not compare '$one' and '$two': $!\n";
         return 0;
