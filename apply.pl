@@ -207,7 +207,7 @@ sub retrieve_spell_check_this {
     my %config;
     eval { %config = %{decode_json $spell_check_this_config}; } || die "decode_json failed in retrieve_spell_check_this with '$spell_check_this_config'";
     my ($repo, $branch, $destination, $path) = ($config{url}, $config{branch}, $config{config}, $config{path});
-    $spell_check_this_dir = tempdir();
+    my $spell_check_this_dir = tempdir();
     run_and_swallow_output(
         'git', 'clone',
         '--depth', '1',
