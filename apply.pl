@@ -166,8 +166,9 @@ sub gh_is_happy {
 }
 
 sub tools_are_ready {
-    unless (gh_is_happy()) {
-        die "$0 requires a happy gh, please try 'gh auth login'\n";
+    my ($program) = @_;
+    unless (gh_is_happy) {
+        die "$program requires a happy gh, please try 'gh auth login'\n";
     }
 }
 
@@ -342,19 +343,19 @@ sub get_artifacts {
                 my $expired;
                 eval { $expired = decode_json $expired_json } || die "decode_json failed in update_repository with '$expired_json'";
                 if ($expired) {
-                    print "Run artifact expired. You will need to trigger a new run.\n";
+                    print "$program: GitHub Run Artifact expired. You will need to trigger a new run.\n";
                     exit 1;
                 }
             }
-            print "Run may not have completed. If so, please wait for it to finish and try again.\n";
+            print "$program: GitHub Run may not have completed. If so, please wait for it to finish and try again.\n";
             exit 2;
         }
         if ($gh_err_text =~ /no artifact matches any of the names or patterns provided/) {
-            print "The referenced repository ($repo) run ($run) does not have a corresponding artifact ($artifact_name). If it was deleted, that's unfortunate. Consider pushing a change to the branch to trigger a new run?\n";
+            print "$program: The referenced repository ($repo) run ($run) does not have a corresponding artifact ($artifact_name). If it was deleted, that's unfortunate. Consider pushing a change to the branch to trigger a new run?\n";
             print "If you don't think anyone deleted the artifact, please file a bug to https://github.com/check-spelling/check-spelling/issues/new including as much information about how you triggered this error as possible.\n";
             exit 3;
         }
-        print "unknown error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
+        print "$program: Unknown error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
         print $gh_err_text;
         exit 4;
     }
@@ -366,7 +367,7 @@ sub update_repository {
     die if $artifact =~ /'/;
     my $apply = unzip_pipe_string($artifact, 'apply.json');
     unless ($apply =~ /\{.*\}/s) {
-        print STDERR "Could not retrieve valid apply.json from artifact\n";
+        print STDERR "$program: Could not retrieve valid apply.json from artifact\n";
         $apply = '{
             "expect_files": [".github/actions/spelling/expect.txt"],
             "new_expect_file": ".github/actions/spelling/expect.txt",
@@ -376,11 +377,11 @@ sub update_repository {
     }
     my $config_ref;
     eval { $config_ref = decode_json($apply); } ||
-        die "decode_json failed in update_repository with '$apply'";
+        die "$program: decode_json failed in update_repository with '$apply'";
 
     my $git_repo_root = join '', run_pipe('git', 'rev-parse', '--show-toplevel');
     chomp $git_repo_root;
-    die "$program could not find git repo root..." unless $git_repo_root =~ /\w/;
+    die "$program: Could not find git repo root..." unless $git_repo_root =~ /\w/;
     chdir $git_repo_root;
 
     retrieve_spell_check_this($artifact, $config_ref);
@@ -439,7 +440,7 @@ sub main {
         }
         die $syntax unless defined $repo && defined $run;
         # - 3 check for tool readiness (is `gh` working)
-        tools_are_ready();
+        tools_are_ready($program);
         @artifacts = get_artifacts($program, $repo, $run);
     }
 
