@@ -605,11 +605,17 @@ show_github_actions_push_disclaimer() {
   else
     qualified_workflow_path="workflow"
   fi
+  if [ "$(jq -r '.repository.owner.type // empty' "$GITHUB_EVENT_PATH" )" = 'User' ]; then
+    owner="$(jq -r '.repository.owner.login // empty' "$GITHUB_EVENT_PATH" )"
+    OWNER_TEXT="The owner ${owner:+"($owner)"}"
+  else
+    OWNER_TEXT='Users with the Admin role'
+  fi
   OUTPUT="### :hourglass: check-spelling changes applied
 
   As [configured](https://github.com/check-spelling/check-spelling/wiki/Feature:-Update-expect-list#github_token), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
 
-  <details><summary>Users with the Admin role can address this for future interactions :magic_wand:</summary>
+  <details><summary>$OWNER_TEXT can address this for future interactions :magic_wand:</summary>
 
   #### Create a deploy key and secret
   $B sh
