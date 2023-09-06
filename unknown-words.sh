@@ -2981,8 +2981,14 @@ set_patch_remove_add() {
 
     if [ -z "$patch_add" ]; then
       begin_group 'No misspellings'
+      expect_count="$(line_count < "$expect_path")"
+      if [ "$expect_count" = 0 ]; then
+        headline="There is currently _one_ expected item."
+      else
+        headline="There are currently $expect_count expected items."
+      fi
       title="No new words with misspellings found"
-      spelling_info "$title" "There are currently $(line_count < "$expect_path") expected items." ""
+      spelling_info "$title" "$headline" ""
       end_group
       should_collapse_previous_and_not_comment
       quit 0
