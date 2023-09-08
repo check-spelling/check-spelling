@@ -332,7 +332,7 @@ comment_task() {
   if [ -z "$has_errors" ] && [ -z "$patch_add" ]; then
     quit
   fi
-  more_misspellings
+  check_spelling_report
 }
 
 get_pull_request_url() {
@@ -2995,7 +2995,8 @@ set_patch_remove_add() {
   begin_group 'New output'
     patch_add="$(perl -ne 'next unless s/^\+([^+])/$1/; s/\n/ /; print' "$diff_output")"
 
-    if [ -z "$patch_add" ]; then
+    get_has_errors
+    if [ -z "$has_errors" ] && [ -z "$patch_add" ]; then
       begin_group 'No misspellings'
       expect_count="$(line_count < "$expect_path")"
       if [ "$expect_count" = 0 ]; then
@@ -3020,27 +3021,7 @@ make_instructions() {
   fi
 }
 
-fewer_misspellings() {
-  begin_group 'Fewer misspellings'
-  title='There are now fewer misspellings than before'
-  if [ -n "$INPUT_EXPERIMENTAL_COMMIT_NOTE" ]; then
-    instructions="$(generate_curl_instructions)"
-
-    . "$instructions" &&
-    git_commit "$INPUT_EXPERIMENTAL_COMMIT_NOTE" &&
-    git push origin "${GITHUB_HEAD_REF:-"$GITHUB_REF"}"
-    spelling_info "$title" "" "Applied"
-  else
-    instructions=$(
-      make_instructions
-    )
-    spelling_info "$title" "" "$instructions"
-  fi
-  end_group
-  should_collapse_previous_and_not_comment
-  quit
-}
-more_misspellings() {
+check_spelling_report() {
   if [ -s "$extra_dictionaries_json" ]; then
     "$output_covers" "$extra_dictionaries_json" > "$extra_dictionaries_cover_entries"
   elif [ -z "$INPUT_TASK" ] || [ "$INPUT_TASK" = 'spelling' ]; then
@@ -3085,8 +3066,16 @@ more_misspellings() {
   )
   (echo "$patch_add" | tr " " "\n" | grep . || true) > "$tokens_file"
   unknown_count="$(line_count < "$tokens_file")"
+  get_has_errors
   title='Please review'
-  begin_group "Unrecognized ($unknown_count)"
+  if [ -n "$patch_add" ]; then
+    begin_group "Unrecognized ($unknown_count)"
+  elif [ -n "$has_errors" ]; then
+    begin_group "Errors ..."
+  elif [ -n "$patch_remove" ]; then
+    begin_group 'Fewer misspellings'
+    title='There are now fewer misspellings than before'
+  fi
   echo "unknown_words=$tokens_file" >> "$output_variables"
   if [ "$unknown_count" -eq 0 ]; then
     unknown_word_body=''
@@ -3103,7 +3092,21 @@ $B
       unknown_word_body="$n#### $unrecognized_words_title$N$(cat "$tokens_file")"
     fi
   fi
-  spelling_warning "$title" "$unknown_word_body" "$N$(remove_items)$n" "$instructions"
+  if [ -n "$has_errors" ] || [ "$unknown_count" -gt 0 ]; then
+    spelling_warning "$title" "$unknown_word_body" "$N$(remove_items)$n" "$instructions"
+  else
+    if [ -n "$INPUT_EXPERIMENTAL_COMMIT_NOTE" ]; then
+      instructions="$(generate_curl_instructions)"
+
+      . "$instructions" &&
+      git_commit "$INPUT_EXPERIMENTAL_COMMIT_NOTE" &&
+      git push origin "${GITHUB_HEAD_REF:-"$GITHUB_REF"}"
+      spelling_info "$title" "" "Applied"
+    else
+      spelling_info "$title" "" "$instructions"
+    fi
+    should_collapse_previous_and_not_comment
+  fi
   end_group
   echo "$title"
   if [ -n "$comment_author_id" ]; then
@@ -3160,7 +3163,4 @@ exit_if_no_unknown_words
 compare_new_output
 fewer_misspellings_canary="$(mktemp)"
 set_patch_remove_add
-if [ -z "$patch_add" ]; then
-  fewer_misspellings
-fi
-more_misspellings
+check_spelling_report
