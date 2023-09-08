@@ -1607,8 +1607,8 @@ set_up_reporter() {
     set_up_tools
     sarif_error=$(mktemp)
     sarif_output=$(mktemp_json)
-    GH_TOKEN="$GITHUB_TOKEN" gh api "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/code-scanning/alerts/0" > "$sarif_output" 2> "$sarif_error" || true
-    if grep -q 403 "$sarif_error" ||
+    GH_TOKEN="$GITHUB_TOKEN" gh api --method POST -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/code-scanning/sarifs" > "$sarif_output" 2> "$sarif_error" || true
+    if grep -q 'Advanced Security must be enabled' "$sarif_error" ||
        grep -q 'GH_TOKEN environment' "$sarif_error"; then
       if true || to_boolean "$DEBUG"; then
         cat "$sarif_error"
@@ -1617,7 +1617,6 @@ set_up_reporter() {
       fi
       WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY="$INPUT_USE_SARIF"
     else
-      GH_TOKEN="$GITHUB_TOKEN" gh api --method POST -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/code-scanning/sarifs" > "$sarif_output" 2> "$sarif_error" || true
       if grep -Eq 'not authorized|not accessible' "$sarif_output"; then
         if true || to_boolean "$DEBUG"; then
           cat "$sarif_error"
