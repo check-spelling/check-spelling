@@ -2458,10 +2458,7 @@ spelling_body() {
         echo '::error title=Excludes generation failed::Please file a bug (excludes-generation-failed)' >&2
       else
         echo "should_exclude_patterns=$should_exclude_patterns" >> "$output_variables"
-        exclude_files_text=" and update file exclusions"
-        if [ -n "$add_spell_check_this_text" ]; then
-          exclude_files_text=",$exclude_files_text"
-        fi
+        exclude_files_text="update file exclusions"
         output_excludes="$(echo "
           <details><summary>Some files were automatically ignored :see_no_evil:</summary>
 
@@ -2539,8 +2536,18 @@ spelling_body() {
         </details>
       " | strip_lead)"
     fi
-    if [ -n "$err" ]; then
-      accept_heading="To accept $add_spell_check_this_text these unrecognized words as correct$cleanup_text$exclude_files_text"
+    if ! to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES" && [ -n "$patch_add" ]; then
+      can_offer_to_apply=1
+      accept_words_text="accept $add_spell_check_this_text these unrecognized words as correct$cleanup_text"
+    fi
+    if [ "$can_offer_to_apply" = 1 ]; then
+      if [ -n "$accept_words_text" ] && [ -n "$exclude_files_text" ]; then
+        accept_conjunction=' and '
+        if [ -n "$add_spell_check_this_text" ]; then
+          accept_conjunction=', and '
+        fi
+      fi
+      accept_heading="To $accept_words_text$accept_conjunction$exclude_files_text"
       output_accept_script="$(echo "
         <details><summary>$accept_heading,
         run the following commands</summary>
