@@ -1073,6 +1073,7 @@ define_variables() {
   remove_words="$data_dir/remove_words.txt"
   action_log_ref="$data_dir/action_log_ref.txt"
   action_log_file_name="$data_dir/action_log_file_name.txt"
+  jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   export sarif_overlay_path="$data_dir/overlay.sarif.json"
   file_list="$data_dir/checked_files.lst"
@@ -2782,7 +2783,6 @@ update_would_change_things() {
 
 add_talk_to_bot_message() {
   if offer_quote_reply && update_would_change_things; then
-    jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
     quote_reply_insertion="$(mktemp)"
     (
       if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
@@ -2982,8 +2982,6 @@ generate_curl_instructions() {
   if [ -n "$ACT" ]; then
     echo '# look for the instructions to extract `artifact.zip` from your log' >> "$instructions"
     jobs_summary_link=./artifact.zip
-  else
-    jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
   fi
   calculate_exclude_patterns
   echo "curl -s -S -L 'https://raw.githubusercontent.com/$GH_ACTION_REPOSITORY/$GH_ACTION_REF/apply.pl' |
