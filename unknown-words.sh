@@ -1073,6 +1073,7 @@ define_variables() {
   remove_words="$data_dir/remove_words.txt"
   action_log_ref="$data_dir/action_log_ref.txt"
   action_log_file_name="$data_dir/action_log_file_name.txt"
+  job_id_ref="$data_dir/job_id_ref.txt"
   jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   export sarif_overlay_path="$data_dir/overlay.sarif.json"
@@ -2309,6 +2310,7 @@ get_action_log() {
         fi
       fi
       echo "$action_log" > "$action_log_ref"
+      echo "${job_log##*/}" > "$job_id_ref"
     fi
   fi
   echo "$action_log"
@@ -2346,6 +2348,7 @@ spelling_body() {
   extra="$2"
   err="$3"
   action_log_markdown="the [:scroll:action log]($(get_action_log))"
+  memo="[:memo: job summary]($jobs_summary_link#summary-$(cat "$job_id_ref" 2>/dev/null))"
   if to_boolean "$INPUT_USE_SARIF"; then
     pr_number=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
     if [ -n "$pr_number" ]; then
@@ -2353,14 +2356,12 @@ spelling_body() {
     else
       sarif_report_query="branch:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
     fi
-    sarif_report="[:angel: SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+$sarif_report_query)"
+    sarif_report="[:angel: SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+$sarif_report_query),"
     # check-spelling here corresponds to the uses github/codeql-action/upload-sarif / with / category
     code_scanning_results_run=$(GH_TOKEN="$GITHUB_TOKEN" gh api "/repos/$GITHUB_REPOSITORY/commits/${GITHUB_HEAD_SHA:-$GITHUB_SHA}/check-runs" -q '.check_runs|map(select(.app.id==57789 and .name=="check-spelling"))[0].url // empty' || true)
     if [ -n "$code_scanning_results_run" ]; then
       code_scanning_results_url=$(GH_TOKEN="$GITHUB_TOKEN" gh api "$code_scanning_results_run" -q '.html_url // empty')
-      sarif_report=", $sarif_report or [:mag_right:]($code_scanning_results_url)"
-    else
-      sarif_report="or $sarif_report"
+      sarif_report="$sarif_report [:mag_right:]($code_scanning_results_url),"
     fi
     or_markdown=','
   else
@@ -2369,9 +2370,9 @@ spelling_body() {
 
   case "$GITHUB_EVENT_NAME" in
     pull_request|pull_request_target)
-      details_note="See the [:open_file_folder: files]($(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")/files/) view$or_markdown $action_log_markdown $sarif_report for details.";;
+      details_note="See the [:open_file_folder: files]($(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")/files/) view, $action_log_markdown, $sarif_report or $memo for details.";;
     push)
-      details_note="See $action_log_markdown $sarif_report for details.";;
+      details_note="See $action_log_markdown${sarif_report:+,} $sarif_report or $memo for details.";;
     *)
       details_note=$(echo "<!-- If you can see this, please [file a bug](https://github.com/$GH_ACTION_REPOSITORY/issues/new)
         referencing this comment url, as the code does not expect this to happen. -->" | strip_lead);;
