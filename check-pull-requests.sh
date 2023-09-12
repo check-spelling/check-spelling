@@ -80,7 +80,7 @@ else
   do
     curl -s -H "Authorization: token $GITHUB_TOKEN" --header "Content-Type: application/json" --data-binary "$(get_open_pulls)" $GITHUB_GRAPHQL_URL > $pulls
     cat "$pulls" | jq .data.repository.pullRequests > "$pulls.pull_requests"
-    cat "$pulls.pull_requests" | jq -c '.nodes[]' >> "$pulls.nodes"
+    cat "$pulls.pull_requests" | jq -c 'try .nodes[]' >> "$pulls.nodes"
     cat "$pulls.pull_requests" | jq .pageInfo > "$pulls.page_info"
     if [ "$(cat "$pulls.page_info" | jq -c -r .hasNextPage)" != "true" ]; then
       continue=''

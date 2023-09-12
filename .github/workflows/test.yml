@@ -11,28 +11,103 @@ jobs:
   test:
     name: Perl
     runs-on: ubuntu-latest
-    if: "contains(github.event_name, 'pull_request') || github.event_name == 'push'"
+    if: contains(github.event_name, 'pull_request') || github.event_name == 'push'
     steps:
     - name: checkout-merge
-      if: "contains(github.event_name, 'pull_request')"
+      if: contains(github.event_name, 'pull_request')
       uses: actions/checkout@v3
       with:
         ref: refs/pull/${{github.event.pull_request.number}}/merge
     - name: checkout
       if: github.event_name == 'push'
       uses: actions/checkout@v3
+    - name: perl configuration
+      id: perl-config
+      run: |
+        perl_modules="$(
+          echo "
+          Module::Build::Tiny
+          Devel::Cover
+          IO::Capture::Stderr
+          Hash::Merge
+          Text::Hunspell
+          " |sort|xargs)"
+        perl_modules_sha=$(echo "$perl_modules" | shasum | perl -pe 's/\s.*//')
+        installsitearch=$(perl -V:'installsitearch' | perl -pe 's/.*=.(.*).;/$1/')
+        installsitelib=$(perl -V:'installsitelib' | perl -pe 's/.*=.(.*).;/$1/')
+        sudo install -d -o $(whoami) "$installsitearch" "$installsitelib"
+        (
+          echo "installsitearch=$installsitearch"
+          echo "installsitelib=$installsitelib"
+          echo "perl-modules=$perl_modules"
+          echo "perl-key=perl-$(perl -e 'print "$^V"')-$perl_modules_sha"
+        ) >> "$GITHUB_OUTPUT"
+    - name: retrieve perl libraries arch
+      id: retrieve-perl-libraries-arch
+      uses: actions/cache/restore@v3
+      with:
+        path: ${{ steps.perl-config.outputs.installsitearch }}
+        key: ${{ steps.perl-config.outputs.perl-key }}-arch
+    - name: retrieve perl libraries lib
+      id: retrieve-perl-libraries-lib
+      uses: actions/cache/restore@v3
+      with:
+        path: ${{ steps.perl-config.outputs.installsitelib }}
+        key: ${{ steps.perl-config.outputs.perl-key }}-lib
+    - name: retrieve jd
+      id: retrieve-jd
+      uses: actions/cache/restore@v3
+      with:
+        path: ~/go/bin/jd
+        key: jd-${{ runner.os }}
     - name: test
       id: test
       shell: bash
       run: |
         (
-          sudo apt-get update &&
-          sudo apt-get install -y cpanminus &&
-          perl `command -v cpanm` -S --notest Module::Build::Tiny Devel::Cover IO::Capture::Stderr
+          PATH=$PATH:~/go/bin
+          cpan_modules=$(
+            for module in ${{ steps.perl-config.outputs.perl-modules }}; do
+              perl -e "use $module; 1;" > /dev/null 2>/dev/null || echo $module
+            done | xargs
+          )
+          [ -z "$cpan_modules" ] || command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
+          command -v jd && HAS_JD=1 || HAS_JD=
+          [ -n "$HAS_JD" ] || command -v go >/dev/null 2>/dev/null || GO_PACKAGE=" golang"
+          APT_PACKAGES="$GO_PACKAGE"
+          [ -z "$APT_PACKAGES" ] ||
+          (
+            APT_PACKAGES="$GO_PACKAGE"
+            sudo apt-get install -y $APT_PACKAGES ||
+            sudo apt-get update &&
+            sudo apt-get install -y $APT_PACKAGES
+          )
+          [ -z "$cpan_modules" ] || perl `command -v cpanm` -S --notest $cpan_modules
+          [ -n "$HAS_JD" ] || go install 'github.com/josephburnett/jd@latest' || echo 'Could not install jd' >&2
         ) > /tmp/prework || (cat /tmp/prework && false)
         ./Build.PL
         ./Build build
         perl `command -v cover` -test
+    - name: save perl libraries arch
+      if: ${{ steps.retrieve-perl-libraries-arch.outputs.cache-hit != 'true' }}
+      id: save-perl-libraries-arch
+      uses: actions/cache/save@v3
+      with:
+        path: ${{ steps.perl-config.outputs.installsitearch }}
+        key: ${{ steps.perl-config.outputs.perl-key }}-arch
+    - name: save perl libraries lib
+      if: ${{ steps.retrieve-perl-libraries-lib.outputs.cache-hit != 'true' }}
+      id: save-perl-libraries-lib
+      uses: actions/cache/save@v3
+      with:
+        path: ${{ steps.perl-config.outputs.installsitelib }}
+        key: ${{ steps.perl-config.outputs.perl-key }}-lib
+    - name: save jd
+      if: ${{ steps.retrieve-jd.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v3
+      with:
+        path: ~/go/bin/jd
+        key: jd-${{ runner.os }}
     - name: store-coverage
       uses: actions/upload-artifact@v3
       timeout-minutes: 5

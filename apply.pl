@@ -1,7 +1,9 @@
 #!/usr/bin/env perl
+":" || q@<<"=END_OF_PERL"@;
 
-use File::Path qw(make_path);
 use File::Basename qw(dirname);
+use File::Path qw(make_path);
+use File::Spec::Functions qw(catfile path);
 use File::Temp qw/ tempfile tempdir /;
 use JSON::PP;
 use warnings;
@@ -16,13 +18,26 @@ my @safe_path = qw(
     /sbin
 );
 
-my $ua = 'check-spelling-agent/0.0.1';
+my $ua = 'check-spelling-agent/0.0.2';
 
 $ENV{'PATH'} = join ':', @safe_path unless defined $ENV{SYSTEMROOT};
 
 sub check_exists_command {
-    my $check = `/bin/sh -c 'command -v $_[0]'`;
-    return $check;
+    my ($program) = @_;
+
+    my @path = path;
+    my @pathext = ('');
+
+    if ($^O eq 'MSWin32') {
+        push @pathext, map { lc } split /;/, $ENV{PATHEXT};
+    }
+
+    for my $dir (@path) {
+        for my $suffix (@pathext) {
+            my $f = catfile $dir, "$program$suffix";
+            return $f if -x $f;
+        }
+    }
 }
 
 sub needs_command_because {
@@ -41,7 +56,18 @@ sub check_basic_tools {
 sub download_with_curl {
     my ($url, $dest, $flags) = @_;
     $flags = '-fsL' unless defined $flags;
-    `curl -A '$ua' $flags -o '$dest' '$url'`;
+    system('curl',
+        '-A', $ua,
+        $flags,
+        '-o', $dest,
+        $url
+    );
+}
+
+sub tempfile_name {
+    my ($fh, $filename) = tempfile();
+    close $fh;
+    return $filename;
 }
 
 sub strip_comments {
@@ -57,11 +83,26 @@ sub strip_comments {
     return $filename;
 }
 
+sub run_program_capture_output {
+    my ($output, $error, @arguments) = @_;
+    $ENV{'OUTPUT'} = $output;
+    $ENV{'ERROR'} = $error;
+    system('/bin/sh', $0, @arguments);
+}
+
+sub run_and_swallow_output {
+    run_program_capture_output('/dev/null', '/dev/null', @_);
+}
+
 sub compare_files {
     my ($one, $two) = @_;
     my $one_stripped = strip_comments($one);
     my $two_stripped = strip_comments($two);
-    `diff -qwB '$one' '$two'`;
+    run_and_swallow_output(
+        'diff',
+        '-qwB',
+        $one, $two
+    );
     if ($? == -1) {
         print "could not compare '$one' and '$two': $!\n";
         return 0;
@@ -75,10 +116,29 @@ sub compare_files {
     return 1;
 }
 
+my $bash_script=q{
+=END_OF_PERL@
+# bash
+set -e
+if [ "$OUTPUT" = "$ERROR" ]; then
+    ("$@" 2>&1) > "$OUTPUT"
+else
+    "$@" > "$OUTPUT" 2> "$ERROR"
+fi
+exit
+};
+
 sub check_current_script {
-    return if "$0" eq '-';
-    my ($fh, $filename) = tempfile();
-    close $fh;
+    if ("$0" eq '-') {
+        my ($bash_script) = @_;
+        my $fh;
+        ($fh, $0) = tempfile();
+        $bash_script =~ s/^=.*\@$//m;
+        print $fh $bash_script;
+        close $fh;
+        return;
+    }
+    $filename = tempfile_name();
     my $source = 'https://raw.githubusercontent.com/check-spelling/check-spelling/prerelease/apply.pl';
     download_with_curl($source, $filename);
     if ($? == 0) {
@@ -89,11 +149,16 @@ sub check_current_script {
 }
 
 sub gh_is_happy {
-    my $gh_auth_status = `gh auth status 2>&1`;
-    return 1 if $? == 0;
-    if ($? != 0) {
-        if ($? >> 8) {
-            print $gh_auth_status;
+    my (@output, $output, $gh_status);
+    $gh_status = tempfile_name();
+    run_program_capture_output($gh_status, $gh_status, 'gh', 'auth', 'status');
+    my $gh_auth_status = $?;
+    return 1 if $gh_auth_status == 0;
+    if ($gh_auth_status != 0) {
+        if ($gh_auth_status >> 8) {
+            open my $fh, '<', $gh_status;
+            print while (<$fh>);
+            close $fh;
             return 0;
         }
     }
@@ -110,18 +175,55 @@ sub maybe_unlink {
     unlink($_[0]) if $_[0];
 }
 
+sub run_pipe {
+    my $out = tempfile_name();
+    run_program_capture_output($out, '/dev/null', @_);
+    my @lines;
+    open my $fh, '<', $out;
+    while (<$fh>) {
+        push @lines, $_;
+    }
+    close $fh;
+    return @lines;
+}
+
+sub unzip_pipe {
+    my ($artifact, $file) = @_;
+    my $output;
+    return run_pipe(
+        'unzip',
+        '-p', $artifact,
+        $file
+    );
+}
+
+sub unzip_pipe_string {
+    return join '', unzip_pipe(@_);
+}
+
 sub retrieve_spell_check_this {
     my ($artifact, $config_ref) = @_;
-    my $spell_check_this_config = `unzip -p '$artifact' 'spell_check_this.json' 2>/dev/null`;
+    my $spell_check_this_config = unzip_pipe_string($artifact, 'spell_check_this.json');
     return unless $spell_check_this_config =~ /\{.*\}/s;
     my %config;
     eval { %config = %{decode_json $spell_check_this_config}; } || die "decode_json failed in retrieve_spell_check_this with '$spell_check_this_config'";
     my ($repo, $branch, $destination, $path) = ($config{url}, $config{branch}, $config{config}, $config{path});
     $spell_check_this_dir = tempdir();
-    system("git clone --depth 1 --no-tags $repo --branch $branch $spell_check_this_dir > /dev/null 2> /dev/null");
+    run_and_swallow_output(
+        'git', 'clone',
+        '--depth', '1',
+        '--no-tags',
+        $repo,
+        '--branch', $branch,
+        $spell_check_this_dir
+    );
+    if ($?) {
+        die "git clone $repo#$branch failed";
+    }
+
     make_path($destination);
-    system("cp -i -R \$(cd '$spell_check_this_dir/$path/'; pwd)/* '$destination'");
-    system("git add '$destination'");
+    system('cp', '-i', '-R', glob("$spell_check_this_dir/$path/*"), $destination);
+    system('git', 'add', '-f', $destination);
 }
 
 sub case_biased {
@@ -132,9 +234,12 @@ sub add_to_excludes {
     my ($artifact, $config_ref) = @_;
     my %config = %{$config_ref};
     my $excludes = $config{"excludes_file"};
-    my $should_exclude_patterns = `unzip -p '$artifact' should_exclude.txt 2>/dev/null`;
-    return unless $should_exclude_patterns =~ /\w/;
-    $should_exclude_patterns =~ s{^(.*)}{^\\Q$1\\E\$}gm;
+    my $should_exclude_patterns = unzip_pipe_string($artifact, 'should_exclude.patterns');
+    unless ($should_exclude_patterns =~ /\w/) {
+        $should_exclude_patterns = unzip_pipe_string($artifact, 'should_exclude.txt');
+        return unless $should_exclude_patterns =~ /\w/;
+        $should_exclude_patterns =~ s{^(.*)}{^\\Q$1\\E\$}gm;
+    }
     open EXCLUDES, '<', $excludes;
     my %excludes;
     while (<EXCLUDES>) {
@@ -153,7 +258,7 @@ sub add_to_excludes {
 
 sub remove_stale {
     my ($artifact, $config_ref) = @_;
-    my @stale = split /\s+/s, `unzip -p '$artifact' remove_words.txt 2>/dev/null`;
+    my @stale = split /\s+/s, unzip_pipe_string($artifact, 'remove_words.txt');
     return unless @stale;
     my %config = %{$config_ref};
     my @expect_files = @{$config{"expect_files"}};
@@ -166,27 +271,24 @@ sub remove_stale {
     }
 
     my $re = join "|", @stale;
-    my $suffix = ".".time();
-    my $previous = "";
-    my $old_argv = '';
     for my $file (@expect_files) {
-        my $rewritten = "$file$suffix";
         open INPUT, '<', $file;
-        open OUTPUT, '>', $rewritten;
+        my @keep;
         while (<INPUT>) {
             next if /^(?:$re)(?:(?:\r|\n)*$| .*)/;
-            print OUTPUT $_;
+            push @keep, $_;
         }
-        close OUTPUT;
         close INPUT;
-        rename($rewritten, $file);
+
+        open OUTPUT, '>', $file;
+        print OUTPUT join '', @keep;
+        close OUTPUT;
     };
-    maybe_unlink($previous);
 }
 
 sub add_expect {
     my ($artifact, $config_ref) = @_;
-    my @add = `unzip -p '$artifact' tokens.txt 2>/dev/null`;
+    my @add = unzip_pipe($artifact, 'tokens.txt');
     return unless @add;
     my %config = %{$config_ref};
     my $new_expect_file = $config{"new_expect_file"};
@@ -203,27 +305,41 @@ sub add_expect {
     @words = sort case_biased keys %items;
     open FILE, q{>}, $new_expect_file;
     for my $word (@words) {
-        chomp $word;
-        print FILE "$word\n" if $word =~ /\w/;
+        print FILE "$word" if $word =~ /\S/;
     };
     close FILE;
     system("git", "add", $new_expect_file);
 }
 
-sub get_artifact {
+sub get_artifacts {
     my ($program, $repo, $run) = @_;
     my $artifact_dir = tempdir(CLEANUP => 1);
-    my ($fh, $gh_err) = tempfile();
-    close $fh;
+    my $gh_err_text;
+    my $artifact_name = 'check-spelling-comment';
+    my $out = tempfile_name();
 
-    my $ret = system("gh run download -D '$artifact_dir' -R '$repo' '$run' -n check-spelling-comment 2> '$gh_err'");
+    run_program_capture_output($out, $out,
+        'gh', 'run', 'download',
+        '-D', $artifact_dir,
+        '-R', $repo,
+        $run,
+        '-n', $artifact_name
+    );
+    my $ret = $?;
     if (($ret >> 8)) {
-        open GH_ERR, '<', $gh_err;
-            local $/;
-            $gh_err_text = <GH_ERR>;
-        close GH_ERR;
+        open my $fh, '<', $out;
+        while (<$fh>) {
+            $gh_err_text .= $_;
+        }
+        close $fh;
+
         if ($gh_err_text =~ /no valid artifacts found to download/) {
-            my $expired_json = `gh api /repos/$repo/actions/runs/$run/artifacts -q '.artifacts.[]|select(.name=="check-spelling-comment")|.expired'`;
+            my $expired_json = join '', run_pipe(
+                'gh', 'api',
+                "/repos/$repo/actions/runs/$run/artifacts",
+                '-q',
+                '.artifacts.[]|select(.name=="check-spelling-comment")|.expired'
+            );
             if ($expired_json ne '') {
                 chomp $expired_json;
                 my $expired;
@@ -237,35 +353,35 @@ sub get_artifact {
             exit 2;
         }
         if ($gh_err_text =~ /no artifact matches any of the names or patterns provided/) {
-            print "unexpected error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
-            print $gh_err;
+            print "The referenced repository ($repo) run ($run) does not have a corresponding artifact ($artifact_name). If it was deleted, that's unfortunate. Consider pushing a change to the branch to trigger a new run?\n";
+            print "If you don't think anyone deleted the artifact, please file a bug to https://github.com/check-spelling/check-spelling/issues/new including as much information about how you triggered this error as possible.\n";
             exit 3;
         }
         print "unknown error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
-        print "$gh_err";
+        print $gh_err_text;
         exit 4;
     }
-    return "$artifact_dir/artifact.zip";
+    return glob("$artifact_dir/artifact*.zip");
 }
 
 sub update_repository {
     my ($program, $artifact) = @_;
     die if $artifact =~ /'/;
-    my $apply = `unzip -p '$artifact' 'apply.json' 2>/dev/null`;
+    my $apply = unzip_pipe_string($artifact, 'apply.json');
     unless ($apply =~ /\{.*\}/s) {
         print STDERR "Could not retrieve valid apply.json from artifact\n";
         $apply = '{
             "expect_files": [".github/actions/spelling/expect.txt"],
             "new_expect_file": ".github/actions/spelling/expect.txt",
             "excludes_file": ".github/actions/spelling/excludes.txt",
-            "config": ".github/actions/spelling"
+            "spelling_config": ".github/actions/spelling"
         }';
     }
     my $config_ref;
     eval { $config_ref = decode_json($apply); } ||
         die "decode_json failed in update_repository with '$apply'";
 
-    my $git_repo_root = `git rev-parse --show-toplevel`;
+    my $git_repo_root = join '', run_pipe('git', 'rev-parse', '--show-toplevel');
     chomp $git_repo_root;
     die "$program could not find git repo root..." unless $git_repo_root =~ /\w/;
     chdir $git_repo_root;
@@ -274,11 +390,11 @@ sub update_repository {
     remove_stale($artifact, $config_ref);
     add_expect($artifact, $config_ref);
     add_to_excludes($artifact, $config_ref);
-    system("git add -u");
+    system('git', 'add', '-u', '--', $config_ref->{'spelling_config'});
 }
 
 sub main {
-    my ($program, $first, $run) = @_;
+    my ($program, $bash_script, $first, $run) = @_;
     my $syntax = "$program <RUN_URL | OWNER/REPO RUN | ARTIFACT.zip>";
     # Stages
     # - 1 check for tools basic
@@ -287,12 +403,13 @@ sub main {
     # -> 1 download the latest version to a temp file
     # -> 2. parse current and latest (stripping comments) and compare (whitespace insensitively)
     # -> 3. offer to update if the latest version is different
-    check_current_script();
+    check_current_script($bash_script);
     # - 4 parse arguments
     die $syntax unless defined $first;
-    my ($repo, $artifact);
+    my $repo;
+    my @artifacts;
     if (-s $first) {
-        $artifact = $first;
+        my $artifact = $first;
         open my $artifact_reader, '-|', 'unzip', '-l', $artifact;
         my ($has_artifact, $only_file) = (0, 0);
         while (my $line = <$artifact_reader>) {
@@ -313,7 +430,9 @@ sub main {
             my ($fh, $gh_err) = tempfile();
             close $fh;
             system('unzip', '-d', $artifact_dir, $artifact, 'artifact.zip');
-            $artifact = "$artifact_dir/artifact.zip";
+            @artifacts = ("$artifact_dir/artifact.zip");
+        } else {
+            @artifacts = ($artifact);
         }
     } else {
         if ($first =~ m{^\s*https://.*/([^/]+/[^/]+)/actions/runs/(\d+)(?:/attempts/\d+|)\s*$}) {
@@ -324,10 +443,13 @@ sub main {
         die $syntax unless defined $repo && defined $run;
         # - 3 check for tool readiness (is `gh` working)
         tools_are_ready();
-        $artifact = get_artifact($program, $repo, $run);
+        @artifacts = get_artifacts($program, $repo, $run);
     }
 
     # - 5 do work
-    update_repository($program, $artifact);
+    for my $artifact (@artifacts) {
+        update_repository($program, $artifact);
+    }
 }
-main($0, @ARGV);
+
+main($0 ne '-' ? $0 : 'apply.pl', $bash_script, @ARGV);

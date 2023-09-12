@@ -1,2 +1,8 @@
+.secrets
 blib/
+Build
 cover_db/
+coverage/
+local/
+/CheckSpelling/
+MYMETA.*

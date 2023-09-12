@@ -1,3 +1,5 @@
-cspell
-jsoref
+cpan
+cpanmin
+installsitearch
+installsitelib
 stdbuf

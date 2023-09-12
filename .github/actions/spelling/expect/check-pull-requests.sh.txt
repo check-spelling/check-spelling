@@ -1,5 +1,4 @@
 GRAPHQL
-oid
 spellchecker
 timeframe
 vnd

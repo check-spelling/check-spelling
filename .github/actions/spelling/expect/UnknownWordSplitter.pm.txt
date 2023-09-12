@@ -1,2 +1,4 @@
-csv
+ALRM
+dic
+hunspell
 xge

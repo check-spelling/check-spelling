@@ -115,6 +115,13 @@ sub count_warning {
   }
 }
 
+sub report_timing {
+  my ($name, $start_time, $directory, $marker) = @_;
+  my $end_time = (stat "$directory/$marker")[9];
+  $name =~ s/"/\\"/g;
+  print TIMING_REPORT "\"$name\", $start_time, $end_time\n";
+}
+
 sub main {
   my @directories;
   my @cleanup_directories;
@@ -129,16 +136,23 @@ sub main {
   my $should_exclude_file = CheckSpelling::Util::get_file_from_env('should_exclude_file', '/dev/null');
   my $unknown_word_limit = CheckSpelling::Util::get_val_from_env('unknown_word_limit', undef);
   my $candidate_summary = CheckSpelling::Util::get_file_from_env('candidate_summary', '/dev/stderr');
+  my $candidate_example_limit = CheckSpelling::Util::get_file_from_env('INPUT_CANDIDATE_EXAMPLE_LIMIT', '3');
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
   my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
   my $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
   my $file_list = CheckSpelling::Util::get_file_from_env('check_file_names', '');
+  my $timing_report = CheckSpelling::Util::get_file_from_env('timing_report', '');
+  my ($start_time, $end_time);
 
   open WARNING_OUTPUT, '>:utf8', $warning_output;
   open MORE_WARNINGS, '>:utf8', $more_warnings;
   open COUNTER_SUMMARY, '>:utf8', $counter_summary;
   open SHOULD_EXCLUDE, '>:utf8', $should_exclude_file;
   open CANDIDATE_SUMMARY, '>:utf8', $candidate_summary;
+  if ($timing_report) {
+    open TIMING_REPORT, '>:utf8', $timing_report;
+    print TIMING_REPORT "file, start, finish\n";
+  }
 
   my @candidates;
   if (defined $ENV{'candidates_path'}) {
@@ -185,6 +199,9 @@ sub main {
     next unless open(NAME, '<:utf8', "$directory/name");
     my $file=<NAME>;
     close NAME;
+    if ($timing_report) {
+      $start_time = (stat "$directory/name")[9];
+    }
 
     if (-e "$directory/skipped") {
       open SKIPPED, '<:utf8', "$directory/skipped";
@@ -192,13 +209,17 @@ sub main {
       close SKIPPED;
       chomp $reason;
       push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because $reason\n";
-      print SHOULD_EXCLUDE "$file\n";
+      print SHOULD_EXCLUDE "$file\n" unless $file eq $file_list;
       push @cleanup_directories, $directory;
+      report_timing($file, $start_time, $directory, 'skipped') if ($timing_report);
       next;
     }
 
     # stats isn't written if all words in the file are in the dictionary
-    next unless (-s "$directory/stats");
+    unless (-s "$directory/stats") {
+      report_timing($file, $start_time, $directory, 'warnings') if ($timing_report);
+      next;
+    }
 
     if ($file eq $file_list) {
       open FILE_LIST, '<:utf8', $file_list;
@@ -229,7 +250,7 @@ sub main {
             my $hits = $candidate_list[$i];
             if ($hits) {
               $candidate_totals[$i] += $hits;
-              if ($candidate_file_counts[$i]++ < 3) {
+              if ($candidate_file_counts[$i]++ < $candidate_example_limit) {
                 my $pattern = (split /\n/,$candidates[$i])[-1];
                 my $position = $lines[$i];
                 $position =~ s/:(\d+)$/ ... $1/;
@@ -242,14 +263,19 @@ sub main {
       #print STDERR "$file (unrecognized: $unrecognized; unique: $unique; unknown: $unknown, words: $words, candidates: [".join(", ", @candidate_list)."])\n";
     }
 
+    report_timing($file, $start_time, $directory, 'unknown') if ($timing_report);
     # These heuristics are very new and need tuning/feedback
     if (
         ($unknown > $unique)
         # || ($unrecognized > $words / 2)
     ) {
       unless ($disable_noisy_file) {
-        push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because there seems to be more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). (noisy-file)\n";
-        print SHOULD_EXCLUDE "$file\n";
+        if ($file eq $file_list) {
+          push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping file names because there seems to be more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). (noisy-file-list)\n"
+        } else {
+          push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because there seems to be more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). (noisy-file)\n";
+          print SHOULD_EXCLUDE "$file\n";
+        }
         push @cleanup_directories, $directory;
         next;
       }
@@ -285,6 +311,7 @@ sub main {
     push @directories, $directory;
   }
   close SHOULD_EXCLUDE;
+  close TIMING_REPORT if $timing_report;
 
   if (@candidate_totals) {
     my @indices = sort {
@@ -325,23 +352,28 @@ sub main {
     close NAME;
     my $is_file_list = $file eq $file_list;
     open WARNINGS, '<:utf8', "$directory/warnings";
-    for $warning (<WARNINGS>) {
-      chomp $warning;
-      if (!$is_file_list) {
-        if ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:$1:$2, Warning - `$3` is not a recognized word. (unrecognized-spelling)/) {
+    if (!$is_file_list) {
+      for $warning (<WARNINGS>) {
+        chomp $warning;
+        if ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:$1:$2, Warning - `$3` is not a recognized word\. \(unrecognized-spelling\)/) {
           my ($line, $range, $item) = ($1, $2, $3);
           next if log_skip_item($item, $file, $warning, $unknown_word_limit);
         } else {
+          if ($warning =~ /\`(.*?)\` in line\. \(token-is-substring\)/) {
+            next if skip_item($1);
+          }
           count_warning $warning;
         }
         print WARNING_OUTPUT "$file$warning\n";
-      } elsif ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:1:$2, Warning - `$3` is not a recognized word. (check-file-path)/) {
-        my ($line, $range, $item) = ($1, $2, $3);
-        $file = $check_file_paths[$line];
-        next if log_skip_item($item, $file, $warning, $unknown_word_limit);
-        print WARNING_OUTPUT "$file$warning\n";
-        count_warning $warning;
-      } else {
+      }
+    } else {
+      for $warning (<WARNINGS>) {
+        chomp $warning;
+        next unless $warning =~ s/^:(\d+)/:1/;
+        $file = $check_file_paths[$1];
+        if ($warning =~ s/:(\d+ \.\.\. \d+): '(.*)'/:$1, Warning - `$2` is not a recognized word\. \(check-file-path\)/) {
+          next if skip_item($2);
+        }
         print WARNING_OUTPUT "$file$warning\n";
         count_warning $warning;
       }
@@ -406,7 +438,7 @@ sub main {
 
   # display the current unknown
   for my $char (sort keys %letter_map) {
-    for $key (sort { lc $a cmp lc $b || $a cmp $b } keys(%{$letter_map{$char}})) {
+    for $key (sort CheckSpelling::Util::case_biased keys(%{$letter_map{$char}})) {
       my %word_map = %{$letter_map{$char}{$key}};
       my @words = keys(%word_map);
       if (scalar(@words) > 1) {

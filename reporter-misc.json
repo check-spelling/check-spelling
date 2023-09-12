@@ -49,7 +49,74 @@
                     "code": 2
                 }
             ]
+        },
+        {
+            "owner": "check-spelling-perl-not-enough-arguments",
+            "pattern": [
+                {
+                    "regexp": "^(Not enough arguments for.* at (.*?) line (\\d+))",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
+            "owner": "check-spelling-perl-compilation-failed",
+            "pattern": [
+                {
+                    "regexp": "^(Compilation failed in.* at (.*?) line (\\d+))",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
+            "owner": "check-spelling-perl-taint-failed",
+            "pattern": [
+                {
+                    "regexp": "^(.* while running with -T switch at (.*?) line (\\d+))",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
+            "owner": "check-spelling-perl-undefined-value-failed",
+            "pattern": [
+                {
+                    "regexp": "^(.*Can't use an undefined value.* at (.*?) line (\\d+))",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
+            "owner": "check-spelling-perl-experimental-regex",
+            "severity": "warning",
+            "pattern": [
+                {
+                    "regexp": "^(.*is experimental in regex.*)",
+                    "message": 1
+                },
+                {
+                    "regexp": "line \\d+, (.+) line (\\d+)\\.$",
+                    "file": 1,
+                    "line": 2
+                }
+            ]
+        },
+        {
+            "owner": "github-internal-server-error",
+            "pattern": [
+                {
+                    "regexp": "^(.*Please include `(?:[0-9A-F]{4}:){2}(?:[0-9A-F]{6}:){2}[0-9A-F]{8}`.*)$",
+                    "message": 1
+                }
+            ]
         }
     ]
 }
-

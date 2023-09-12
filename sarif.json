@@ -246,6 +246,31 @@
               }
             },
             {
+              "id": "non-alpha-in-dictionary",
+              "name": "NonAlphaInDictionary",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#non-alpha-in-dictionary",
+              "shortDescription": {
+                "text": "Non-alpha in dictionary"
+              },
+              "fullDescription": {
+                "text": "The dictionary entry has non-alpha characters."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove non-alpha characters\n- Place each word on its own line\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "recommendation",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },            {
               "id": "check-file-path",
               "name": "CheckFilePath",
               "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#check-file-path",
@@ -362,6 +387,84 @@
               "help": {
                 "text": "?",
                 "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Disable `use_file_magic`\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "token-is-substring",
+              "name": "TokenIsSubstring",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#token-is-substring",
+              "shortDescription": {
+                "text": "Token is a substring"
+              },
+              "fullDescription": {
+                "text": "While trying to find the token in the line, the exact instance could not be found."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n- Correct any overeager [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- See [Feature: Warning about substring matches](https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Warning-about-substring-matches)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "slow-file",
+              "name": "SlowFile",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#slow-file",
+              "shortDescription": {
+                "text": "Slow file"
+              },
+              "fullDescription": {
+                "text": "Parsing the file exceeded the parsing timeout."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Adjust [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- Adjust the [timeout](https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Parsing-Timeouts#configuration)\n- See [Feature: Parsing Timeouts](https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Parsing-Timeouts)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "ignored-expect-variant",
+              "name": "IgnoredExpectVariant",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#ignored-expect-variant",
+              "shortDescription": {
+                "text": "Ignored Expect Variant"
+              },
+              "fullDescription": {
+                "text": "Multiple related word variants listed in expect"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove the entry from [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"

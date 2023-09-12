@@ -15,14 +15,6 @@ strip_blanks() {
 strip_lead_and_blanks() {
   strip_lead | strip_blanks
 }
-path_to_pattern() {
-  perl -pe 's/^/^\\Q/;s/$/\\E\$/'
-}
-calculate_exclude_patterns() {
-  if [ -z "$should_exclude_patterns" ] && [ -s "$should_exclude_file" ]; then
-    should_exclude_patterns=$(sort "$should_exclude_file" | path_to_pattern)
-  fi
-}
 generate_instructions() {
   instructions=$(mktemp)
   if [ -z "$skip_wrapping" ]; then

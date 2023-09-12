@@ -11,8 +11,6 @@ if [ "$INITIALIZED" != defined ]; then
     esac
   }
 
-  "$spellchecker/secpoll.sh"
-
   if [ "$RUNNER_OS" = "Windows" ]; then
     echo "::error ::Windows isn't currently supported"
     exit 5
@@ -25,19 +23,12 @@ if [ "$INITIALIZED" != defined ]; then
   export temp=$(mktemp -d)
   if to_boolean "$DEBUG"; then
     set -x
-    begin_group() {
-      echo "::group::$1"
-    }
-    end_group() {
-      echo '::end_group::'
-    }
-  else
-    begin_group() {
-      echo "(...$1...)"
-    }
-    end_group() {
-      :
-    }
-    INITIALIZED=defined
   fi
+  begin_group() {
+    echo "::group::$1"
+  }
+  end_group() {
+    echo '::endgroup::'
+  }
+  INITIALIZED=defined
 fi

@@ -1,20 +1,21 @@
-#!/usr/bin/env -S perl -wT -Ilib
+#!/usr/bin/env -S perl -T -Ilib
 
 use strict;
+use warnings;
 
 use File::Temp qw/ tempfile tempdir /;
 use File::Basename;
 use Test::More;
 use IO::Capture::Stderr;
-plan tests => 8;
+plan tests => 10;
 use_ok('CheckSpelling::DictionaryCoverage');
 
 my $name = '/dev/null';
 my $object = CheckSpelling::DictionaryCoverage::entry($name);
 isa_ok($object->{'handle'}, 'GLOB');
-is($object->{'name'}, $name);
-is($object->{'word'}, 0);
-is($object->{'covered'}, 0);
+is($object->{'name'}, $name, 'object->name');
+is($object->{'word'}, 0, 'object->word');
+is($object->{'covered'}, 0, 'object->covered');
 
 my ($fh, $filename, $dict);
 ($fh, $dict) = tempfile();
@@ -36,8 +37,9 @@ $ENV{'extra_dictionaries'} = $dict;
 my @files = grep{/.*/} glob($dict);
 CheckSpelling::DictionaryCoverage::main($filename, @files);
 select $oldFH;
-is($output, "2 [$dict](test:case) (3) covers 2 of them
-");
+is($output, "2-3-2-$dict [$dict](test:case) (3) covers 2 of them (2 uniquely)
+", 'covers uniquely 2-3');
+
 my ($fh2, $one_match) = tempfile();
 print $fh2 'not
 this
@@ -63,12 +65,36 @@ CheckSpelling::DictionaryCoverage::main($filename, @files);
 select $oldFH;
 my $one_match_name = basename $one_match;
 my $dict_name = basename $dict;
-is($output2, "1 [other:$one_match_name]($one_match) (4) covers 1 of them
-2 [suggest:$dict_name]($dict) (3) covers 2 of them
-");
+is($output2, "1-4-0-other:$one_match_name [other:$one_match_name]($one_match) (4) covers 1 of them
+2-3-1-suggest:$dict_name [suggest:$dict_name]($dict) (3) covers 2 of them (1 uniquely)
+", 'covers uniquely 1-4');
+
+($fh, $filename) = tempfile();
+close $fh;
 my $capture = IO::Capture::Stderr->new();
+$capture->start();
+CheckSpelling::DictionaryCoverage::main($filename, "no-such-file");
+$capture->stop();
+is((join "\n", $capture->read()), "Couldn't open dictionary \`no-such-file\` (dictionary-not-found)
+", 'dictionary-not-found');
+
+$capture = IO::Capture::Stderr->new();
 $capture->start();
 CheckSpelling::DictionaryCoverage::main("/dev/no-such-file", ());
 $capture->stop();
 is((join "\n", $capture->read()), 'Could not read /dev/no-such-file
-');
+', 'no-such-file');
+
+$capture = IO::Capture::Stderr->new();
+$capture->start();
+($fh, $filename) = tempfile();
+print $fh 'world
+hello
+try
+worked
+something
+';
+close $fh;
+CheckSpelling::DictionaryCoverage::main($filename, 't/sample.dic');
+$capture->stop();
+is((join "\n", $capture ? $capture->read() : ()), '', 'coverage for .dic');
