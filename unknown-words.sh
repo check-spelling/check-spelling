@@ -502,7 +502,7 @@ confused_comment() {
   react_comment_and_die "$1" "$2" "confused"
 }
 
-github_user_and_email() {
+get_github_user_and_email() {
   user_json="$(mktemp_json)"
   call_curl \
     "$GITHUB_API_URL/users/$1" > "$user_json"
@@ -907,7 +907,7 @@ handle_comment() {
   git status --u=no --porcelain | grep -q . ||
     confused_comment "$trigger_comment_url" "Request did not change repository content.${N}Maybe someone already applied these changes?"
   react_prefix="$react_prefix_base"
-  github_user_and_email "$sender_login"
+  get_github_user_and_email "$sender_login"
   git_commit "$(echo "Update $update_note
                       Accepted in $(comment_url_to_html_url "$trigger_comment_url")
                     "|strip_lead)" ||
