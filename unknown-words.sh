@@ -2360,7 +2360,7 @@ spelling_body() {
     code_scanning_results_run=$(GH_TOKEN="$GITHUB_TOKEN" gh api "/repos/$GITHUB_REPOSITORY/commits/${GITHUB_HEAD_SHA:-$GITHUB_SHA}/check-runs" -q '.check_runs|map(select(.app.id==57789 and .name=="check-spelling"))[0].url // empty' || true)
     if [ -n "$code_scanning_results_run" ]; then
       code_scanning_results_url=$(GH_TOKEN="$GITHUB_TOKEN" gh api "$code_scanning_results_run" -q '.html_url // empty')
-      sarif_report="$sarif_report [:mag_right:]($code_scanning_results_url),"
+      sarif_report="$sarif_report [:rotating_light: alerts]($code_scanning_results_url),"
     fi
     or_markdown=','
   else
