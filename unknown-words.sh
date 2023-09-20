@@ -2484,6 +2484,9 @@ spelling_body() {
           To check these files, more of their words need to be in the dictionary than not. You can use `patterns.txt` to exclude portions, add items to the dictionary (e.g. by adding them to `allow.txt`), or fix typos.
           </details>
         ' | strip_lead)"
+        if ! to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
+          can_offer_to_apply=1
+        fi
       fi
     fi
     if [ -s "$counter_summary_file" ]; then
