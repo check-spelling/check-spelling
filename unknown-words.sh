@@ -2409,7 +2409,7 @@ minimize_comment_body() {
   if [ "$payload_size" -le "$github_comment_size_limit" ]; then
     return 0
   fi
-  trim_commit_comment 'Script' '(<details><summary>)To accept these unrecognized.*?</summary>().*?(?=</details>\n)' 'Script unavailable</summary>\n\n'
+  trim_commit_comment 'Script' '(<details><summary>)To accept.* these unrecognized.*?</summary>().*?(?=</details>\n)' 'Script unavailable</summary>\n\n'
   if [ "$payload_size" -le "$github_comment_size_limit" ]; then
     return 0
   fi
