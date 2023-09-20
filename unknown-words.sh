@@ -2315,6 +2315,14 @@ get_action_log() {
   echo "$action_log"
 }
 
+repo_clone_note() {
+  echo "
+        ... in a clone of the [$remote_url_ssh]($remote_url_https) repository
+        on the $b$remote_ref$b branch ([:information_source: how do I use this?](
+        https://github.com/check-spelling/check-spelling/wiki/Accepting-Suggestions)):
+  "
+}
+
 spelling_warning() {
   OUTPUT="### :red_circle: $1
 "
@@ -2555,10 +2563,7 @@ spelling_body() {
       output_accept_script="$(echo "
         <details><summary>$accept_heading,
         you could run the following commands</summary>
-
-        ... in a clone of the [$remote_url_ssh]($remote_url_https) repository
-        on the $b$remote_ref$b branch ([:information_source: how do I use this?](
-        https://github.com/check-spelling/check-spelling/wiki/Accepting-Suggestions)):
+        $(repo_clone_note)
         $(relative_note)
 
         $B sh
@@ -2798,6 +2803,65 @@ add_talk_to_bot_message() {
   fi
 }
 
+generate_sample_commit_help() {
+  if [ ! -s "$tokens_file" ]; then
+    return
+  fi
+  git remote set-url --push origin .
+  archive_directory=$(mktemp -d)
+  if [ -s "$tokens_file" ]; then
+    cp "$tokens_file" "$archive_directory/tokens.txt"
+  fi
+  if [ -s "$remove_words" ]; then
+    cp "$remove_words" "$archive_directory/remove_words.txt"
+  fi
+  cp "$data_dir/apply.json" "$archive_directory"
+  apply_archive=$(mktemp).zip
+  (
+    cd "$archive_directory"
+    zip -r "$apply_archive" . >/dev/null 2>/dev/null
+  )
+  if should_patch_head; then
+    remote_ref="$GITHUB_HEAD_REF"
+    remote_sha="$(get_pr_sha_from_url "$pull_request_url")"
+    remote_sha="${remote_sha:-$GITHUB_SHA}"
+  else
+    remote_ref="${GITHUB_BASE_REF:-$GITHUB_REF_NAME}"
+    if [ "$GITHUB_EVENT_NAME" = 'pull_request' ]; then
+      remote_sha="$GITHUB_SHA"'~'
+    else
+      remote_sha="$GITHUB_SHA"
+    fi
+  fi
+  git_stashed="$(git stash list|line_count)"
+  git stash --include-untracked >/dev/null 2>/dev/null
+  git_stashed_now="$(git stash list|line_count)"
+  current_branch="$(git rev-parse --abbrev-ref HEAD)"
+  if [ "$current_branch" = "HEAD" ]; then
+    current_branch="$(git rev-parse HEAD)"
+  fi
+  git branch -f update-check-spelling-metadata "$remote_sha"
+  git checkout update-check-spelling-metadata >/dev/null 2>/dev/null
+  "$spellchecker/apply.pl" "$apply_archive"
+  sender_login="$(jq -r '.sender.login // empty' "$GITHUB_EVENT_PATH")"
+  get_github_user_and_email "$sender_login"
+  created_at="$(date)" git_commit "check-spelling run ($GITHUB_EVENT_NAME) for $remote_ref" >/dev/null 2>/dev/null
+  git_apply_commit="$(mktemp)"
+  delim="@@@@$(shasum "$git_apply_commit" |perl -pe 's/\s.*//')--$(date +%s)"
+  git format-patch HEAD~..HEAD --stdout > "$git_apply_commit"
+  echo "<details><summary>To accept these unrecognized words as correct, you could apply this commit</summary>$N$(repo_clone_note | strip_lead)$n${B}sh"
+  echo "git am <<'$delim'"
+  cat "$git_apply_commit"
+  echo "$delim$n$B$N"
+  echo 'And `git push` ...'
+  echo "</details>$N**OR**$N"
+  git checkout "$current_branch" >/dev/null 2>/dev/null
+  if [ "$git_stashed" != "$git_stashed_now" ]; then
+    git stash pop >/dev/null 2>/dev/null
+  fi
+  git remote set-url --delete --push origin .
+}
+
 post_summary() {
   if [ -z "$GITHUB_STEP_SUMMARY" ]; then
     echo 'The $GITHUB_STEP_SUMMARY environment variable is unavailable'
@@ -2815,6 +2879,24 @@ post_summary() {
   step_summary_draft=$(mktemp)
   echo "$OUTPUT" >> "$step_summary_draft"
   add_talk_to_bot_message "$step_summary_draft"
+  sample_commit="$(mktemp)"
+  generate_sample_commit_help >> "$sample_commit" ||
+    echo 'generate_sample_commit_help failed, please file a bug' >&2
+  if [ -s "$sample_commit" ]; then
+    draft_with_commit="$(mktemp)"
+    base="$step_summary_draft" insert="$sample_commit" perl -e '
+      open BASE, "<", $ENV{base};
+      while (<BASE>){
+        if (!$found && $_=~/To accept /){
+          $found=1;
+          $/=undef;
+          open INSERT, "<", $ENV{insert};
+          print <INSERT>;
+        }
+        print;
+      }' > "$draft_with_commit"
+    cp "$draft_with_commit" "$step_summary_draft"
+  fi
   if [ -n "$INPUT_SUMMARY_TABLE" ] && [ -s "$warning_output" ]; then
     begin_group 'Building summary table'
     summary_table="$(mktemp)"
