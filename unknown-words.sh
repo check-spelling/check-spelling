@@ -1536,7 +1536,7 @@ get_extra_dictionary() {
   fi
   keep_headers=1 call_curl "$check_etag" "$check_etag_value" "$url" > "$dest"
   if { [ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ] ; } 2> /dev/null; then
-    echo "::error ::Failed to retrieve $extra_dictionary_url -- $url (dictionary-not-found)" >> "$early_warnings"
+    echo "::error ::Failed to retrieve $extra_dictionary_url -- HTTP $response_code for $url (dictionary-not-found)" >> "$early_warnings"
     (
       echo "Failed to retrieve $extra_dictionary_url ($url)"
       cat "$response_headers"
