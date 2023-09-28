@@ -2215,7 +2215,7 @@ spelling_body() {
       " | strip_lead)"
     fi
     if [ -n "$err" ]; then
-      accept_heading="To accept :heavy_check_mark: these unrecognized words as correct$cleanup_text"
+      accept_heading="To accept these unrecognized words as correct$cleanup_text"
       output_accept_script="$(echo "
         <details><summary>$accept_heading,
         run the following commands</summary>
