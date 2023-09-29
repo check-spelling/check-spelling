@@ -726,7 +726,7 @@ handle_comment() {
   fi
 
   trigger_comment_url="$(jq -r '.url // empty' "$comment")"
-  sender_login="$(jq -r '.sender.login // empty' "$GITHUB_EVENT_PATH")"
+  sender_login="$(jq -r '.sender.login // "check-spelling-bot"' "$GITHUB_EVENT_PATH")"
   pull_request_head_info="$(mktemp_json)"
   jq .head "$pull_request_info" > "$pull_request_head_info"
   pull_request_sha="$(jq -r '.sha // empty' "$pull_request_head_info")"
@@ -2849,7 +2849,7 @@ generate_sample_commit_help() {
   git branch -f update-check-spelling-metadata "$remote_sha"
   git checkout update-check-spelling-metadata >/dev/null 2>/dev/null
   "$spellchecker/apply.pl" "$apply_archive"
-  sender_login="$(jq -r '.sender.login // empty' "$GITHUB_EVENT_PATH")"
+  sender_login="$(jq -r '.sender.login // "check-spelling-bot"' "$GITHUB_EVENT_PATH")"
   get_github_user_and_email "$sender_login"
   created_at="$(date)" git_commit "check-spelling run ($GITHUB_EVENT_NAME) for $remote_ref" >/dev/null 2>/dev/null
   git_apply_commit="$(mktemp)"
