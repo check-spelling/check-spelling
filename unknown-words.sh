@@ -2853,8 +2853,8 @@ generate_sample_commit_help() {
   get_github_user_and_email "$sender_login"
   created_at="$(date)" git_commit "check-spelling run ($GITHUB_EVENT_NAME) for $remote_ref" >/dev/null 2>/dev/null
   git_apply_commit="$(mktemp)"
-  delim="@@@@$(shasum "$git_apply_commit" |perl -pe 's/\s.*//')--$(date +%s)"
   git format-patch HEAD~..HEAD --stdout > "$git_apply_commit"
+  delim="@@@@$(shasum "$git_apply_commit" |perl -pe 's/\s.*//')--$(date +%s)"
   echo "<details><summary>To accept these unrecognized words as correct, you could apply this commit</summary>$N$(repo_clone_note | strip_lead)$n${B}sh"
   echo "git am <<'$delim'"
   cat "$git_apply_commit"
