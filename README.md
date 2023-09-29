@@ -61,7 +61,7 @@ https://docs.check-spelling.dev/Event-descriptions#unrecognized-spelling.
 
 ## Multilingual
 
-As of v0.0.22, you'll be able to [use non English dictionaries](https://docs.check-spelling.dev/Feature%3A-Configurable-word-characters) with the help of [Hunspell](https://github.com/hunspell/hunspell).
+As of [v0.0.22](https://github.com/check-spelling/check-spelling/releases/tag/v0.0.22), you can [use non English dictionaries](https://docs.check-spelling.dev/Feature%3A-Configurable-word-characters) with the help of [Hunspell](https://github.com/hunspell/hunspell).
 
 ## Wiki
 
