@@ -19,7 +19,7 @@ into word-like things for checking against a dictionary.
 
 ## GitHub Action
 
-[![Spell checking](https://github.com/check-spelling/check-spelling/workflows/Spell%20checking/badge.svg?branch=main&event=push)](https://github.com/check-spelling/check-spelling/actions?query=workflow:"Spell+checking"+branch:main+event:push)
+[![Check Spelling](https://github.com/check-spelling/check-spelling/actions/workflows/spelling.yml/badge.svg)](https://github.com/check-spelling/check-spelling/actions/workflows/spelling.yml)
 
 - [@check-spelling/check-spelling GitHub Action](#check-spellingcheck-spelling-github-action)
   - [Overview](#overview)
