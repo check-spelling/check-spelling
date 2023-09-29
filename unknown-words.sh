@@ -2851,16 +2851,28 @@ generate_sample_commit_help() {
   "$spellchecker/apply.pl" "$apply_archive"
   sender_login="$(jq -r '.sender.login // "check-spelling-bot"' "$GITHUB_EVENT_PATH")"
   get_github_user_and_email "$sender_login"
-  created_at="$(date)" git_commit "check-spelling run ($GITHUB_EVENT_NAME) for $remote_ref" >/dev/null 2>/dev/null
-  git_apply_commit="$(mktemp)"
-  git format-patch HEAD~..HEAD --stdout > "$git_apply_commit"
-  delim="@@@@$(shasum "$git_apply_commit" |perl -pe 's/\s.*//')--$(date +%s)"
-  echo "<details><summary>To accept these unrecognized words as correct, you could apply this commit</summary>$N$(repo_clone_note | strip_lead)$n${B}sh"
-  echo "git am <<'$delim'"
-  cat "$git_apply_commit"
-  echo "$delim$n$B$N"
-  echo 'And `git push` ...'
-  echo "</details>$N**OR**$N"
+  git_commit_out=$(mktemp)
+  git_commit_err=$(mktemp)
+  created_at="$(date)" git_commit "check-spelling run ($GITHUB_EVENT_NAME) for $remote_ref" > "$git_commit_out" 2> "$git_commit_err" ||
+    git_commit_status=$?
+  if [ -z "$git_commit_status" ]; then
+    git_apply_commit="$(mktemp)"
+    git format-patch HEAD~..HEAD --stdout > "$git_apply_commit"
+    delim="@@@@$(shasum "$git_apply_commit" |perl -pe 's/\s.*//')--$(date +%s)"
+    echo "<details><summary>To accept these unrecognized words as correct, you could apply this commit</summary>$N$(repo_clone_note | strip_lead)$n${B}sh"
+    echo "git am <<'$delim'"
+    cat "$git_apply_commit"
+    echo "$delim$n$B$N"
+    echo 'And `git push` ...'
+    echo "</details>$N**OR**$N"
+  else
+    (
+      echo "git commit failed ($git_commit_status)..."
+      cat "$git_commit_err"
+      cat "$git_commit_out"
+      git reset --hard
+    ) >&2
+  fi
   git checkout "$current_branch" >/dev/null 2>/dev/null
   if [ "$git_stashed" != "$git_stashed_now" ]; then
     git stash pop >/dev/null 2>/dev/null
