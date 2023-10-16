@@ -1773,6 +1773,11 @@ set_up_files() {
           echo
           echo "In order to run locally, please use:"
           echo
+          if [ -n "$THIS_GITHUB_JOB_ID" ]; then
+            echo "jobs:"
+            echo "  $THIS_GITHUB_JOB_ID:"
+            echo "    steps:"
+          fi
           echo "      with:"
           echo "        dictionary_url: fill_this_in"
           if [ -z "$INPUT_CONFIG" ]; then
@@ -2418,6 +2423,9 @@ spelling_body() {
       if [ -n "$workflow_path" ]; then
         workflow_path_hint=" (in $b$workflow_path$b)"
       fi
+      if [ -n "$THIS_GITHUB_JOB_ID" ]; then
+        job_id_hint=" in ${b}jobs:${b}/${b}$THIS_GITHUB_JOB_ID:${b}"
+      fi
       action_ref=$(get_action_repo_info)
       if [ -n "$action_ref" ]; then
         action_ref_hint=" for ${b}uses: ${action_ref}${b}"
@@ -2439,7 +2447,7 @@ spelling_body() {
         -|-|-|-
         $(perl -pe 's/ \((\d+)\) covers (\d+) of them \((\d+) uniquely\)/|$1|$2|$3|/ || s/ \((\d+)\) covers (\d+) of them/|$1|$2||/' "$extra_dictionaries_cover_entries_limited")
 
-        Consider adding them$workflow_path_hint$action_ref_hint$inline_with_hint$extra_dictionaries_hint:
+        Consider adding them$workflow_path_hint$job_id_hint$action_ref_hint$inline_with_hint$extra_dictionaries_hint:
         $B yml$with_hint$n$(
           perl -pe 's/\s.*//;s/^/                  /;s{\[(.*)\]\(.*}{$1}' "$extra_dictionaries_cover_entries_limited"
         )

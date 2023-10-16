@@ -15,6 +15,8 @@ catching 'templatesz'
 # githubusercontent
 /[-a-z0-9]+\.githubusercontent\.com/[-a-zA-Z0-9?&=_\/.]*
 \bgithub\.com/[^/]+/[^/]+/(?:blob|commit|tree|releases)/\w+(?:/|$)
+# GitHub SHAs (markdown)
+(?:\[`?[0-9a-f]+`?\]\(https:/|)/(?:www\.|)github\.com(?:/[^/\s"]+){2,}(?:/[^/\s")]+)(?:[0-9a-f]+(?:[-0-9a-zA-Z/#.]*|)\b|)
 
 # GitHub header
 \bx-served-by: cache-[a-z]+-[a-z]+\d+
