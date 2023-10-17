@@ -352,6 +352,7 @@ runs:
       if: inputs.alternate_engine
       uses: actions/checkout@v4
       with:
+        show-progress: false
         path: alternate-engine
         repository: ${{ steps.parse-alternate-engine.outputs.repo }}
         ref: ${{ steps.parse-alternate-engine.outputs.branch }}
@@ -386,6 +387,7 @@ runs:
       if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && env.replace_v4_actions_checkout
       uses: check-spelling/actions-checkout@v4
       with:
+        show-progress: false
         path: ${{ inputs.experimental_path }}
         ssh-key: ${{ inputs.ssh_key }}
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
@@ -401,6 +403,7 @@ runs:
       if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !env.replace_v4_actions_checkout
       uses: actions/checkout@v4
       with:
+        show-progress: false
         path: ${{ inputs.experimental_path }}
         ssh-key: ${{ inputs.ssh_key }}
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
