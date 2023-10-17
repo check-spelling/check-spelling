@@ -1947,6 +1947,33 @@ welcome() {
   fi
 }
 
+get_private_refs() {
+  remote="$1"
+  source_ref="$2"
+  dest_ref="$3"
+  if [ -e .git/shallow ]; then
+    if [ -z "$UNSHALLOW" ]; then
+      UNSHALLOW=--unshallow
+      echo "Unshallowing (this may take a while)" >&2
+    fi
+  else
+    UNSHALLOW=
+  fi
+
+  git_fetch_log="$(mktemp)"
+  git_fetch_err="$(mktemp)"
+  if ! git fetch -f "$remote" ${UNSHALLOW:+"$UNSHALLOW"} "$source_ref":refs/private/"$dest_ref" > "$git_fetch_log" 2> "$git_fetch_err"; then
+    echo "git fetch "$remote" ${UNSHALLOW:+"$UNSHALLOW"} '$source_ref:refs/private/$dest_ref' -- failed:"
+    cat "$git_fetch_err"
+    cat "$git_fetch_log"
+    if ! git fetch -f . "$source_ref":refs/private/"$dest_ref" > "$git_fetch_log" 2> "$git_fetch_err"; then
+      echo "git fetch . '$source_ref:refs/private/$dest_ref' -- also failed:"
+      cat "$git_fetch_err"
+      cat "$git_fetch_log"
+    fi
+  fi
+}
+
 get_before() {
   if [ -z "$BEFORE" ]; then
     COMPARE="$(jq -r '.compare // empty' "$GITHUB_EVENT_PATH" 2>/dev/null)"
@@ -1963,22 +1990,8 @@ get_before() {
     else
       BEFORE="$(git rev-parse "$AFTER"~)"
     fi
-    if [ -e .git/shallow ]; then
-      UNSHALLOW=--unshallow
-      echo "Unshallowing (this may take a while)" >&2
-    fi
-    git_fetch_log="$(mktemp)"
-    git_fetch_err="$(mktemp)"
-    if ! git fetch -f origin ${UNSHALLOW:+"$UNSHALLOW"} "$BEFORE":refs/private/before "$AFTER:refs/private/after" > "$git_fetch_log" 2> "$git_fetch_err"; then
-      echo "git fetch origin ${UNSHALLOW:+"$UNSHALLOW"} '$BEFORE:refs/private/before' '$AFTER:refs/private/after' -- failed:"
-      cat "$git_fetch_err"
-      cat "$git_fetch_log"
-      if ! git fetch -f . "$BEFORE":refs/private/before "$AFTER:refs/private/after" > "$git_fetch_log" 2> "$git_fetch_err"; then
-        echo "git fetch . '$BEFORE:refs/private/before' '$AFTER:refs/private/after' -- also failed:"
-        cat "$git_fetch_err"
-        cat "$git_fetch_log"
-      fi
-    fi
+    get_private_refs origin "$BEFORE" before
+    get_private_refs origin "$AFTER" after
   fi
 }
 
