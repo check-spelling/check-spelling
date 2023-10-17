@@ -1950,7 +1950,8 @@ welcome() {
 get_before() {
   if [ -z "$BEFORE" ]; then
     COMPARE="$(jq -r '.compare // empty' "$GITHUB_EVENT_PATH" 2>/dev/null)"
-    AFTER="${GITHUB_HEAD_REF:-$GITHUB_SHA}"
+    AFTER="$(jq -r '.pull_request.head.sha // .after // empty' "$GITHUB_EVENT_PATH")"
+    AFTER="${AFTER:-$GITHUB_SHA}"
     if [ -n "$COMPARE" ]; then
       BEFORE="$(echo "$COMPARE" | perl -ne 'if (m{/compare/(.*)\.\.\.}) { print $1; } elsif (m{/commit/([0-9a-f]+)$}) { print "$1^"; };')"
       BEFORE="$(call_curl \
