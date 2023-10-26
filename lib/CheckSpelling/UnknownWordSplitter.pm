@@ -375,6 +375,7 @@ sub split_file {
         last;
       }
       s/\R$//;
+      s/^\x{FEFF}// if $. == 1;
       next unless /./;
       my $raw_line = $_;
 
