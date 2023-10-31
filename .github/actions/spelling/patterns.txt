@@ -16,6 +16,9 @@ catching 'templatesz'
 /[-a-z0-9]+\.githubusercontent\.com/[-a-zA-Z0-9?&=_\/.]*
 \bgithub\.com/[^/]+/[^/]+/(?:blob|commit|tree|releases)/\w+(?:/|$)
 
+# GitHub header
+\bx-served-by: cache-[a-z]+-[a-z]+\d+
+
 # regex
 \\b
 

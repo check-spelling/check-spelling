@@ -1490,6 +1490,7 @@ call_curl() {
        [ "$response_code" -eq 308 ]; then
       curl_url="$(perl -ne 'next unless /^location:\s*(\S+)/i; print $1' "$response_headers")"
     elif [ "$response_code" -ne 429 ] &&
+       [ "$response_code" -ne 502 ] &&
        [ "$response_code" -ne 503 ]; then
       cat "$response_body"
       rm -f "$response_body"
