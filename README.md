@@ -41,7 +41,7 @@ into word-like things for checking against a dictionary.
 ## Quick Setup
 
 Just copy the [spell-check-this](https://github.com/check-spelling/spell-check-this)
-[`.github/workflows/spelling.yml`](https://github.com/check-spelling/spell-check-this/tree/main/.github/workflows/.github/workflows/spelling.yml) into your `.github/workflows` in your project.
+[`.github/workflows/spelling.yml`](https://github.com/check-spelling/spell-check-this/tree/main/.github/workflows/spelling.yml) into your `.github/workflows` in your project.
 
 ## Configuration
 
