@@ -223,6 +223,23 @@ sub get_pattern_with_context {
   return @items;
 }
 
+sub summarize_totals {
+  my ($format, $path, $items, $totals, $file_counts) = @_;
+  return unless @{$totals};
+  return unless open my $fh, '>:utf8', $path;
+  my @indices = sort {
+    $totals->[$b] <=> $totals->[$a] ||
+    $file_counts->[$b] <=> $file_counts->[$a]
+  } 0 .. scalar(@{$totals}) - 1;
+  for my $i (@indices) {
+    last unless $totals->[$i] > 0;
+    printf $fh $format, $totals->[$i],
+    ($file_counts ? " file-count: $file_counts->[$i]" : ""),
+    $items->[$i];
+  }
+  close $fh;
+}
+
 sub main {
   my @directories;
   my @cleanup_directories;
@@ -234,7 +251,6 @@ sub main {
   my $counter_summary = CheckSpelling::Util::get_file_from_env('counter_summary', '/dev/stderr');
   my $should_exclude_file = CheckSpelling::Util::get_file_from_env('should_exclude_file', '/dev/null');
   my $unknown_word_limit = CheckSpelling::Util::get_val_from_env('unknown_word_limit', undef);
-  my $candidate_summary = CheckSpelling::Util::get_file_from_env('candidate_summary', '/dev/stderr');
   my $candidate_example_limit = CheckSpelling::Util::get_file_from_env('INPUT_CANDIDATE_EXAMPLE_LIMIT', '3');
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
   my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
@@ -247,7 +263,6 @@ sub main {
   open MORE_WARNINGS, '>:utf8', $more_warnings;
   open COUNTER_SUMMARY, '>:utf8', $counter_summary;
   open SHOULD_EXCLUDE, '>:utf8', $should_exclude_file;
-  open CANDIDATE_SUMMARY, '>:utf8', $candidate_summary;
   if ($timing_report) {
     open TIMING_REPORT, '>:utf8', $timing_report;
     print TIMING_REPORT "file, start, finish\n";
@@ -380,17 +395,13 @@ sub main {
   close SHOULD_EXCLUDE;
   close TIMING_REPORT if $timing_report;
 
-  if (@candidate_totals) {
-    my @indices = sort {
-      $candidate_totals[$b] <=> $candidate_totals[$a] ||
-      $candidate_file_counts[$b] <=> $candidate_file_counts[$a]
-    } 0 .. $#candidate_totals;
-    for my $i (@indices) {
-      last unless $candidate_totals[$i] > 0;
-      print CANDIDATE_SUMMARY "# hit-count: $candidate_totals[$i] file-count: $candidate_file_counts[$i]\n$candidates[$i]\n\n";
-    }
-  }
-  close CANDIDATE_SUMMARY;
+  summarize_totals(
+    "# hit-count: %d%s\n%s\n\n",
+    CheckSpelling::Util::get_file_from_env('candidate_summary', '/dev/stderr'),
+    \@candidates,
+    \@candidate_totals,
+    \@candidate_file_counts,
+  );
 
   group_related_words;
 
