@@ -2545,8 +2545,11 @@ spelling_body() {
         " | strip_lead)"
       fi
     fi
+    count_patterns() {
+      perl -ne 'next if /^#/;next unless /\S/;print' "$1" | line_count
+    }
     if [ -s "$candidate_summary" ]; then
-      pattern_suggestion_count=$(perl -ne 'next if /^#/;next unless /\S/;print' "$candidate_summary"|line_count)
+      pattern_suggestion_count=$(count_patterns "$candidate_summary")
       output_candidate_pattern_suggestions="$(echo "
         <details><summary>Pattern suggestions :scissors: ($pattern_suggestion_count)</summary>
 
