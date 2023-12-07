@@ -197,6 +197,32 @@ sub report_timing {
   print TIMING_REPORT "\"$name\", $start_time, $end_time\n";
 }
 
+sub get_pattern_with_context {
+  my ($path) = @_;
+  return unless defined $ENV{$path};
+  $ENV{$path} =~ /(.*)/;
+  return unless open ITEMS, '<:utf8', $1;
+
+  my @items;
+  my $context = '';
+  while (<ITEMS>) {
+    my $pattern = $_;
+    if ($pattern =~ /^#/) {
+      $context .= $pattern;
+      next;
+    }
+    chomp $pattern;
+    unless ($pattern =~ /./) {
+      $context = '';
+      next;
+    }
+    push @items, $context.$pattern;
+    $context = '';
+  }
+  close ITEMS;
+  return @items;
+}
+
 sub main {
   my @directories;
   my @cleanup_directories;
@@ -227,28 +253,7 @@ sub main {
     print TIMING_REPORT "file, start, finish\n";
   }
 
-  my @candidates;
-  if (defined $ENV{'candidates_path'}) {
-    $ENV{'candidates_path'} =~ /(.*)/;
-    if (open CANDIDATES, '<:utf8', $1) {
-      my $candidate_context = '';
-      while (<CANDIDATES>) {
-        my $candidate = $_;
-        if ($candidate =~ /^#/) {
-          $candidate_context .= $candidate;
-          next;
-        }
-        chomp $candidate;
-        unless ($candidate =~ /./) {
-          $candidate_context = '';
-          next;
-        }
-        push @candidates, $candidate_context.$candidate;
-        $candidate_context = '';
-      }
-      close CANDIDATES;
-    }
-  }
+  my @candidates = get_pattern_with_context('candidates_path');
   my @candidate_totals = (0) x scalar @candidates;
   my @candidate_file_counts = (0) x scalar @candidates;
 
