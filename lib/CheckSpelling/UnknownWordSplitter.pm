@@ -314,6 +314,8 @@ sub split_file {
 
   my @candidates_re_hits = (0) x scalar @candidates_re_list;
   my @candidates_re_lines = (0) x scalar @candidates_re_list;
+  my @forbidden_re_hits = (0) x scalar @forbidden_re_list;
+  my @forbidden_re_lines = (0) x scalar @forbidden_re_list;
   my $temp_dir = tempdir();
   print STDERR "checking file: $file\n" if defined $ENV{'DEBUG'};
   open(NAME, '>:utf8', "$temp_dir/name");
@@ -390,7 +392,8 @@ sub split_file {
           $line_flagged = 1;
           my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
           my $found_trigger_re;
-          for my $forbidden_re_singleton (@forbidden_re_list) {
+          for my $i (0 .. $#forbidden_re_list) {
+            my $forbidden_re_singleton = $forbidden_re_list[$i];
             my $test_line = $previous_line_state;
             if ($test_line =~ s/($forbidden_re_singleton)/"="x length($1)/e) {
               next unless $test_line eq $_;
@@ -399,6 +402,9 @@ sub split_file {
               next unless $end == $end_test;
               next unless $match eq $match_test;
               $found_trigger_re = $forbidden_re_singleton;
+              my $hit = "$.:$begin:$end";
+              $forbidden_re_hits[$i]++;
+              $forbidden_re_lines[$i] = $hit unless $forbidden_re_lines[$i];
               last;
             }
           }
@@ -489,12 +495,14 @@ sub split_file {
   close FILE;
   close WARNINGS;
 
-  if ($unrecognized || @candidates_re_hits) {
+  if ($unrecognized || @candidates_re_hits || @forbidden_re_hits) {
     open(STATS, '>:utf8', "$temp_dir/stats");
       print STATS "{words: $words, unrecognized: $unrecognized, unknown: ".(keys %unique_unrecognized).
       ", unique: ".(keys %unique).
       (@candidates_re_hits ? ", candidates: [".(join ',', @candidates_re_hits)."]" : "").
       (@candidates_re_lines ? ", candidate_lines: [".(join ',', @candidates_re_lines)."]" : "").
+      (@forbidden_re_hits ? ", forbidden: [".(join ',', @forbidden_re_hits)."]" : "").
+      (@forbidden_re_lines ? ", forbidden_lines: [".(join ',', @forbidden_re_lines)."]" : "").
       "}";
     close STATS;
     open(UNKNOWN, '>:utf8', "$temp_dir/unknown");

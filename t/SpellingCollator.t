@@ -7,7 +7,7 @@ use File::Temp qw/ tempfile tempdir /;
 use IO::Capture::Stderr;
 
 use Test::More;
-plan tests => 31;
+plan tests => 32;
 
 sub fill_file {
   my ($file, $content) = @_;
@@ -68,16 +68,20 @@ sub check_output_file {
 
 use_ok('CheckSpelling::SpellingCollator');
 
-my ($fh, $early_warnings, $warning_output, $more_warnings, $counter_summary);
+my ($fh, $early_warnings, $warning_output, $more_warnings, $counter_summary, $forbidden_patterns, $forbidden_summary);
 
 ($fh, $early_warnings) = tempfile;
 ($fh, $warning_output) = tempfile;
 ($fh, $more_warnings) = tempfile;
 ($fh, $counter_summary) = tempfile;
+($fh, $forbidden_patterns) = tempfile;
+($fh, $forbidden_summary) = tempfile;
 $ENV{'early_warnings'} = $early_warnings;
 $ENV{'warning_output'} = $warning_output;
 $ENV{'more_warnings'} = $more_warnings;
 $ENV{'counter_summary'} = $counter_summary;
+$ENV{'forbidden_path'} = $forbidden_patterns;
+$ENV{'forbidden_summary'} = $forbidden_summary;
 
 my $directory = stage_test('empty.txt', '', '', '', '');
 run_test($directory);
@@ -250,7 +254,10 @@ my $file_names;
 print $fh 'apple
 pear';
 close $fh;
-$directory = stage_test($file_names, '{}', '', ":1:1 ... 5: 'apple'
+fill_file($forbidden_patterns, '# please avoid starting lines with "pe" followed by a letter.
+^pe.
+');
+$directory = stage_test($file_names, '{forbidden: [1], forbidden_lines: [2:1:3]}}', '', ":1:1 ... 5: 'apple'
 :2:1 ... 4: 'pear'
 :2:1 ... 3, Warning - `pea` matches a line_forbidden.patterns entry: `^pe.`. (forbidden-pattern)
 ", 'apple
@@ -263,7 +270,14 @@ check_output_file($counter_summary, '{
 ,"forbidden-pattern": 1
 }
 ');
+check_output_file($forbidden_summary, '#### please avoid starting lines with "pe" followed by a letter.
+```
+^pe.
+```
+
+');
 check_output_file($warning_output, 'apple:1:1 ... 5, Warning - `apple` is not a recognized word. (check-file-path)
 pear:1:1 ... 4, Warning - `pear` is not a recognized word. (check-file-path)
 pear:1:1 ... 3, Warning - `pea` matches a line_forbidden.patterns entry: `^pe.`. (forbidden-pattern)
 ');
+truncate($forbidden_patterns, 0);

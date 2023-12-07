@@ -1747,6 +1747,7 @@ set_up_files() {
   remove_exclude_patterns=$data_dir/remove_exclude.patterns
   counter_summary_file=$data_dir/counter_summary.json
   candidate_summary="$data_dir/candidate_summary.txt"
+  forbidden_summary="$data_dir/forbidden_summary.txt"
   if [ "$INPUT_TASK" = 'spelling' ]; then
     get_project_files dictionary.words "$dictionary_path"
     get_project_files dictionary.txt "$dictionary_path"
@@ -2142,6 +2143,8 @@ run_spell_check() {
     unknown_word_limit="$INPUT_UNKNOWN_WORD_LIMIT" \
     candidates_path="$candidates_path" \
     candidate_summary="$candidate_summary" \
+    forbidden_path="$forbidden_path" \
+    forbidden_summary="$forbidden_summary" \
     check_file_names="$check_file_names" \
     timing_report="$timing_report" \
     "$word_collator" |\
@@ -2546,10 +2549,26 @@ spelling_body() {
       fi
     fi
     count_patterns() {
-      perl -ne 'next if /^#/;next unless /\S/;print' "$1" | line_count
+      perl -ne 'next '"$2"';next unless /\S/;print' "$1" | line_count
     }
+    if [ -s "$forbidden_summary" ]; then
+      forbidden_pattern_count=$(count_patterns "$forbidden_summary" "unless /^#### /")
+      output_forbidden_patterns="$(echo "
+        <details><summary>Forbidden patterns :no_good: ($forbidden_pattern_count)</summary>
+
+        In order to address this, you could change the content to not match the forbidden patterns (comments before forbidden patterns may help explain why they're forbidden), add patterns for acceptable instances, or adjust the forbidden patterns themselves.
+
+        These forbidden patterns matched content:
+
+        $(
+        cat "$forbidden_summary"
+        )
+
+        </details>
+      " | strip_lead)"
+    fi
     if [ -s "$candidate_summary" ]; then
-      pattern_suggestion_count=$(count_patterns "$candidate_summary")
+      pattern_suggestion_count=$(count_patterns "$candidate_summary" "if /^#/")
       output_candidate_pattern_suggestions="$(echo "
         <details><summary>Pattern suggestions :scissors: ($pattern_suggestion_count)</summary>
 
@@ -2595,7 +2614,7 @@ spelling_body() {
         output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
       fi
     fi
-    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_candidate_pattern_suggestions$output_warnings$output_advice
+    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_forbidden_patterns$output_candidate_pattern_suggestions$output_warnings$output_advice
       " | perl -pe 's/^\s+$/\n/;'| uniq)
 }
 
