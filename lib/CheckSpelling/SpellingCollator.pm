@@ -228,18 +228,36 @@ sub get_pattern_with_context {
 }
 
 sub summarize_totals {
-  my ($format, $path, $items, $totals, $file_counts) = @_;
+  my ($formatter, $path, $items, $totals, $file_counts) = @_;
   return unless @{$totals};
   return unless open my $fh, '>:utf8', $path;
-  my @indices = sort {
-    $totals->[$b] <=> $totals->[$a] ||
-    $file_counts->[$b] <=> $file_counts->[$a]
-  } 0 .. scalar(@{$totals}) - 1;
+  my $totals_count = scalar(@{$totals}) - 1;
+  my @indices;
+  if ($file_counts) {
+    @indices = sort {
+      $totals->[$b] <=> $totals->[$a] ||
+      $file_counts->[$b] <=> $file_counts->[$a]
+    } 0 .. $totals_count;
+  } else {
+    @indices = sort {
+      $totals->[$b] <=> $totals->[$a]
+    } 0 .. $totals_count;
+  }
   for my $i (@indices) {
     last unless $totals->[$i] > 0;
-    printf $fh $format, $totals->[$i],
-    ($file_counts ? " file-count: $file_counts->[$i]" : ""),
-    $items->[$i];
+    my $rule_with_context = $items->[$i];
+    my ($description, $rule);
+    if ($rule_with_context =~ /^(.*\n)([^\n]+)$/s) {
+      ($description, $rule) = ($1, $2);
+    } else {
+      ($description, $rule) = ('', $rule_with_context);
+    }
+    print $fh $formatter->(
+      $totals->[$i],
+      ($file_counts ? " file-count: $file_counts->[$i]" : ""),
+      $description,
+      $rule
+    );
   }
   close $fh;
 }
@@ -275,6 +293,9 @@ sub main {
   my @candidates = get_pattern_with_context('candidates_path');
   my @candidate_totals = (0) x scalar @candidates;
   my @candidate_file_counts = (0) x scalar @candidates;
+
+  my @forbidden = get_pattern_with_context('forbidden_path');
+  my @forbidden_totals = (0) x scalar @forbidden;
 
   my @delayed_warnings;
   our %letter_map = ();
@@ -358,6 +379,18 @@ sub main {
           }
         }
       }
+      if (@forbidden_totals) {
+        @forbidden_list=get_array($stats, 'forbidden');
+        my @lines=get_array($stats, 'forbidden_lines');
+        if (@forbidden_list) {
+          for (my $i=0; $i < scalar @forbidden_list; $i++) {
+            my $hits = $forbidden_list[$i];
+            if ($hits) {
+              $forbidden_totals[$i] += $hits;
+            }
+          }
+        }
+      }
       #print STDERR "$file (unrecognized: $unrecognized; unique: $unique; unknown: $unknown, words: $words, candidates: [".join(", ", @candidate_list)."])\n";
     }
 
@@ -400,11 +433,32 @@ sub main {
   close TIMING_REPORT if $timing_report;
 
   summarize_totals(
-    "# hit-count: %d%s\n%s\n\n",
+    sub {
+      my ($hits, $files, $context, $pattern) = @_;
+      return "# hit-count: $hits$files\n$context$pattern\n\n",
+    },
     CheckSpelling::Util::get_file_from_env('candidate_summary', '/dev/stderr'),
     \@candidates,
     \@candidate_totals,
     \@candidate_file_counts,
+  );
+
+  summarize_totals(
+    sub {
+      my (undef, undef, $context, $pattern) = @_;
+      $context =~ s/^# //gm;
+      chomp $context;
+      my $details;
+      if ($context =~ /^(.*?)$(.*)/ms) {
+        ($context, $details) = ($1, $2);
+        $details = "\n$details" if $details;
+      }
+      $context = 'Pattern' unless $context;
+      return "#### $context$details\n```\n$pattern\n```\n\n";
+    },
+    CheckSpelling::Util::get_file_from_env('forbidden_summary', '/dev/stderr'),
+    \@forbidden,
+    \@forbidden_totals,
   );
 
   group_related_words;
