@@ -288,7 +288,7 @@ sub main {
       next;
     }
 
-    # stats isn't written if all words in the file are in the dictionary
+    # stats isn't written if there was nothing interesting in the file
     unless (-s "$directory/stats") {
       push @directories, $directory;
       report_timing($file, $start_time, $directory, 'warnings') if ($timing_report);
