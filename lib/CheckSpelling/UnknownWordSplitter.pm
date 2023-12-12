@@ -489,7 +489,7 @@ sub split_file {
   close FILE;
   close WARNINGS;
 
-  if ($unrecognized) {
+  if ($unrecognized || @candidates_re_hits) {
     open(STATS, '>:utf8', "$temp_dir/stats");
       print STATS "{words: $words, unrecognized: $unrecognized, unknown: ".(keys %unique_unrecognized).
       ", unique: ".(keys %unique).
