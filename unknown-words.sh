@@ -615,7 +615,7 @@ show_github_actions_push_disclaimer() {
   else
     OWNER_TEXT='Users with the Admin role'
   fi
-  OUTPUT="### :hourglass: check-spelling changes applied
+  OUTPUT="## :hourglass: check-spelling changes applied
 
   As [configured](https://github.com/check-spelling/check-spelling/wiki/Feature:-Update-expect-list#github_token), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
 
@@ -942,7 +942,7 @@ handle_comment() {
   if git remote get-url origin | grep -q ^https://; then
     show_github_actions_push_disclaimer
   else
-    echo "### :white_check_mark: check-spelling changes applied" >> "$GITHUB_STEP_SUMMARY"
+    echo "## :white_check_mark: check-spelling changes applied" >> "$GITHUB_STEP_SUMMARY"
   fi
   echo "
   #### Metadata updates
@@ -2335,7 +2335,7 @@ repo_clone_note() {
 }
 
 spelling_warning() {
-  OUTPUT="### :red_circle: $1
+  OUTPUT="## :red_circle: $1
 "
   spelling_body "$2" "$3" "$4"
   if [ -n "$OUTPUT" ]; then
