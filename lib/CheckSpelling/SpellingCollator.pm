@@ -208,7 +208,11 @@ sub get_pattern_with_context {
   while (<ITEMS>) {
     my $pattern = $_;
     if ($pattern =~ /^#/) {
-      $context .= $pattern;
+      if ($pattern =~ /^# /) {
+        $context .= $pattern;
+      } else {
+        $context = '';
+      }
       next;
     }
     chomp $pattern;
