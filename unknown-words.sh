@@ -621,7 +621,7 @@ show_github_actions_push_disclaimer() {
 
   <details><summary>$OWNER_TEXT can address this for future interactions :magic_wand:</summary>
 
-  #### Create a deploy key and secret
+  ### Create a deploy key and secret
   $B sh
   (
     set -e
@@ -633,7 +633,7 @@ show_github_actions_push_disclaimer() {
   )'"
   $B
 
-  #### Configure update job in workflow to use secret
+  ### Configure update job in workflow to use secret
 
   If the $qualified_workflow_path ${b}${update_job_name}${b} job doesn't already have the $workflow_ssh_key_hint
 
@@ -945,7 +945,7 @@ handle_comment() {
     echo "## :white_check_mark: check-spelling changes applied" >> "$GITHUB_STEP_SUMMARY"
   fi
   echo "
-  #### Metadata updates
+  ### Metadata updates
 
   $B
   $(git diff HEAD~..HEAD --stat)
@@ -3202,7 +3202,7 @@ $(cat "$tokens_file")
 $B
 </details>"
     else
-      unknown_word_body="$n#### $unrecognized_words_title$N$(cat "$tokens_file")"
+      unknown_word_body="$n### $unrecognized_words_title$N$(cat "$tokens_file")"
     fi
   fi
   if [ -n "$has_errors" ] || [ "$unknown_count" -gt 0 ]; then
