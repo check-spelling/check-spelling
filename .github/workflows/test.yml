@@ -83,6 +83,15 @@ jobs:
         ) > /tmp/prework || (cat /tmp/prework && false)
         ./Build.PL
         ./Build build
+        (
+          cd lib;
+          for m in $(
+            find * -name '*.pm' |
+              perl -pe 's!/!::!g;s/\.pm$//'
+          ); do
+            perl -I. -M$m -e ''
+          done
+        )
         perl `command -v cover` -test
     - name: store-coverage
       uses: actions/upload-artifact@v3
