@@ -11,7 +11,7 @@ use File::Temp qw/ tempfile tempdir /;
 use IO::Capture::Stderr;
 
 use Test::More;
-plan tests => 42;
+plan tests => 55;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
