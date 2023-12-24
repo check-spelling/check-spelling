@@ -37,17 +37,18 @@ my $disable_flags;
 sub file_to_list {
   my ($re) = @_;
   my @file;
-  if (open(FILE, '<:utf8', $re)) {
-    local $/=undef;
-    my $file=<FILE>;
-    close FILE;
-    for (split /\R/, $file) {
-      next if /^#/;
-      chomp;
-      next unless s/^(.+)/(?:$1)/;
-      push @file, $_;
-    }
+  return @file unless open(FILE, '<:utf8', $re);
+
+  local $/=undef;
+  my $file=<FILE>;
+  close FILE;
+  for (split /\R/, $file) {
+    next if /^#/;
+    chomp;
+    next unless s/^(.+)/(?:$1)/;
+    push @file, $_;
   }
+
   return @file;
 }
 
