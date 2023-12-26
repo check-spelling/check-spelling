@@ -10,6 +10,8 @@ on:
 jobs:
   test:
     name: Perl
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     if: contains(github.event_name, 'pull_request') || github.event_name == 'push'
     steps:
