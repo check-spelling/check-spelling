@@ -294,11 +294,7 @@ inputs:
   report-timing:
     description: 'Report processing time for files'
     required: false
-    default: ''
-  cache-dictionaries:
-    description: 'Cache dictionaries'
-    required: false
-    default: 1
+    default: ""
 
 outputs:
   unknown_words:
@@ -448,70 +444,6 @@ runs:
       with:
         name: "check-spelling-comment"
         path: /tmp/data
-    - name: hash-dictionaries
-      id: hash-dictionaries
-      if: ${{ !inputs.task || inputs.task == 'spelling' }}
-      env:
-        INPUT_TASK: hash-dictionaries
-        INPUT_DICTIONARY_SOURCE_PREFIXES: ${{ inputs.dictionary_source_prefixes || inputs.dictionary-source-prefixes }}
-        INPUT_EXTRA_DICTIONARIES: ${{ inputs.extra_dictionaries || inputs.extra-dictionaries }} ${{ inputs.check_extra_dictionaries || inputs.check-extra-dictionaries }}
-        INPUT_USE_SARIF: ${{ inputs.use_sarif || inputs.use-sarif }}
-      shell: bash
-      run: |
-        unknown-words
-    - name: retrieve-dictionaries
-      id: retrieve-dictionaries
-      if: ${{ env.DICTIONARY_URLS_HASH }}
-      uses: actions/cache/restore@v3
-      with:
-        path: ${{ env.THIS_ACTION_PATH }}/dictionaries
-        key: check-spelling-dictionaries-${{ env.DICTIONARY_URLS_HASH }}-${{ github.sha}}
-        restore-keys: check-spelling-dictionaries-${{ env.DICTIONARY_URLS_HASH }}
-    - name: perl configuration
-      id: perl-config
-      if: steps.hash-dictionaries.outputs.perl-libraries
-      shell: bash
-      run: |
-        perl_modules="$(
-          echo "${{ steps.hash-dictionaries.outputs.perl-libraries }}" |tr " " "\n" |sort|xargs)"
-        perl_modules_sha=$(echo "$perl_modules" | shasum | perl -pe 's/\s.*//')
-        installsitearch=$(perl -V:'installsitearch' | perl -pe 's/.*=.(.*).;/$1/')
-        installsitelib=$(perl -V:'installsitelib' | perl -pe 's/.*=.(.*).;/$1/')
-        sudo install -d -o $(whoami) "$installsitearch" "$installsitelib"
-        (
-          echo "installsitearch=$installsitearch"
-          echo "installsitelib=$installsitelib"
-          echo "perl-modules=$perl_modules"
-          echo "perl-key=check-spelling-perl-$(perl -e 'print "$^V"')-$perl_modules_sha"
-        ) >> "$GITHUB_OUTPUT"
-    - name: retrieve perl libraries arch
-      id: retrieve-perl-libraries-arch
-      if: steps.perl-config.outputs.installsitearch
-      uses: actions/cache/restore@v3
-      with:
-        path: ${{ steps.perl-config.outputs.installsitearch }}
-        key: ${{ steps.perl-config.outputs.perl-key }}-arch
-    - name: retrieve perl libraries lib
-      id: retrieve-perl-libraries-lib
-      if: steps.perl-config.outputs.installsitelib
-      uses: actions/cache/restore@v3
-      with:
-        path: ${{ steps.perl-config.outputs.installsitelib }}
-        key: ${{ steps.perl-config.outputs.perl-key }}-lib
-
-    - name: install perl modules
-      if: steps.perl-config.outputs.perl-modules
-      shell: bash
-      run: |
-        cpan_modules=$(
-          for module in ${{ steps.perl-config.outputs.perl-modules }}; do
-            perl -e "use $module; 1;" > /dev/null 2>/dev/null || echo $module
-          done | xargs
-        )
-        if [ -n "$cpan_modules" ]; then
-          command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
-          perl `command -v cpanm` -S --notest $cpan_modules
-        fi
     - name: check-spelling
       id: spelling
       if: env.MERGE_FAILED != '1'
@@ -524,26 +456,6 @@ runs:
       run:
         unknown-words
       shell: bash
-    - name: save-dictionaries
-      uses: actions/cache/save@v3
-      if: (success() || failure()) && steps.spelling.outputs.CACHE_DICTIONARIES == '1'
-      with:
-        path: ${{ env.THIS_ACTION_PATH }}/dictionaries
-        key: check-spelling-dictionaries-${{ env.DICTIONARY_URLS_HASH }}-${{ github.sha}}
-    - name: save perl libraries arch
-      if: ${{ (success() || (failure() && env.MERGE_FAILED != '1')) && steps.retrieve-perl-libraries-arch.outputs.cache-hit != 'true' && steps.perl-config.outputs.installsitearch }}
-      id: save-perl-libraries-arch
-      uses: actions/cache/save@v3
-      with:
-        path: ${{ steps.perl-config.outputs.installsitearch }}
-        key: ${{ steps.perl-config.outputs.perl-key }}-arch
-    - name: save perl libraries lib
-      if: ${{ (success() || (failure() && env.MERGE_FAILED != '1')) && steps.retrieve-perl-libraries-lib.outputs.cache-hit != 'true' && steps.perl-config.outputs.installsitelib }}
-      id: save-perl-libraries-lib
-      uses: actions/cache/save@v3
-      with:
-        path: ${{ steps.perl-config.outputs.installsitelib }}
-        key: ${{ steps.perl-config.outputs.perl-key }}-lib
     - name: store-comment
       if: (contains(github.event_name, 'pull_request') ||
           github.event_name == 'push') &&

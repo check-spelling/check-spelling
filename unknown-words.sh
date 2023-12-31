@@ -1539,19 +1539,6 @@ get_extra_dictionary() {
   source_link="$dictionaries_dir"/."$2"
   url="$(expand_dictionary_url "$extra_dictionary_url")"
   dest="$dictionaries_dir"/"$2"
-  if [ -s "$dest" ]; then
-    if [ ! -s "$dest.etag" ]; then
-      return
-    fi
-    check_etag="-H"
-    check_etag_value="$(perl -ne 's/\s+$//; print qq<If-None-Match: $_>; last' "$dest.etag")"
-    real_dest="$dest"
-    dest="$(mktemp)"
-  else
-    check_etag=-H
-    check_etag_value=Ignore:1
-    real_dest=
-  fi
   if [ "$url" != "${url#"${GITHUB_SERVER_URL}"/*}" ]; then
     no_curl_auth=1
   fi
@@ -1576,8 +1563,6 @@ get_extra_dictionary() {
     dest="$real_dest"
   fi
   echo "$extra_dictionary_url" > "$source_link"
-  perl -ne 'next unless s/^etag: //; chomp; print' "$response_headers" > "$dest.etag"
-  [ -s "$CACHE_DICTIONARIES" ] || echo 1 > "$CACHE_DICTIONARIES"
 }
 
 get_hunspell_stem() {
@@ -1806,7 +1791,6 @@ set_up_files() {
       fi
       eval download_or_quit_with_error "$DICTIONARY_URL" "$dict"
     fi
-    CACHE_DICTIONARIES=$(mktemp)
     if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
       begin_group 'Retrieving check extra dictionaries'
       build_dictionary_alias_pattern
@@ -1819,12 +1803,6 @@ set_up_files() {
       if [ -n "$check_extra_dictionaries" ]; then
         check_extra_dictionaries_canary=$(mktemp)
         export check_extra_dictionaries_dir="$(get_extra_dictionaries check "$check_extra_dictionaries" "$check_extra_dictionaries_canary")"
-        if [ ! -e "$check_extra_dictionaries_canary" ]; then
-          echo 0 > "$CACHE_DICTIONARIES"
-        else
-          :
-          # should handle hunspell
-        fi
       fi
       end_group
     fi
@@ -1836,7 +1814,6 @@ set_up_files() {
       if [ -n "$extra_dictionaries_dir" ]; then
         if [ ! -e "$extra_dictionaries_canary" ]; then
           message="Problems were encountered retrieving extra dictionaries ($INPUT_EXTRA_DICTIONARIES)."
-          echo 0 > "$CACHE_DICTIONARIES"
           if [ "$GITHUB_EVENT_NAME" = 'pull_request_target' ]; then
             message=$(echo "
             $message
@@ -1869,7 +1846,6 @@ set_up_files() {
               fallback_extra_dictionaries_dir="$(get_extra_dictionaries fallback "$check_extra_dictionaries" "$fallback_extra_dictionaries_canary")"
               if [ ! -e "$fallback_extra_dictionaries_canary" ]; then
                 fallback_extra_dictionaries_dir=
-                echo 0 > "$CACHE_DICTIONARIES"
               fi
               if [ -d "$fallback_extra_dictionaries_dir" ]; then
                 # should handle hunspell
@@ -1894,19 +1870,11 @@ set_up_files() {
               mv ./*.aff ./*.dic "$hunspell_dictionary_path" 2>/dev/null || true
             fi
             # Items that aren't proper should be moved to patterns instead
-            etag_temp=$(mktemp -d)
-            mv ./*.etag "$etag_temp"
             "$spellchecker/dictionary-word-filter.pl" ./* | sort -u >> "$dict"
-            mv "$etag_temp"/* .
           )
         fi
       fi
       end_group
-    fi
-    if to_boolean "$INPUT_CACHE_DICTIONARIES" &&
-        [ -s "$CACHE_DICTIONARIES" ] &&
-        grep -q 1 "$CACHE_DICTIONARIES"; then
-      echo "CACHE_DICTIONARIES=1" >> "$output_variables"
     fi
     get_project_files dictionary_additions.words "$allow_path"
     get_project_files allow.txt "$allow_path"
@@ -3230,33 +3198,10 @@ $B
 }
 
 hash_dictionaries() {
-  if ! to_boolean "$INPUT_CACHE_DICTIONARIES"; then
-    exit
-  fi
-  if [ -n "$INPUT_EXTRA_DICTIONARIES$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
-    build_dictionary_alias_pattern
-    dictionary_list=$(mktemp)
-    (
-      for url in $INPUT_EXTRA_DICTIONARIES $INPUT_CHECK_EXTRA_DICTIONARIES; do
-        expand_dictionary_url "$url"
-      done |
-      sort -u > "$dictionary_list"
-    )
-    if [ -s "$dictionary_list" ]; then
-      echo "DICTIONARY_URLS_HASH=$(
-        shasum "$dictionary_list" |
-        perl -pe 's/\s.*//'
-      )" >> "$GITHUB_ENV"
-    fi
-  fi
-  . "$spellchecker/common.sh"
-  check_perl_libraries
-  echo "perl-libraries=$perl_libs" >> "$GITHUB_OUTPUT"
   exit
 }
 
 if [ "$INPUT_TASK" = hash-dictionaries ]; then
-  . "$spellchecker/common.sh"
   hash_dictionaries
 fi
 basic_setup

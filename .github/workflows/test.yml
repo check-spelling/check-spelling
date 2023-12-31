@@ -32,34 +32,9 @@ jobs:
           Hash::Merge
           Text::Hunspell
           " |sort|xargs)"
-        perl_modules_sha=$(echo "$perl_modules" | shasum | perl -pe 's/\s.*//')
-        installsitearch=$(perl -V:'installsitearch' | perl -pe 's/.*=.(.*).;/$1/')
-        installsitelib=$(perl -V:'installsitelib' | perl -pe 's/.*=.(.*).;/$1/')
-        sudo install -d -o $(whoami) "$installsitearch" "$installsitelib"
         (
-          echo "installsitearch=$installsitearch"
-          echo "installsitelib=$installsitelib"
           echo "perl-modules=$perl_modules"
-          echo "perl-key=perl-$(perl -e 'print "$^V"')-$perl_modules_sha"
         ) >> "$GITHUB_OUTPUT"
-    - name: retrieve perl libraries arch
-      id: retrieve-perl-libraries-arch
-      uses: actions/cache/restore@v3
-      with:
-        path: ${{ steps.perl-config.outputs.installsitearch }}
-        key: ${{ steps.perl-config.outputs.perl-key }}-arch
-    - name: retrieve perl libraries lib
-      id: retrieve-perl-libraries-lib
-      uses: actions/cache/restore@v3
-      with:
-        path: ${{ steps.perl-config.outputs.installsitelib }}
-        key: ${{ steps.perl-config.outputs.perl-key }}-lib
-    - name: retrieve jd
-      id: retrieve-jd
-      uses: actions/cache/restore@v3
-      with:
-        path: ~/go/bin/jd
-        key: jd-${{ runner.os }}
     - name: test
       id: test
       shell: bash
@@ -109,26 +84,6 @@ jobs:
         ./Build.PL
         ./Build build
         perl `command -v cover` -test
-    - name: save perl libraries arch
-      if: ${{ steps.retrieve-perl-libraries-arch.outputs.cache-hit != 'true' }}
-      id: save-perl-libraries-arch
-      uses: actions/cache/save@v3
-      with:
-        path: ${{ steps.perl-config.outputs.installsitearch }}
-        key: ${{ steps.perl-config.outputs.perl-key }}-arch
-    - name: save perl libraries lib
-      if: ${{ steps.retrieve-perl-libraries-lib.outputs.cache-hit != 'true' }}
-      id: save-perl-libraries-lib
-      uses: actions/cache/save@v3
-      with:
-        path: ${{ steps.perl-config.outputs.installsitelib }}
-        key: ${{ steps.perl-config.outputs.perl-key }}-lib
-    - name: save jd
-      if: ${{ steps.retrieve-jd.outputs.cache-hit != 'true' }}
-      uses: actions/cache/save@v3
-      with:
-        path: ~/go/bin/jd
-        key: jd-${{ runner.os }}
     - name: store-coverage
       uses: actions/upload-artifact@v3
       timeout-minutes: 5

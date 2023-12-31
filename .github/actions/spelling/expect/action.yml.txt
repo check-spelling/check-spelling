@@ -1,5 +1,2 @@
-cpan
 cpanmin
-installsitearch
-installsitelib
 stdbuf
