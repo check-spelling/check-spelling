@@ -1556,7 +1556,7 @@ get_extra_dictionary() {
   fi
   echo "$extra_dictionary_url" > "$source_link"
   perl -ne 'next unless s/^etag: //; chomp; print' "$response_headers" > "$dest.etag"
-  [ -s "$CACHE_DICTIONARIES" ] || echo 1 > "$CACHE_DICTIONARIES"
+  [ -s "$CACHE_DICTIONARIES" ] || [ -z "$DICTIONARY_URLS_HASH" ] || echo 1 > "$CACHE_DICTIONARIES"
 }
 
 get_hunspell_stem() {
