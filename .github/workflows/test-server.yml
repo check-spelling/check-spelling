@@ -38,7 +38,6 @@ jobs:
         post_comment: 0
         config: t/with-dictionaries/config
         dictionary_url: http://localhost:8123/basic.txt
-        cache-dictionaries: 0
         check_extra_dictionaries:
         extra_dictionaries:
           http://localhost:8123/429.php
