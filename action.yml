@@ -462,6 +462,7 @@ runs:
         INPUT_DICTIONARY_SOURCE_PREFIXES: ${{ inputs.dictionary_source_prefixes || inputs.dictionary-source-prefixes }}
         INPUT_EXTRA_DICTIONARIES: ${{ inputs.extra_dictionaries || inputs.extra-dictionaries }} ${{ inputs.check_extra_dictionaries || inputs.check-extra-dictionaries }}
         INPUT_USE_SARIF: ${{ inputs.use_sarif || inputs.use-sarif }}
+        INPUT_CACHE_DICTIONARIES: ${{ inputs.cache-dictionaries }}
         DEBUG: ${{ inputs.debug }}
       shell: bash
       run: |
