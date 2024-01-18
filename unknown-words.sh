@@ -1132,7 +1132,7 @@ check_inputs() {
   fi
   if to_boolean "$WARN_USE_SARIF_ONLY_CHANGED_FILES"; then
     KEY=use_sarif \
-    VALUE="$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE" \
+    VALUE="$WARN_USE_SARIF_ONLY_CHANGED_FILES" \
     MESSAGE='Warning - Unsupported configuration: use_sarif is incompatible with only_check_changed_files. (unsupported-configuration)' \
     check_yaml_key_value "$workflow_path"
   fi
