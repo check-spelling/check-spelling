@@ -1117,37 +1117,37 @@ check_yaml_key_value() {
   ) >> "$early_warnings"
 }
 
+check_input() {
+  if to_boolean "$1"; then
+    KEY="$2" \
+    VALUE="$1" \
+    MESSAGE="$3" \
+    check_yaml_key_value "$workflow_path"
+  fi
+}
 check_inputs() {
-  if to_boolean "$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE"; then
-    KEY=use_sarif \
-    VALUE="$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE" \
-    MESSAGE='Warning - Unsupported configuration: use_sarif needs security-events: write. (unsupported-configuration)' \
-    check_yaml_key_value "$workflow_path"
-  fi
-  if to_boolean "$WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY"; then
-    KEY=use_sarif \
-    VALUE="$WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY" \
-    MESSAGE='Warning - Unsupported configuration: use_sarif needs GitHub Advanced Security to be enabled - see <https://docs.github.com/get-started/learning-about-github/about-github-advanced-security>. (unsupported-configuration)' \
-    check_yaml_key_value "$workflow_path"
-  fi
-  if to_boolean "$WARN_USE_SARIF_ONLY_CHANGED_FILES"; then
-    KEY=use_sarif \
-    VALUE="$WARN_USE_SARIF_ONLY_CHANGED_FILES" \
-    MESSAGE='Warning - Unsupported configuration: use_sarif is incompatible with only_check_changed_files. (unsupported-configuration)' \
-    check_yaml_key_value "$workflow_path"
-  fi
-  if [ -n "$ACT" ] &&
-    to_boolean "$INPUT_POST_COMMENT" ; then
-    KEY=post_comment \
-    VALUE="$INPUT_POST_COMMENT" \
-    MESSAGE='Warning - Unsupported configuration: post_comment is not compatible with nektos/act. (unsupported-configuration)' \
-    check_yaml_key_value "$workflow_path"
-  fi
-  if [ -n "$ACT" ] &&
-    to_boolean "$INPUT_USE_SARIF" &&
-    [ "$GITHUB_REPOSITORY" = '.' ]; then
-    INPUT_USE_SARIF=
-    echo '::warning ::Disabling sarif under act without repository'
+  check_input \
+    "$WARN_USE_SARIF_NEED_SECURITY_EVENTS_WRITE" \
+    use_sarif \
+    'Warning - Unsupported configuration: use_sarif needs security-events: write. (unsupported-configuration)'
+  check_input \
+    "$WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY" \
+    use_sarif \
+    'Warning - Unsupported configuration: use_sarif needs GitHub Advanced Security to be enabled - see <https://docs.github.com/get-started/learning-about-github/about-github-advanced-security>. (unsupported-configuration)'
+  check_input \
+    "$WARN_USE_SARIF_ONLY_CHANGED_FILES" \
+    use_sarif \
+    'Warning - Unsupported configuration: use_sarif is incompatible with only_check_changed_files. (unsupported-configuration)'
+  if [ -n "$ACT" ]; then
+    check_input \
+      "$INPUT_POST_COMMENT" \
+      post_comment \
+      'Warning - Unsupported configuration: post_comment is not compatible with nektos/act. (unsupported-configuration)'
+    if to_boolean "$INPUT_USE_SARIF" &&
+      [ "$GITHUB_REPOSITORY" = '.' ]; then
+      INPUT_USE_SARIF=
+      echo '::warning ::Disabling sarif under act without repository'
+    fi
   fi
   if [ -n "$INPUT_SPELL_CHECK_THIS" ] &&
     ! echo "$INPUT_SPELL_CHECK_THIS" | perl -ne 'chomp; exit 1 unless m{^[-_.A-Za-z0-9]+/[-_.A-Za-z0-9]+(?:|\@[-_./A-Za-z0-9]+)$};'; then
