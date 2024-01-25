@@ -17,6 +17,15 @@ Specifically, [w](https://github.com/jsoref/spelling/blob/master/w) understands
 enough about how programmers name things that it can split the above conventions
 into word-like things for checking against a dictionary.
 
+### How check-spelling approaches content
+
+Input | Seen | Reported | Explanation
+-|-|-|-
+`InitialCapitalization`|`Initial` `Capitalization`| `` | Both words are in the dictionary
+`camelCase`|`camel` `Case`| `` | Both words are in the dictionary
+`ALL_CAPS`|`ALL` `CAPS`| `` | Both words are in the dictionary
+`IDLCase`| `IDL` `Case`| `IDL` | The first word isn't in the dictionary, but the second is
+
 ## GitHub Action
 
 [![Check Spelling](https://github.com/check-spelling/check-spelling/actions/workflows/spelling.yml/badge.svg)](https://github.com/check-spelling/check-spelling/actions/workflows/spelling.yml)
