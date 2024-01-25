@@ -2249,7 +2249,7 @@ remove_items() {
     fi
     if [ -s "$remove_words" ]; then
       echo "
-        <details><summary>Previously acknowledged words that are now absent
+        <details><summary>These words are not needed and should be removed
         </summary>$(cat "$remove_words")$N🫥$N</details>
       " | strip_lead_and_blanks
       echo "stale_words=$remove_words" >> "$output_variables"
@@ -2796,7 +2796,7 @@ minimize_comment_body() {
   if [ "$payload_size" -le "$github_comment_size_limit" ]; then
     return 0
   fi
-  trim_commit_comment 'Stale words' '(<details><summary>Previously acknowledged words that are now absent.*?</summary>)(.*?)(?=</details>)' '\n\n'
+  trim_commit_comment 'Stale words' '(<details><summary>These words are not needed and should be removed.*?</summary>)(.*?)(?=</details>)' '\n\n'
   if [ "$payload_size" -le "$github_comment_size_limit" ]; then
     return 0
   fi
