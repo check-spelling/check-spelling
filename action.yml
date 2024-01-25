@@ -492,7 +492,7 @@ runs:
     - name: upload-sarif
       id: upload-sarif
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != ''
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         wait-for-processing: false
         sarif_file: ${{ env.UPLOAD_SARIF }}
