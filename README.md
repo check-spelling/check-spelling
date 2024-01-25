@@ -26,6 +26,86 @@ Input | Seen | Reported | Explanation
 `ALL_CAPS`|`ALL` `CAPS`| `` | Both words are in the dictionary
 `IDLCase`| `IDL` `Case`| `IDL` | The first word isn't in the dictionary, but the second is
 
+### How check-spelling manages `expect.txt`
+
+Generally, check-spelling wants to minimize the `expect.txt` (or similar file(s)) so that it's easier for someone to open the file up and complain that something in it shouldn't be there.
+
+The enemy of that goal is repetition or near repetition. The longer the file, the more likely a reader's eyes will glaze over before they spot something that shouldn't be there.
+
+#### uppercase
+
+`about.txt`
+
+```
+IKEA was started July 28, 1943.
+```
+
+Corresponding `expect.txt`:
+
+```
+IKEA
+```
+
+Explanation: `IKEA` isn't in the dictionary.
+
+This doesn't mean that it would be ok to write `Ikea` or `ikea`.
+`Ikea` is definitely wrong (and outside of domain names, `ikea` is probably also wrong).
+
+#### proper noun
+
+`file.txt`
+
+```
+Microsoft shipped Windows in 1985.
+```
+
+Corresponding `expect.txt`:
+
+```
+Microsoft
+```
+
+Explanation: `Microsoft` isn't in the dictionary.
+
+### proper noun and uppercase
+
+`file.js`
+
+```
+// Microsoft shipped Windows in 1985.
+
+MICROSOFT_WINDOWS_RELEASE_DATE="November 20, 1985"
+```
+
+Corresponding `expect.txt`:
+
+```
+Microsoft
+```
+
+Explanation: `Microsoft` isn't in the dictionary, but there's a reasonable expectation that in some programming language a proper noun will need to be written in uppercase in order to be used as constant (or similar).
+
+This doesn't mean that a project has decided to allow `microsoft`,
+in a documentation oriented project `microsoft` would be wrong.
+
+### lowercase, proper noun, and uppercase
+
+`file.js`
+
+```
+// http://microsoft.com/ie
+
+MICROSOFT_IE_RELEASE_DATE="August 16, 1995"
+```
+
+Corresponding `expect.txt`:
+
+```
+microsoft
+```
+
+Explanation: `microsoft` isn't in the dictionary, and there's a reasonable expectation that in some cases it will have to be written as `Microsoft` (because in English the first word of a sentence will have its first letter capitalized) or as `MICROSOFT` (because programmers tend to write things in uppercase for constants).
+
 ## GitHub Action
 
 [![Check Spelling](https://github.com/check-spelling/check-spelling/actions/workflows/spelling.yml/badge.svg)](https://github.com/check-spelling/check-spelling/actions/workflows/spelling.yml)
