@@ -46,19 +46,19 @@ jobs:
         ) >> "$GITHUB_OUTPUT"
     - name: retrieve perl libraries arch
       id: retrieve-perl-libraries-arch
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: ${{ steps.perl-config.outputs.installsitearch }}
         key: ${{ steps.perl-config.outputs.perl-key }}-arch
     - name: retrieve perl libraries lib
       id: retrieve-perl-libraries-lib
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: ${{ steps.perl-config.outputs.installsitelib }}
         key: ${{ steps.perl-config.outputs.perl-key }}-lib
     - name: retrieve jd
       id: retrieve-jd
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: ~/go/bin/jd
         key: jd-${{ runner.os }}
@@ -102,20 +102,20 @@ jobs:
     - name: save perl libraries arch
       if: ${{ steps.retrieve-perl-libraries-arch.outputs.cache-hit != 'true' }}
       id: save-perl-libraries-arch
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: ${{ steps.perl-config.outputs.installsitearch }}
         key: ${{ steps.perl-config.outputs.perl-key }}-arch
     - name: save perl libraries lib
       if: ${{ steps.retrieve-perl-libraries-lib.outputs.cache-hit != 'true' }}
       id: save-perl-libraries-lib
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: ${{ steps.perl-config.outputs.installsitelib }}
         key: ${{ steps.perl-config.outputs.perl-key }}-lib
     - name: save jd
       if: ${{ steps.retrieve-jd.outputs.cache-hit != 'true' }}
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: ~/go/bin/jd
         key: jd-${{ runner.os }}

@@ -470,7 +470,7 @@ runs:
     - name: retrieve-dictionaries
       id: retrieve-dictionaries
       if: ${{ env.DICTIONARY_URLS_HASH }}
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: ${{ env.THIS_ACTION_PATH }}/dictionaries
         key: check-spelling-dictionaries-${{ env.DICTIONARY_URLS_HASH }}-${{ github.sha}}
@@ -495,14 +495,14 @@ runs:
     - name: retrieve perl libraries arch
       id: retrieve-perl-libraries-arch
       if: steps.perl-config.outputs.installsitearch
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: ${{ steps.perl-config.outputs.installsitearch }}
         key: ${{ steps.perl-config.outputs.perl-key }}-arch
     - name: retrieve perl libraries lib
       id: retrieve-perl-libraries-lib
       if: steps.perl-config.outputs.installsitelib
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: ${{ steps.perl-config.outputs.installsitelib }}
         key: ${{ steps.perl-config.outputs.perl-key }}-lib
@@ -533,7 +533,7 @@ runs:
         unknown-words
       shell: bash
     - name: save-dictionaries
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       if: (success() || failure()) && steps.spelling.outputs.CACHE_DICTIONARIES == '1'
       with:
         path: ${{ env.THIS_ACTION_PATH }}/dictionaries
@@ -541,14 +541,14 @@ runs:
     - name: save perl libraries arch
       if: ${{ (success() || (failure() && env.MERGE_FAILED != '1')) && steps.retrieve-perl-libraries-arch.outputs.cache-hit != 'true' && steps.perl-config.outputs.installsitearch }}
       id: save-perl-libraries-arch
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: ${{ steps.perl-config.outputs.installsitearch }}
         key: ${{ steps.perl-config.outputs.perl-key }}-arch
     - name: save perl libraries lib
       if: ${{ (success() || (failure() && env.MERGE_FAILED != '1')) && steps.retrieve-perl-libraries-lib.outputs.cache-hit != 'true' && steps.perl-config.outputs.installsitelib }}
       id: save-perl-libraries-lib
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: ${{ steps.perl-config.outputs.installsitelib }}
         key: ${{ steps.perl-config.outputs.perl-key }}-lib
