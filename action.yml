@@ -469,12 +469,26 @@ runs:
       run:
         unknown-words
       shell: bash
-    - name: store-comment
+    - name: store-comment-replacement
       if: (contains(github.event_name, 'pull_request') ||
           github.event_name == 'push') &&
         inputs.custom_task != 'comment' &&
         ((failure() && env.MERGE_FAILED != '1') || steps.spelling.outputs.followup) &&
-        steps.spelling.outputs.internal_state_directory
+        steps.spelling.outputs.internal_state_directory &&
+        env.replace_v4_actions_upload_artifact
+      uses: check-spelling/actions-upload-artifact@v4
+      with:
+        name: |
+          ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling-comment', inputs.report_title_suffix) || 'check-spelling-comment' }}
+        path: |
+          ${{ steps.spelling.outputs.internal_state_directory }}
+    - name: store-comment
+      if: (contains(github.event_name, 'pull_request') ||
+          github.event_name == 'push') &&
+        inputs.custom_task != 'comment' &&
+          ((failure() && env.MERGE_FAILED != '1') || steps.spelling.outputs.followup) &&
+        steps.spelling.outputs.internal_state_directory &&
+        (!env.replace_v4_actions_upload_artifact)
       uses: actions/upload-artifact@v4
       with:
         name:
@@ -489,8 +503,18 @@ runs:
         cd "${{ inputs.experimental_path }}"
         git reset "$PRIVATE_SARIF_SHA"
     - name: artifact-sarif
+      id: artifact-sarif-replacement
+      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && env.replace_v4_actions_upload_artifact
+      uses: check-spelling/actions-upload-artifact@v4
+      with:
+        name: |
+          ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling-sarif', inputs.report_title_suffix) || 'check-spelling-sarif' }}
+        retention-days: 1
+        path: |
+          ${{ env.UPLOAD_SARIF }}
+    - name: artifact-sarif
       id: artifact-sarif
-      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != ''
+      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && !env.replace_v4_actions_upload_artifact
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling-sarif', inputs.report_title_suffix) || 'check-spelling-sarif' }}
