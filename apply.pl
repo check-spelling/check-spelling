@@ -143,7 +143,7 @@ sub check_current_script {
     download_with_curl($source, $filename);
     if ($? == 0) {
         if (compare_files($filename, $0)) {
-            print "Current script differs from '$source' (locally downloaded to '$filename'). You may wish to upgrade.\n";
+            print "Current script differs from '$source' (locally downloaded to `$filename`). You may wish to upgrade.\n";
         }
     }
 }
