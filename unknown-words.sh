@@ -3220,7 +3220,7 @@ check_spelling_report() {
     unknown_word_body=''
   else
     unrecognized_words_title="Unrecognized words ($unknown_count)"
-    if [ "$unknown_count" -gt 10 ]; then
+    if [ "$unknown_count" -gt ${INPUT_UNRECOGNIZED_WORDS_BEFORE_COLLAPSING:-10} ]; then
       unknown_word_body="$n<details><summary>$unrecognized_words_title</summary>
 
 $B
