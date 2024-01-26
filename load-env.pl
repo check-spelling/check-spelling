@@ -6,7 +6,7 @@ my %inputs = %{decode_json $input};
 for my $key (keys %inputs) {
     next unless $key;
     my $val = $inputs{$key};
-    next unless $val;
+    next unless $val ne '';
     my $var = $key;
     next if $var =~ /\s/;
     if ($var =~ /-/ && $inputs{$var} ne '') {
