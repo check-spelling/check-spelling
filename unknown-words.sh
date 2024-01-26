@@ -2541,7 +2541,7 @@ spelling_body() {
         output_warnings="$(echo "
         <details><summary>$event_title ($(grep -c ':' "$counter_summary_file"))</summary>
 
-        $details_note
+        #### $details_note
 
         $warnings_details
         </details>
@@ -2614,7 +2614,7 @@ spelling_body() {
         output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
       fi
     fi
-    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_forbidden_patterns$output_candidate_pattern_suggestions$output_warnings$output_advice
+    OUTPUT=$(echo "$n$report_header$n$OUTPUT### $details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_forbidden_patterns$output_candidate_pattern_suggestions$output_warnings$output_advice
       " | perl -pe 's/^\s+$/\n/;'| uniq)
 }
 
