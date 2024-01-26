@@ -18,7 +18,7 @@ my @safe_path = qw(
     /sbin
 );
 
-my $ua = 'check-spelling-agent/0.0.2';
+my $ua = 'check-spelling-agent/0.0.3';
 
 $ENV{'PATH'} = join ':', @safe_path unless defined $ENV{SYSTEMROOT};
 
@@ -330,10 +330,13 @@ sub add_expect {
 }
 
 sub get_artifacts {
-    my ($program, $repo, $run) = @_;
+    my ($program, $repo, $run, $suffix) = @_;
     my $artifact_dir = tempdir(CLEANUP => 1);
     my $gh_err_text;
     my $artifact_name = 'check-spelling-comment';
+    if ($suffix) {
+        $artifact_name .= "-$suffix";
+    }
     my $out = tempfile_name();
 
     run_program_capture_output($out, $out,
@@ -453,15 +456,16 @@ sub main {
             @artifacts = ($artifact);
         }
     } else {
-        if ($first =~ m{^\s*https://.*/([^/]+/[^/]+)/actions/runs/(\d+)(?:/attempts/\d+|)\s*$}) {
-            ($repo, $run) = ($1, $2);
+        my $suffix;
+        if ($first =~ m{^\s*https://.*/([^/]+/[^/]+)/actions/runs/(\d+)(?:/attempts/\d+|)(?:#(\S+)|)\s*$}) {
+            ($repo, $run, $suffix) = ($1, $2, $3);
         } else {
             $repo = $first;
         }
         die $syntax unless defined $repo && defined $run;
         # - 3 check for tool readiness (is `gh` working)
         tools_are_ready($program);
-        @artifacts = get_artifacts($program, $repo, $run);
+        @artifacts = get_artifacts($program, $repo, $run, $suffix);
     }
 
     # - 5 do work

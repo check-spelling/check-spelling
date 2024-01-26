@@ -445,14 +445,21 @@ runs:
         echo "INPUT_INTERNAL_STATE_DIRECTORY=/tmp/data" >> "$GITHUB_ENV"
       shell: bash
     - name: retrieve-comment
+      id: retrieve-comment
       if: inputs.task && inputs.task != 'spelling' && (!env.ACT || github.token)
-      uses: actions/download-artifact@v3
-      with:
-        name: "check-spelling-comment"
-        path: /tmp/data
+      shell: bash
+      working-directory: /tmp/data
+      env:
+        GH_TOKEN: ${{ github.token }}
+        suffix: ${{ inputs.report_title_suffix }}
+      run: |
+        echo retrieve comment >/dev/null &&
+        gh run download -R "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" -n "check-spelling-comment-$suffix" 2>/dev/null ||
+        gh run download -R "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" -n check-spelling-comment 2>/dev/null ||
+        echo "no-comment=1" >> "$GITHUB_OUTPUT"
     - name: check-spelling
       id: spelling
-      if: env.MERGE_FAILED != '1'
+      if: env.MERGE_FAILED != '1' && steps.retrieve-comment.outputs.no-comment != '1'
       env:
         INPUTS: ${{ toJSON(inputs) }}
         DEBUG: ${{ inputs.debug }}
@@ -468,9 +475,10 @@ runs:
         inputs.custom_task != 'comment' &&
         ((failure() && env.MERGE_FAILED != '1') || steps.spelling.outputs.followup) &&
         steps.spelling.outputs.internal_state_directory
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: "check-spelling-comment"
+        name: |
+          ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling-comment', inputs.report_title_suffix) || 'check-spelling-comment' }}
         path: |
           ${{ steps.spelling.outputs.internal_state_directory }}
     - name: Shim Sarif
@@ -483,9 +491,10 @@ runs:
     - name: artifact-sarif
       id: artifact-sarif
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != ''
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: "check-spelling-sarif"
+        name: |
+          ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling-sarif', inputs.report_title_suffix) || 'check-spelling-sarif' }}
         retention-days: 1
         path: |
           ${{ env.UPLOAD_SARIF }}

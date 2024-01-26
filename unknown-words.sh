@@ -782,7 +782,7 @@ handle_comment() {
   export comments_url="$pull_request_base|$comments_base|$issue_comments_base"
 
   summary_url=$(echo "$trigger" | perl -ne '
-    next unless m{($ENV{GITHUB_SERVER_URL}/$ENV{GITHUB_REPOSITORY}/actions/runs/\d+(?:/attempts/\d+|))};
+    next unless m{($ENV{GITHUB_SERVER_URL}/$ENV{GITHUB_REPOSITORY}/actions/runs/\d+(?:/attempts/\d+|)(?:#\S+|))};
     print $1;
   ')
   comment_url=$(echo "$trigger" | perl -ne '
@@ -2834,12 +2834,13 @@ add_talk_to_bot_message() {
     (
       if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
         apply_changes_suffix=" $INPUT_REPORT_TITLE_SUFFIX"
+        jobs_summary_link_suffix="#$INPUT_REPORT_TITLE_SUFFIX"
       fi
       echo
       echo "**OR**"
       echo
       echo "To have the bot accept them for you, reply quoting the following line:"
-      echo "@check-spelling-bot apply [updates]($jobs_summary_link)$apply_changes_suffix."
+      echo "@check-spelling-bot apply [updates]($jobs_summary_link$jobs_summary_link_suffix)$apply_changes_suffix."
     )> "$quote_reply_insertion"
     perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$1"
   fi
@@ -3120,8 +3121,11 @@ generate_curl_instructions() {
     jobs_summary_link=./artifact.zip
   fi
   calculate_exclude_patterns
+  if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
+    jobs_summary_link_suffix="#$INPUT_REPORT_TITLE_SUFFIX"
+  fi
   echo "curl -s -S -L 'https://raw.githubusercontent.com/$GH_ACTION_REPOSITORY/$GH_ACTION_REF/apply.pl' |
-  perl - '$jobs_summary_link'" >> "$instructions"
+  perl - '$jobs_summary_link$jobs_summary_link_suffix'" >> "$instructions"
   echo "$instructions"
 }
 
