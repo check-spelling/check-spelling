@@ -8,6 +8,10 @@ for my $key (keys %inputs) {
     my $val = $inputs{$key};
     next unless $val ne '';
     my $var = $key;
+    if ($val =~ /^github_pat_/) {
+        print STDERR "Censoring `$var` (unexpected-input-value)\n";
+        next;
+    }
     next if $var =~ /\s/;
     next if $var =~ /[-_](?:key|token)$/;
     if ($var =~ /-/ && $inputs{$var} ne '') {
