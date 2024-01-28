@@ -293,7 +293,7 @@ sub remove_stale {
         open INPUT, '<', $file;
         my @keep;
         while (<INPUT>) {
-            next if /^(?:$re)(?:(?:\r|\n)*$| .*)/;
+            next if /^(?:$re)(?:(?:\r|\n)*$|[# ].*)/;
             push @keep, $_;
         }
         close INPUT;

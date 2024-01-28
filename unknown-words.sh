@@ -1213,7 +1213,7 @@ check_for_newline_at_eof() {
 
 check_dictionary() {
   file="$1"
-  comment_char="#" \
+  comment_char="\s*#" \
   "$check_dictionary" "$file"
 }
 
