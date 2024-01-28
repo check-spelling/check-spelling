@@ -1721,7 +1721,35 @@ set_up_files() {
   if [ -n "$expect_files" ]; then
     expect_notes="$(mktemp)"
     expect_collated="$(mktemp)"
-    echo "$expect_files" | xargs env INPUT_USE_SARIF='' "$word_splitter" 2> /dev/null |
+    expect_splitter_configuration=$(mktemp -d)
+    (
+      bang='!'
+      shortest_word="${INPUT_SHORTEST_WORD:-3}"
+      shortest_word_minus_one=$(( $shortest_word - 1 ))
+      longest_word="$INPUT_LONGEST_WORD"
+      echo '# Expect entries should be one entry per line'
+      echo '# Please do not mix a capitalized word with an initially capitalized word'
+      echo "(?:$INPUT_UPPER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}$INPUT_UPPER_PATTERN(?:$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word_minus_one,$longest_word}"
+      echo
+      echo '# Expect entries should be one entry per line'
+      echo '# Please do not merge an uppercase / capitalized word after a lowercase word'
+      echo "(?:$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}(?:(?:$INPUT_UPPER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}|$INPUT_UPPER_PATTERN(?:$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word_minus_one,$longest_word})"
+      echo
+      echo '# Expect entries should not include non-word characters'
+      echo "(?$bang$INPUT_UPPER_PATTERN|$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN|\\s|=)."
+    ) > "$expect_splitter_configuration/forbidden.txt"
+    echo "$expect_files" | xargs env \
+    splitter_configuration="$expect_splitter_configuration" \
+    INPUT_LONGEST_WORD="$INPUT_LONGEST_WORD" \
+    INPUT_SHORTEST_WORD="$INPUT_SHORTEST_WORD" \
+    INPUT_IGNORE_PATTERN="$INPUT_IGNORE_PATTERN" \
+    INPUT_UPPER_PATTERN="$INPUT_UPPER_PATTERN" \
+    INPUT_LOWER_PATTERN="$INPUT_LOWER_PATTERN" \
+    INPUT_NOT_LOWER_PATTERN="$INPUT_NOT_LOWER_PATTERN" \
+    INPUT_NOT_UPPER_OR_LOWER_PATTERN="$INPUT_NOT_UPPER_OR_LOWER_PATTERN" \
+    INPUT_PUNCTUATION_PATTERN="$INPUT_PUNCTUATION_PATTERN" \
+    INPUT_USE_SARIF='' \
+    "$word_splitter" 2> /dev/null |
     INPUT_USE_SARIF='' INPUT_DISABLE_CHECKS=noisy-file "$word_collator" 2> "$expect_notes" > "$expect_collated"
     perl -pe 's/ \(.*\)//' "$expect_collated" > "$expect_path"
     "$expect_collator" "$expect_collated" "$expect_notes" >> "$early_warnings"
