@@ -9,6 +9,7 @@ for my $key (keys %inputs) {
     next unless $val ne '';
     my $var = $key;
     next if $var =~ /\s/;
+    next if $var =~ /[-_](?:key|token)$/;
     if ($var =~ /-/ && $inputs{$var} ne '') {
         my $var_pattern = $var;
         $var_pattern =~ s/-/[-_]/g;
