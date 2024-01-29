@@ -463,10 +463,28 @@ runs:
         GH_TOKEN: ${{ github.token }}
         suffix: ${{ inputs.report_title_suffix }}
       run: |
-        echo retrieve comment >/dev/null &&
-        gh run download -R "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" -n "check-spelling-comment-$suffix" 2>/dev/null ||
-        gh run download -R "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" -n check-spelling-comment 2>/dev/null ||
-        echo "no-comment=1" >> "$GITHUB_OUTPUT"
+        : Retrieve comment
+        if ! gh run download -R "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" -n "check-spelling-comment-$suffix" 2>/dev/null; then
+          if ! gh run download -R "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" -n check-spelling-comment 2>/dev/null; then
+            gh_api_out=$(mktemp)
+            gh_api_err=$(mktemp)
+            if ! gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=1" > "$gh_api_out" 2> "$gh_api_err"; then
+              if grep -q 'HTTP 403' "$gh_api_err"; then
+                (
+                  echo '# Workflow is missing permissions'
+                  echo 'Please add `actions: read` to enable check-spelling to retrieve the artifact it needs to post a comment. [more info](https://github.com/check-spelling/check-spelling/wiki/Workflow-Permissions#contents-read)'
+                  echo
+                  echo '#### Technical details'
+                  echo '```'
+                  cat "$gh_api_err"
+                  cat "$gh_api_out"
+                  echo '```'
+                ) >> "$GITHUB_STEP_SUMMARY"
+              fi
+            fi
+            echo "no-comment=1" >> "$GITHUB_OUTPUT"
+          fi
+        fi
     - name: check-spelling
       id: spelling
       if: env.MERGE_FAILED != '1' && steps.retrieve-comment.outputs.no-comment != '1'
