@@ -458,9 +458,25 @@ runs:
         mkdir -p /tmp/data;
         echo "INPUT_INTERNAL_STATE_DIRECTORY=/tmp/data" >> "$GITHUB_ENV"
       shell: bash
+    - name: retrieve-comment-matrix-replacement
+      id: retrieve-comment-matrix-replacement
+      if: inputs.task && inputs.task != 'spelling' && (!env.ACT || github.token) && env.replace_v4_actions_download_artifact
+      uses: check-spelling/actions-download-artifact@v4
+      with:
+        name: "check-spelling-comment-${{ inputs.report_title_suffix }}"
+        path: /tmp/data
+        warn-on-failure: true
+    - name: retrieve-comment-replacement
+      id: retrieve-comment-replacement
+      if: steps.retrieve-comment-matrix-replacement.outputs.failure != ''
+      uses: check-spelling/actions-download-artifact@v4
+      with:
+        name: "check-spelling-comment"
+        path: /tmp/data
+        warn-on-failure: true
     - name: retrieve-comment
       id: retrieve-comment
-      if: inputs.task && inputs.task != 'spelling' && (!env.ACT || github.token)
+      if: inputs.task && inputs.task != 'spelling' && (!env.ACT || github.token) && !env.replace_v4_actions_download_artifact
       shell: bash
       working-directory: /tmp/data
       env:
@@ -557,7 +573,7 @@ runs:
         fi
     - name: check-spelling
       id: spelling
-      if: env.MERGE_FAILED != '1' && steps.retrieve-comment.outputs.no-comment != '1'
+      if: env.MERGE_FAILED != '1' && steps.retrieve-comment.outputs.no-comment != '1' &&(steps.retrieve-comment-matrix-replacement.outputs.failure == '' || steps.retrieve-comment-replacement.outputs.failure == '')
       env:
         INPUTS: ${{ toJSON(inputs) }}
         DEBUG: ${{ inputs.debug }}
