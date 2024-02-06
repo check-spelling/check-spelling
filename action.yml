@@ -39,9 +39,8 @@ inputs:
     default: "0"
     required: false
   experimental_parallel_jobs:
-    description: 'Number of CPUs available for running checks'
+    description: 'Number of CPUs available for running checks (defaults to number of processors)'
     required: false
-    default: '2'
   post_comment:
     description: 'Post comment with report'
     required: false
