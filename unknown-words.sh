@@ -1028,7 +1028,10 @@ define_variables() {
     bucket=${INPUT_CONFIG%/*}
     project=${INPUT_CONFIG##*/}
   fi
-  job_count="${INPUT_EXPERIMENTAL_PARALLEL_JOBS:-2}"
+  job_count="${INPUT_EXPERIMENTAL_PARALLEL_JOBS}"
+  if [ -z "$job_count" ]; then
+    job_count=$(nproc 2>/dev/null || sysctl -n hw.physicalcpu)
+  fi
   if ! [ "$job_count" -eq "$job_count" ] 2>/dev/null || [ "$job_count" -lt 2 ]; then
     job_count=1
   fi
