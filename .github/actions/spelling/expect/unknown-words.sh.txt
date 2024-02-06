@@ -16,6 +16,8 @@ mindepth
 nektos
 noreply
 notest
+nproc
+physicalcpu
 PIPESTATUS
 rawfile
 sarifs
