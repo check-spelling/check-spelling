@@ -76,7 +76,6 @@ dispatcher() {
             open_pr_number="$(jq -r '.[0].number' "$pull_request_json")"
             echo "Found [open PR #$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number) - check-spelling should run there."
             echo
-            echo '::warning title=WARNING: Skipped check-spelling::This workflow is intentionally terminating early with a success code -- it has not checked for misspellings.'
             pull_request_event_name=pull_request_target
             if [ -n "$workflow_path" ]; then
               if ! grep -q pull_request_target "$workflow_path" && grep -q pull_request "$workflow_path"; then
