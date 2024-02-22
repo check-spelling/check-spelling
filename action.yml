@@ -103,9 +103,7 @@ inputs:
       cspell:gaming-terms/dict/gaming-terms.txt
       cspell:golang/dict/go.txt
       cspell:haskell/dict/haskell.txt
-      cspell:html-symbol-entities/entities.txt
       cspell:html/dict/html.txt
-      cspell:html/src/svg.txt
       cspell:java/src/java-terms.txt
       cspell:java/src/java.txt
       cspell:k8s/dict/k8s.txt
