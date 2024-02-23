@@ -1,77 +1,77 @@
-name: 'Check Spelling'
-description: 'Spell check code and commits'
-author: 'jsoref'
+name: "Check Spelling"
+description: "Spell check code and commits"
+author: "jsoref"
 branding:
-  icon: 'edit-3'
-  color: 'red'
+  icon: "edit-3"
+  color: "red"
 inputs:
   GITHUB_TOKEN:
-    description: 'The GITHUB_TOKEN secret'
+    description: "The GITHUB_TOKEN secret"
     default: "${{ github.token }}"
     required: true
   bucket:
-    description: 'Container for spelling configuration'
+    description: "Container for spelling configuration"
     required: false
   project:
-    description: 'Folder/Branch within bucket containing spelling configuration'
+    description: "Folder/Branch within bucket containing spelling configuration"
     required: false
   config:
-    description: 'Spelling configuration directory'
+    description: "Spelling configuration directory"
     default: ".github/actions/spelling"
     required: false
   experimental_path:
-    description: 'Directory root to check for spelling (note that bucket/project/config are independent of this)'
-    default: '.'
+    description: "Directory root to check for spelling (note that bucket/project/config are independent of this)"
+    default: "."
     required: false
   dictionary_url:
     description: "Location of dictionary (if you aren't providing one in your repository)"
-    default: 'https://raw.githubusercontent.com/check-spelling/check-spelling/dictionary-$DICTIONARY_VERSION/dict.txt'
+    default: "https://raw.githubusercontent.com/check-spelling/check-spelling/dictionary-$DICTIONARY_VERSION/dict.txt"
     required: false
   dictionary_version:
-    description: 'Version of the dictionary (only used if the url includes $DICTIONARY_VERSION)'
+    description: "Version of the dictionary (only used if the url includes $DICTIONARY_VERSION)"
     default: "20200211"
     required: false
   debug:
-    description: 'Debug'
+    description: "Debug"
     required: false
   experimental_apply_changes_via_bot:
-    description: '(Experimental) Allow users to quote-reply to the bot comment to update the PR'
+    description: "(Experimental) Allow users to quote-reply to the bot comment to update the PR"
     default: "0"
     required: false
   experimental_parallel_jobs:
-    description: 'Number of CPUs available for running checks (defaults to number of processors)'
+    description: "Number of CPUs available for running checks (defaults to number of processors)"
     required: false
   post_comment:
-    description: 'Post comment with report'
+    description: "Post comment with report"
     required: false
-    default: '1'
+    default: "1"
   capture_output_unknown_words:
-    description: ''
+    description: ""
     required: false
-    deprecationMessage: 'Obsolete: outputs are always captured'
-    default: ''
+    deprecationMessage: "Obsolete: outputs are always captured"
+    default: ""
   capture_output_stale_words:
-    description: ''
-    deprecationMessage: 'Obsolete: outputs are always captured'
+    description: ""
+    deprecationMessage: "Obsolete: outputs are always captured"
     required: false
-    default: ''
+    default: ""
   capture_output_skipped_files:
-    description: ''
-    deprecationMessage: 'Obsolete: outputs are always captured'
+    description: ""
+    deprecationMessage: "Obsolete: outputs are always captured"
     required: false
-    default: ''
+    default: ""
   dictionary_source_prefixes:
-    description: 'JSON map of prefixes for dictionary urls'
+    description: "JSON map of prefixes for dictionary urls"
     required: false
     default: '{"cspell": "https://raw.githubusercontent.com/check-spelling/cspell-dicts/v20230509/dictionaries/"}'
   extra_dictionaries:
-    description: 'Space delimited list of URLs (or `prefix:`+path) to additional word lists'
+    description: "Space delimited list of URLs (or `prefix:`+path) to additional word lists"
     required: false
-    default: ''
+    default: ""
   check_extra_dictionaries:
-    description: 'Compare unknown tokens against these dictionaries and suggest if applicable'
+    description: "Compare unknown tokens against these dictionaries and suggest if applicable"
     required: false
-    default:
+    default: |
       cspell:ada/dict/ada.txt
       cspell:aws/aws.txt
       cspell:clojure/src/clojure.txt
@@ -138,162 +138,162 @@ inputs:
       cspell:swift/src/swift.txt
       cspell:typescript/dict/typescript.txt
   extra_dictionary_limit:
-    description: 'Limit the number of suggested extra dictionaries.'
+    description: "Limit the number of suggested extra dictionaries."
     required: false
-    default: '5'
+    default: "5"
   event_aliases:
     description: >-
       Try to treat a GitHub event "a" as GitHub event "b" (JSON map).
       If this flag was available before this tool recognized `pull_request_target`,
       `{"pull_request_target":"pull_request"}` would have mapped it to `pull_request`.
     required: false
-    default: ''
+    default: ""
   shortest_word:
-    description: 'Shortest word'
+    description: "Shortest word"
     required: false
-    default: '3'
+    default: "3"
   longest_word:
-    description: 'Longest word'
+    description: "Longest word"
     required: false
-    default: ''
+    default: ""
   experimental_commit_note:
-    description: 'If set, commit updates to expect automatically with this note'
+    description: "If set, commit updates to expect automatically with this note"
     required: false
-    default: ''
+    default: ""
   suppress_push_for_open_pull_request:
     description: "If set, do not do work in response to `push` if there is an open `pull` request to the repository for the branch (this assumes there's a `pull_request_target` event configured)."
     required: false
-    default: ''
+    default: ""
   report_title_suffix:
-    description: 'Suffix for report title (useful if you are using a matrix strategy or are using experimental_path)'
+    description: "Suffix for report title (useful if you are using a matrix strategy or are using experimental_path)"
     required: false
-    default: ''
+    default: ""
   only_check_changed_files:
-    description: 'If set, only check files changed since the last push'
+    description: "If set, only check files changed since the last push"
     required: false
-    default: ''
+    default: ""
   custom_task:
     description: 'Run an internal task instead of responding to a GitHub event. Values: "comment"'
     # This will be superseded by task
     required: false
-    default: ''
+    default: ""
   internal_state_directory:
-    description: 'Used for passing internal state from the (default) check mode to the comment module'
+    description: "Used for passing internal state from the (default) check mode to the comment module"
     required: false
-    default: ''
+    default: ""
   check_file_names:
-    description: 'Spell check file paths'
+    description: "Spell check file paths"
     required: false
-    default: ''
+    default: ""
   check_commit_messages:
-    description: 'List of extra text to check (latest `commit` message, messages for pending `commits`, PR `title`, PR `description`)'
+    description: "List of extra text to check (latest `commit` message, messages for pending `commits`, PR `title`, PR `description`)"
     required: false
-    default: ''
+    default: ""
   anonymize_secpoll_source:
-    description: 'Perform secpoll queries via a public dns server'
+    description: "Perform secpoll queries via a public dns server"
     required: false
-    default: ''
+    default: ""
   ignore_security_advisory:
-    description: 'Set to the value of the current security advisory to accept the reported risk -- value must match -- do not set if there is no current advisory'
+    description: "Set to the value of the current security advisory to accept the reported risk -- value must match -- do not set if there is no current advisory"
     required: false
-    default: ''
+    default: ""
   largest_file:
-    description: 'File size limit'
+    description: "File size limit"
     required: false
-    default: '1048576'
+    default: "1048576"
   unknown_word_limit:
-    description: 'Only report an unknown word this many times'
+    description: "Only report an unknown word this many times"
     required: false
-    default: '5'
+    default: "5"
   warnings:
-    description: 'List of events that are warnings (items that are neither warnings nor notices will result in an :x:)'
+    description: "List of events that are warnings (items that are neither warnings nor notices will result in an :x:)"
     required: false
     default: bad-regex,binary-file,deprecated-feature,large-file,limited-references,no-newline-at-eof,noisy-file,non-alpha-in-dictionary,token-is-substring,unexpected-line-ending,whitespace-in-dictionary,minified-file,unsupported-configuration
   notices:
-    description: 'List of events that are notices (items that are neither warnings nor notices will result in an :x:)'
+    description: "List of events that are notices (items that are neither warnings nor notices will result in an :x:)"
     required: false
     default: candidate-pattern
   quit_without_error:
-    description: 'Suppress failure code exit code -- it will be available via outputs.result_code'
+    description: "Suppress failure code exit code -- it will be available via outputs.result_code"
     required: false
-    default: ''
+    default: ""
   spell_check_this:
-    description: 'Repository with default configuration to use if no configuration is found in a .github/actions/spelling directory'
+    description: "Repository with default configuration to use if no configuration is found in a .github/actions/spelling directory"
     required: false
-    default: ''
+    default: ""
   ssh_key:
-    description: 'Key for checking out / pushing to updates (and trigger workflow cascades)'
+    description: "Key for checking out / pushing to updates (and trigger workflow cascades)"
     required: false
-    default: ''
+    default: ""
   checkout:
-    description: 'Whether to check out a repository'
+    description: "Whether to check out a repository"
     required: false
-    default: ''
+    default: ""
   task:
-    description: 'Task to perform (spelling, comment, ...)'
+    description: "Task to perform (spelling, comment, ...)"
     required: false
-    default: ''
+    default: ""
   disable_checks:
-    description: 'Some heuristics might not do what you want, it may be possible to suppress them'
+    description: "Some heuristics might not do what you want, it may be possible to suppress them"
     required: false
-    default: ''
+    default: ""
   alternate_engine:
-    description: 'Alternate engine to use'
+    description: "Alternate engine to use"
     required: false
-    default: ''
+    default: ""
   alternate_engine_key:
-    description: 'ssh key to retrieve alternate engine'
+    description: "ssh key to retrieve alternate engine"
     required: false
-    default: ''
+    default: ""
   use_sarif:
-    description: 'Publish Sarif report'
+    description: "Publish Sarif report"
     required: false
-    default: ''
+    default: ""
   use_magic_file:
-    description: 'Use magic file to skip binary files'
+    description: "Use magic file to skip binary files"
     required: false
-    default: ''
+    default: ""
   caller_container:
     description: "Hack for nektos/act - pass the outputs.docker_container to give check-spelling a way to retrieve data it needs to report a comment"
     required: false
   candidate_example_limit:
-    description: 'Control the number of examples shown for candidate patterns'
+    description: "Control the number of examples shown for candidate patterns"
     required: false
     default: 3
   summary_table:
-    description: 'Provide item table (paths, content)'
+    description: "Provide item table (paths, content)"
     required: false
     default: 1
   ignore-pattern:
-    description: 'Word Splitter Ignore Pattern'
+    description: "Word Splitter Ignore Pattern"
     required: false
     default: "[^a-zA-Z']"
   upper-pattern:
-    description: 'Word Splitter Upper Pattern'
+    description: "Word Splitter Upper Pattern"
     required: false
     default: "[A-Z]"
   lower-pattern:
-    description: 'Word Splitter Lower Pattern'
+    description: "Word Splitter Lower Pattern"
     required: false
     default: "[a-z]"
   not-lower-pattern:
-    description: 'Word Splitter Not Lower Pattern'
+    description: "Word Splitter Not Lower Pattern"
     required: false
     default: "[^a-z]"
   not-upper-or-lower-pattern:
-    description: 'Word Splitter Not Upper or Lower Pattern'
+    description: "Word Splitter Not Upper or Lower Pattern"
     required: false
     default: "[^A-Za-z]"
   punctuation-pattern:
-    description: 'Word Splitter Punctuation Pattern'
+    description: "Word Splitter Punctuation Pattern"
     required: false
     default: "'"
   report-timing:
-    description: 'Report processing time for files'
+    description: "Report processing time for files"
     required: false
     default: ""
   unrecognized-words-before-collapsing:
-    description: 'Control how many unrecognized words can be displayed without wrapping in a collapsed widget'
+    description: "Control how many unrecognized words can be displayed without wrapping in a collapsed widget"
     required: false
     default: 10
   sarif-token:
@@ -320,7 +320,7 @@ outputs:
     description: "Warnings"
     value: ${{ steps.spelling.outputs.warnings }}
   internal_state_directory:
-    description: 'Used for passing internal state from the (default) check mode to the comment module'
+    description: "Used for passing internal state from the (default) check mode to the comment module"
     value: ${{ steps.spelling.outputs.internal_state_directory }}
   result_code:
     description: "Result (indicates unrecognized words were found or comment needs to be collapsed)"
@@ -333,7 +333,7 @@ outputs:
     value: ${{ steps.spelling.outputs.docker_container }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: act-broken
       if: env.ACT && (github.action_path || env.GITHUB_ACTION_PATH) && (env.GITHUB_ACTION_PATH != github.action_path)
@@ -491,12 +491,12 @@ runs:
         spellchecker: ${{ env.THIS_ACTION_PATH }}
         GH_ACTION_REPOSITORY: ${{ github.action_repository || github.repository }}
         GH_ACTION_REF: ${{ github.action_ref || github.ref_name }}
-      run:
+      run: |
         unknown-words
       shell: bash
     - name: store-comment-replacement
       if: (contains(github.event_name, 'pull_request') ||
-          github.event_name == 'push') &&
+        github.event_name == 'push') &&
         inputs.custom_task != 'comment' &&
         ((failure() && env.MERGE_FAILED != '1') || steps.spelling.outputs.followup) &&
         steps.spelling.outputs.internal_state_directory &&
@@ -509,9 +509,9 @@ runs:
           ${{ steps.spelling.outputs.internal_state_directory }}
     - name: store-comment
       if: (contains(github.event_name, 'pull_request') ||
-          github.event_name == 'push') &&
+        github.event_name == 'push') &&
         inputs.custom_task != 'comment' &&
-          ((failure() && env.MERGE_FAILED != '1') || steps.spelling.outputs.followup) &&
+        ((failure() && env.MERGE_FAILED != '1') || steps.spelling.outputs.followup) &&
         steps.spelling.outputs.internal_state_directory &&
         (!env.replace_v4_actions_upload_artifact)
       uses: actions/upload-artifact@v4
