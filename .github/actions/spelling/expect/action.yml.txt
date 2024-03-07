@@ -2,4 +2,5 @@ cpan
 cpanmin
 installsitearch
 installsitelib
+nektosact
 stdbuf
