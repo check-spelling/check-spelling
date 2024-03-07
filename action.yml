@@ -391,6 +391,7 @@ runs:
       shell: bash
     - name: checkout
       id: checkout-replacement
+      continue-on-error: true
       if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && env.replace_v4_actions_checkout
       uses: check-spelling/actions-checkout@v4
       with:
@@ -407,6 +408,8 @@ runs:
             ''
           }}
     - name: checkout
+      id: checkout
+      continue-on-error: true
       if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !env.replace_v4_actions_checkout
       uses: actions/checkout@v4
       with:
@@ -422,6 +425,16 @@ runs:
             github.event.pull_request.head.sha ||
             ''
           }}
+    - name: report if checkout failed
+      if: steps.checkout-replacement.outcome == 'failure' || steps.checkout.outcome == 'failure'
+      shell: bash
+      env:
+        spellchecker: ${{ env.THIS_ACTION_PATH }}
+        ssh_key: ${{ inputs.ssh_key }}
+        ssh_account: git@github.com
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        diagnose-failed-checkout
     - name: checkout-merge
       id: checkout-merge
       if: github.event.pull_request.number && (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task)
