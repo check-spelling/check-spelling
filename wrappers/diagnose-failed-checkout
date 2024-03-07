@@ -1,0 +1,2 @@
+#!/bin/sh
+"$spellchecker/diagnose-failed-checkout.sh"
