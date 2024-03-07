@@ -2492,7 +2492,7 @@ spelling_body() {
       else
         with_hint='
               with:
-                extra_dictionaries:'
+                extra_dictionaries: |'
       fi
       output_dictionaries="$(echo "
         <details><summary>Available :books: dictionaries could cover words$expect_head not in the :blue_book: dictionary</summary>
