@@ -1658,12 +1658,13 @@ set_up_files() {
   fi
   case "$INPUT_TASK" in
     comment|collapse_previous_comment|pr_head_sha)
-      if [ -e "$data_dir/spell_check_this.json" ]; then
+      spell_check_this_json="$data_dir/spell_check_this.json"
+      if [ -e "$spell_check_this_json" ]; then
         spell_check_this_repo=$(mktemp -d)
-        spelling_config=$(jq -r .config "$data_dir/spell_check_this.json")
-        spell_check_this_repo_url=$(jq -r .url "$data_dir/spell_check_this.json")
-        spell_check_this_repo_branch=$(jq -r .branch "$data_dir/spell_check_this.json")
-        spell_check_this_config=$(jq -r .path "$data_dir/spell_check_this.json")
+        spelling_config=$(jq -r .config "$spell_check_this_json")
+        spell_check_this_repo_url=$(jq -r .url "$spell_check_this_json")
+        spell_check_this_repo_branch=$(jq -r .branch "$spell_check_this_json")
+        spell_check_this_config=$(jq -r .path "$spell_check_this_json")
       fi
     ;;
     *)
