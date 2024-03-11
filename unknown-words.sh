@@ -1715,7 +1715,7 @@ set_up_files() {
             --arg url "$spell_check_this_repo_url" \
             --arg branch "$spell_check_this_repo_branch" \
             --arg path "$spell_check_this_config" \
-          '.config=$config|.url=$url|.branch=$branch|.path=$path' > "$data_dir/spell_check_this.json"
+          '.config=$config|.url=$url|.branch=$branch|.path=$path|del(..|select(.==""))' > "$data_dir/spell_check_this.json"
         fi
         add_spell_check_this_text=" using the spell-check-this repository,"
       fi
