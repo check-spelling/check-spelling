@@ -1666,6 +1666,11 @@ set_up_files() {
         spell_check_this_repo_branch=$(jq -r .branch "$spell_check_this_json")
         spell_check_this_config=$(jq -r .path "$spell_check_this_json")
       fi
+      if [ ! -e "$data_dir/apply.json" ]; then
+        echo '::warning ::could not find apply.json (this can happen under `act`)'
+      else
+        THIS_GITHUB_JOB_ID=$(jq -r ".job // \"$THIS_GITHUB_JOB_ID\"" "$data_dir/apply.json")
+      fi
     ;;
     *)
       if [ ! -d "$bucket/$project/" ] && [ -n "$INPUT_SPELL_CHECK_THIS" ]; then
