@@ -772,28 +772,11 @@ handle_comment() {
   set_up_files
   git reset --hard
 
-  number_filter() {
-    perl -pe 's<\{.*\}></(\\d+)>'
-  }
-  export pull_request_base="$(jq -r '.comment.html_url' "$GITHUB_EVENT_PATH" | perl -pe 's/\d+$/(\\d+)/')"
-  comments_base="$(jq -r '.repository.comments_url // empty' "$GITHUB_EVENT_PATH" | number_filter)"
-  export issue_comments_base="$(jq -r '.repository.issue_comment_url // empty' "$GITHUB_EVENT_PATH" | number_filter)"
-  export comments_url="$pull_request_base|$comments_base|$issue_comments_base"
-
   summary_url=$(echo "$trigger" | perl -ne '
     next unless m{($ENV{GITHUB_SERVER_URL}/$ENV{GITHUB_REPOSITORY}/actions/runs/\d+(?:/attempts/\d+|)(?:#\S+|))};
     print $1;
   ')
-  comment_url=$(echo "$trigger" | perl -ne '
-    next unless m{((?:$ENV{comments_url}))};
-    my $capture=$1;
-    my $old_base=$ENV{pull_request_base};
-    my $prefix=$ENV{issue_comments_base};
-    $old_base=~s{\Q(\d+)\E$}{};
-    $prefix=~s{\Q(\d+)\E$}{};
-    $capture =~ s{$old_base}{$prefix};
-    print "$capture\n";
-  ' | sort -u)
+  comment_url=$(echo "$trigger" | comment_api_url)
   if [ -n "$summary_url" ]; then
     [ -n "$comment_url" ] &&
       confused_comment "$trigger_comment_url" "Found both summary url (/actions/runs) and _/_$b$comments_url${b}_/_ in comment."
@@ -1104,6 +1087,29 @@ define_variables() {
     GITHUB_OUTPUT=$(mktemp)
     GH_OUTPUT_STUB=1
   fi
+
+  export pull_request_base="$(jq -r '.comment.html_url' "$GITHUB_EVENT_PATH" | perl -pe 's/\d+$/(\\d+)/')"
+  comments_base="$(jq -r '.repository.comments_url // empty' "$GITHUB_EVENT_PATH" | number_filter)"
+  export issue_comments_base="$(jq -r '.repository.issue_comment_url // empty' "$GITHUB_EVENT_PATH" | number_filter)"
+  export comments_url="$pull_request_base|$comments_base|$issue_comments_base"
+}
+
+number_filter() {
+  perl -pe 's<\{.*\}></(\\d+)>'
+}
+
+comment_api_url() {
+  perl -ne '
+    next unless m{((?:$ENV{comments_url}))};
+    my $capture=$1;
+    my $old_base=$ENV{pull_request_base};
+    my $prefix=$ENV{issue_comments_base};
+    $old_base=~s{\Q(\d+)\E$}{};
+    $prefix=~s{\Q(\d+)\E$}{};
+    $capture =~ s{$old_base}{$prefix};
+    print "$capture\n";
+  ' |
+  sort -u
 }
 
 check_yaml_key_value() {
@@ -2778,7 +2784,8 @@ lock_pr() {
 }
 
 comment() {
-  comments_url="$1"
+  comments_url=$(echo "$1" | comment_api_url)
+  comments_url="${comments_url:-"$1"}"
   payload="$2"
   if [ -n "$payload" ]; then
     method="$3"
