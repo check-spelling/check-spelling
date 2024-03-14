@@ -2885,7 +2885,7 @@ add_talk_to_bot_message() {
       echo
       echo "**OR**"
       echo
-      echo "To have the bot accept them for you, reply quoting the following line:"
+      echo "To have the bot accept them for you, comment in the PR quoting the following line:"
       echo "@check-spelling-bot apply [updates]($jobs_summary_link$jobs_summary_link_suffix)$apply_changes_suffix."
     )> "$quote_reply_insertion"
     perl -e '$/=undef; my ($insertion, $body) = @ARGV; open INSERTION, "<", $insertion; my $text = <INSERTION>; close INSERTION; open BODY, "<", $body; my $content=<BODY>; close BODY; $content =~ s/<!--QUOTE_REPLY-->/$text/; open BODY, ">", $body; print BODY $content; close BODY;' "$quote_reply_insertion" "$1"
