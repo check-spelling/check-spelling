@@ -2234,6 +2234,7 @@ run_spell_check() {
   if to_boolean "$INPUT_USE_SARIF"; then
     SARIF_FILE="$(mktemp).sarif.json"
     echo UPLOAD_SARIF="$SARIF_FILE" >> "$GITHUB_ENV"
+    echo UPLOAD_SARIF_LIMITED="$SARIF_FILE" >> "$GITHUB_ENV"
     warning_output="$warning_output" "$generate_sarif" > "$SARIF_FILE" || (
       echo "::error title=Sarif generation failed::Please file a bug (sarif-generation-failed)"
       cp "$spellchecker/sarif.json" "$SARIF_FILE"
