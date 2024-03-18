@@ -2233,11 +2233,14 @@ run_spell_check() {
   echo "warnings=$warning_output" >> "$output_variables"
   if to_boolean "$INPUT_USE_SARIF"; then
     SARIF_FILE="$(mktemp).sarif.json"
+    UPLOAD_SARIF_LIMITED=$(mktemp)
     echo UPLOAD_SARIF="$SARIF_FILE" >> "$GITHUB_ENV"
+    echo UPLOAD_SARIF_LIMITED="$UPLOAD_SARIF_LIMITED" >> "$GITHUB_ENV"
     warning_output="$warning_output" "$generate_sarif" > "$SARIF_FILE" || (
       echo "::error title=Sarif generation failed::Please file a bug (sarif-generation-failed)"
       cp "$spellchecker/sarif.json" "$SARIF_FILE"
     )
+    jq -c '.runs[0].results = .runs[0].results[0:25000]' "$SARIF_FILE" > "$UPLOAD_SARIF_LIMITED"
   fi
   end_group
   if [ "$word_splitter_status" != '0 0' ]; then
