@@ -302,6 +302,10 @@ inputs:
   checkout-token:
     description: "Token for use with actions/checkout (the default is to use the github.token)"
     required: false
+  wait-for-sarif-processing:
+    description: "Wait for GitHub Advanced Security to process SARIF output"
+    required: false
+    default: false
 
 outputs:
   unknown_words:
@@ -563,7 +567,7 @@ runs:
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && env.replace_v3_github_codeql_action
       uses: check-spelling/github-codeql-action/upload-sarif@v3
       with:
-        wait-for-processing: false
+        wait-for-processing: ${{ inputs.wait-for-sarif-processing != '' && inputs.wait-for-sarif-processing || 'false' }}
         sarif_file: ${{ env.UPLOAD_SARIF }}
         category: ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling', inputs.report_title_suffix) || 'check-spelling' }}
         checkout_path: ${{ inputs.experimental_path }}
@@ -575,7 +579,7 @@ runs:
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && !env.replace_v3_github_codeql_action
       uses: github/codeql-action/upload-sarif@v3
       with:
-        wait-for-processing: false
+        wait-for-processing: ${{ inputs.wait-for-sarif-processing != '' && inputs.wait-for-sarif-processing || 'false' }}
         sarif_file: ${{ env.UPLOAD_SARIF }}
         category: ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling', inputs.report_title_suffix) || 'check-spelling' }}
         checkout_path: ${{ inputs.experimental_path }}
