@@ -564,11 +564,11 @@ runs:
         path: ${{ env.UPLOAD_SARIF }}
     - name: upload-sarif
       id: upload-sarif-replacement
-      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && env.replace_v3_github_codeql_action
+      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF_LIMITED != '' && env.replace_v3_github_codeql_action
       uses: check-spelling/github-codeql-action/upload-sarif@v3
       with:
         wait-for-processing: ${{ inputs.wait-for-sarif-processing != '' && inputs.wait-for-sarif-processing || 'false' }}
-        sarif_file: ${{ env.UPLOAD_SARIF }}
+        sarif_file: ${{ env.UPLOAD_SARIF_LIMITED }}
         category: ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling', inputs.report_title_suffix) || 'check-spelling' }}
         checkout_path: ${{ inputs.experimental_path }}
         ref: ${{ env.PRIVATE_SARIF_REF }}
@@ -576,11 +576,11 @@ runs:
         token: ${{ inputs.sarif-token || inputs.GITHUB_TOKEN }}
     - name: upload-sarif
       id: upload-sarif
-      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && !env.replace_v3_github_codeql_action
+      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF_LIMITED != '' && !env.replace_v3_github_codeql_action
       uses: github/codeql-action/upload-sarif@v3
       with:
         wait-for-processing: ${{ inputs.wait-for-sarif-processing != '' && inputs.wait-for-sarif-processing || 'false' }}
-        sarif_file: ${{ env.UPLOAD_SARIF }}
+        sarif_file: ${{ env.UPLOAD_SARIF_LIMITED }}
         category: ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling', inputs.report_title_suffix) || 'check-spelling' }}
         checkout_path: ${{ inputs.experimental_path }}
         ref: ${{ env.PRIVATE_SARIF_REF }}
