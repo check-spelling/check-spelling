@@ -773,7 +773,7 @@ handle_comment() {
   git reset --hard
 
   summary_url=$(echo "$trigger" | perl -ne '
-    next unless m{($ENV{GITHUB_SERVER_URL}/$ENV{GITHUB_REPOSITORY}/actions/runs/\d+(?:/attempts/\d+|)(?:#\S+|))};
+    next unless m{($ENV{GITHUB_SERVER_URL}/[^/]+/[^/]+/actions/runs/\d+(?:/attempts/\d+|)(?:#\S+|))};
     print $1;
   ')
   comment_url=$(echo "$trigger" | comment_api_url)
@@ -842,6 +842,19 @@ handle_comment() {
     rm "$instructions"
     update_note="per $(comment_url_to_html_url "$comment_url")"
   elif [ -n "$summary_url" ]; then
+    summary_url_repo=$(echo "$summary_url" | perl -ne '
+      next unless m{$ENV{GITHUB_SERVER_URL}/([^/]+/[^/]+)/actions/runs/\d+(?:/attempts/\d+|)(?:#\S+|)};
+      print $1;
+    ')
+    if [ "$summary_url_repo" != "$GITHUB_REPOSITORY" ]; then
+      pull_url=$(jq -r '.issue.html_url // empty' "$GITHUB_EVENT_PATH")
+      if [ -n "$pull_url" ]; then
+        see_checks_url="Look in the [checks tab]($pull_url/checks) for the latest check-spelling report."
+      else
+        see_checks_url=''
+      fi
+      confused_comment "$trigger_comment_url" "Found a GitHub summary for repo $b$summary_url_repo$b but expected repo $b$GITHUB_REPOSITORY$b. This could be because the repository was moved or renamed, or it could just be from the wrong repository. $see_checks_url"
+    fi
     if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
       title_suffix_re='.*'"$("$quote_meta" "$INPUT_REPORT_TITLE_SUFFIX")"
     fi
