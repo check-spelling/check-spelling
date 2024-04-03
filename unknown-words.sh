@@ -82,12 +82,19 @@ dispatcher() {
                 pull_request_event_name=pull_request
               fi
               workflow="workflow (${b}$workflow_path${b})"
+              markdown_escaped_branch=$(perl -e 'my $branch=$ENV{GITHUB_REF_NAME}; $branch =~ s/([\\)])/\\$1/g; print $branch')
+              workflow_run_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/$workflow_path?query=event:$pull_request_event_name+branch:$markdown_escaped_branch"
+              prefix_workflow_link_text='['
+              suffix_workflow_link_text="]($workflow_run_link)"
             else
               workflow='workflow'
+              workflow_run_link=''
+              prefix_workflow_link_text=''
+              suffix_workflow_link_text=''
             fi
             checks_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number/checks"
-            echo "::notice title=Workflow skipped::See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR #$open_pr_number. $checks_link"
-            echo "# ⏭️ Workflow skipped$n${n}See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR [#$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number).$n$n$checks_link" >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=Workflow skipped::See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR #$open_pr_number. $workflow_run_link $checks_link"
+            echo "# ⏭️ Workflow skipped$n${n}See $prefix_workflow_link_text${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow$suffix_workflow_link_text in PR [#$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number).$n$n$checks_link" >> "$GITHUB_STEP_SUMMARY"
             if [ -n "$ACT" ]; then
               echo
               echo 'You appear to be running nektos/act, you should probably comment out:'
