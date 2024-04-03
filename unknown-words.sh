@@ -1624,7 +1624,7 @@ get_extra_dictionaries() {
 set_up_reporter() {
   if to_boolean "$DEBUG"; then
     echo 'env:'
-    env|sort
+    env -0|sort -z|tr '\0' '\n'
   fi
   if [ -z "$GITHUB_EVENT_PATH" ] || [ ! -s "$GITHUB_EVENT_PATH" ]; then
     GITHUB_EVENT_PATH=/dev/null
