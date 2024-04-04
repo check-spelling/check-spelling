@@ -484,6 +484,7 @@ runs:
             gh_api_err=$(mktemp)
             if ! gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=1" > "$gh_api_out" 2> "$gh_api_err"; then
               if grep -q 'HTTP 403' "$gh_api_err"; then
+                act-summary
                 (
                   echo '# Workflow is missing permissions'
                   echo 'Please add `actions: read` to enable check-spelling to retrieve the artifact it needs to post a comment. [more info](https://github.com/check-spelling/check-spelling/wiki/Workflow-Permissions#contents-read)'
@@ -590,6 +591,7 @@ runs:
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && (github.run_attempt > 1 || env.ACT) && env.UPLOAD_SARIF_LIMITED != ''
       shell: bash
       run: |
+        act-summary
         (
           echo '<details><summary>sarif file</summary>'
           echo
@@ -615,3 +617,15 @@ runs:
           echo '```'
           echo '</details>'
         ) >> "$GITHUB_STEP_SUMMARY"
+    - name: act-step-summary
+      if: (success() || failure()) && env.ACT_STEP_SUMMARY
+      shell: bash
+      run: |
+        cd "$ACT_STEP_SUMMARY"
+        for a in $(ls | sort -n); do
+          if [ -s "$a" ]; then
+            echo "<!-- $a -->"
+            cat "$a"
+            echo
+          fi
+        done
