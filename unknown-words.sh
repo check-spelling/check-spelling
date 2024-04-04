@@ -118,10 +118,16 @@ dispatcher() {
               echo "::notice title=Workflow skipped::See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR #$open_pr_number. $workflow_run_link $checks_link"
               echo "# ⏭️ Workflow skipped$n${n}See $prefix_workflow_link_text${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow$suffix_workflow_link_text in PR [#$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number).$n$n$checks_link" >> "$GITHUB_STEP_SUMMARY"
               if [ -n "$ACT" ]; then
+                matched_yaml_key_value=$(
+                  REPORT_MATCHING_YAML=1 \
+                  KEY=suppress_push_for_open_pull_request \
+                  VALUE="$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST" \
+                  check_yaml_key_value "$workflow_path"
+                )
                 echo
                 echo 'You appear to be running nektos/act, you should probably comment out:'
                 echo
-                echo "        suppress_push_for_open_pull_request: $INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"
+                echo "        ${matched_yaml_key_value:-"suppress_push_for_open_pull_request: $INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"}"
               fi
             ) >&2
             exit 0
