@@ -72,37 +72,65 @@ dispatcher() {
             echo 'Cannot determine if there is an open pull request, proceeding as if there is not.'
           ) >&2
         elif [ "$(jq length "$pull_request_json")" -gt 0 ]; then
-          (
-            open_pr_number="$(jq -r '.[0].number' "$pull_request_json")"
-            echo "Found [open PR #$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number) - check-spelling should run there."
-            echo
-            pull_request_event_name=pull_request_target
-            if [ -n "$workflow_path" ]; then
-              if ! grep -q pull_request_target "$workflow_path" && grep -q pull_request "$workflow_path"; then
-                pull_request_event_name=pull_request
+          if [ -f "$workflow_path" ] && [ -s "$workflow_path" ]; then
+            found_pull_request_file=1
+            pull_request_events=$(
+              yq -M '.on | keys' "$workflow_path" |
+              perl -ne 'next unless s/^-\s+(pull_request)/$1/; print'
+            )
+          else
+            found_pull_request_file=
+            pull_request_events=
+          fi
+          if [ -z "$found_pull_request_file" ] || [ -n "$pull_request_events" ]; then
+            (
+              open_pr_number="$(jq -r '.[0].number' "$pull_request_json")"
+              echo "Found [open PR #$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number) - check-spelling should run there."
+              echo
+              pull_request_event_name=pull_request_target
+              if [ -n "$workflow_path" ]; then
+                if ! echo "$pull_request_events" | grep -q pull_request_target ; then
+                  pull_request_event_name=pull_request
+                fi
+                workflow="workflow (${b}$workflow_path${b})"
+                markdown_escaped_branch=$(perl -e 'my $branch=$ENV{GITHUB_REF_NAME}; $branch =~ s/([\\)])/\\$1/g; print $branch')
+                workflow_run_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/$workflow_path?query=event:$pull_request_event_name+branch:$markdown_escaped_branch"
+                prefix_workflow_link_text='['
+                suffix_workflow_link_text="]($workflow_run_link)"
+              else
+                workflow='workflow'
+                workflow_run_link=''
+                prefix_workflow_link_text=''
+                suffix_workflow_link_text=''
               fi
-              workflow="workflow (${b}$workflow_path${b})"
-              markdown_escaped_branch=$(perl -e 'my $branch=$ENV{GITHUB_REF_NAME}; $branch =~ s/([\\)])/\\$1/g; print $branch')
-              workflow_run_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/$workflow_path?query=event:$pull_request_event_name+branch:$markdown_escaped_branch"
-              prefix_workflow_link_text='['
-              suffix_workflow_link_text="]($workflow_run_link)"
-            else
-              workflow='workflow'
-              workflow_run_link=''
-              prefix_workflow_link_text=''
-              suffix_workflow_link_text=''
-            fi
-            checks_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number/checks"
-            echo "::notice title=Workflow skipped::See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR #$open_pr_number. $workflow_run_link $checks_link"
-            echo "# ⏭️ Workflow skipped$n${n}See $prefix_workflow_link_text${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow$suffix_workflow_link_text in PR [#$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number).$n$n$checks_link" >> "$GITHUB_STEP_SUMMARY"
-            if [ -n "$ACT" ]; then
-              echo
-              echo 'You appear to be running nektos/act, you should probably comment out:'
-              echo
-              echo "        suppress_push_for_open_pull_request: $INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"
-            fi
-          ) >&2
-          exit 0
+              checks_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number/checks"
+              if [ -z "$pull_request_event_name" ]; then
+                echo '::warning title=Could not check workflow for pull_request event::Please ensure there is an `on:` / `pull_request` or `on:` / `pull_request_target` in the running workflow (workflow-might-not-have-pull-request-event)'
+                (
+                  echo '# 😕 Workflow might be missing pull_request event handler'
+                  echo 'The `suppress_push_for_open_pull_request` feature relies on the existence of either an `on:`/`pull_request` or `on:`/`pull_request_target`.'
+                  echo '... if neither are defined, then you will need to fix this workflow file.'
+                  echo 'Unfortunately, check-spelling could not identify the workflow file to ensure the presence of this event handler.'
+                  echo 'If you cannot find a corresponding job run for a pull_request or pull_request_target,'
+                  echo 'then you should fix the workflow to include one of these events.'
+                ) >> "$GITHUB_STEP_SUMMARY"
+              fi
+              echo "::notice title=Workflow skipped::See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR #$open_pr_number. $workflow_run_link $checks_link"
+              echo "# ⏭️ Workflow skipped$n${n}See $prefix_workflow_link_text${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow$suffix_workflow_link_text in PR [#$open_pr_number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$open_pr_number).$n$n$checks_link" >> "$GITHUB_STEP_SUMMARY"
+              if [ -n "$ACT" ]; then
+                echo
+                echo 'You appear to be running nektos/act, you should probably comment out:'
+                echo
+                echo "        suppress_push_for_open_pull_request: $INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"
+              fi
+            ) >&2
+            exit 0
+          fi
+          KEY=suppress_push_for_open_pull_request \
+          VALUE="$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST" \
+          MESSAGE='Warning - Misconfigured workflow: missing on:/pull_request(_target). (missing-on-pull-request-event)' \
+          check_yaml_key_value "$workflow_path"
+          INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST=''
         fi
       fi
       if [ -z "$INPUT_TASK" ]; then
