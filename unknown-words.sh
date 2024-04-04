@@ -3052,7 +3052,7 @@ post_summary() {
     echo 'GitHub Enterprise Cloud - https://docs.github.com/enterprise-cloud@latest/actions/using-workflows/workflow-commands-for-github-actions#environment-files'
     echo
     if [ -n "$ACT" ]; then
-      echo 'For `act`, you can pass `--env GITHUB_STEP_SUMMARY=/dev/stdout`, however much of the logic has been reworked to rely on it.'
+      echo 'For `act` (before v0.2.43), you can pass `--env GITHUB_STEP_SUMMARY=/dev/stdout`, however much of the logic has been reworked to rely on it.'
     fi
     return
   fi
