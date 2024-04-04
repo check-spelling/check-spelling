@@ -6,8 +6,12 @@ our $VERSION='0.1.0';
 use CheckSpelling::Util;
 
 sub report {
-  my ($file, $start_line, $start_pos, $end, $message) = @_;
-  print "$file:$start_line:$start_pos ... $end, $message\n";
+  my ($file, $start_line, $start_pos, $end, $message, $match, $report_match) = @_;
+  if (1 == $report_match) {
+    print "$match";
+  } else {
+    print "$file:$start_line:$start_pos ... $end, $message\n";
+  }
   exit;
 }
 
@@ -97,7 +101,7 @@ sub get_yaml_value {
 }
 
 sub check_yaml_key_value {
-  my ($key, $value, $message) = @_;
+  my ($key, $value, $message, $report_match) = @_;
   my ($state, $gh_yaml_mode) = (0, '');
   my @nests;
   my ($start_line, $start_pod, $end);
@@ -115,10 +119,10 @@ sub check_yaml_key_value {
         pop @nests;
       }
       push @nests, $len if (! scalar @nests || $len > $nests[$#nests]);
-      if (/^\s*($key)\s*:\s*([|>][-+]?|\$\{\{.*|(?:"\s*|)$value)\s*$/) {
-        $gh_yaml_mode = $2;
-        ($start_line, $start_pos, $end) = ($., $-[1] + 1, $+[2] + 1);
-        report($ARGV, $start_line, $start_pos, $end, $message) if ($gh_yaml_mode =~ /$value|\$\{\{/);
+      if (/^\s*(($key)\s*:\s*([|>][-+]?|\$\{\{.*|(?:"\s*|)$value))\s*$/) {
+        $gh_yaml_mode = $3;
+        ($start_line, $start_pos, $end, $match) = ($., $-[2] + 1, $+[3] + 1, $1);
+        report($ARGV, $start_line, $start_pos, $end, $message, $match, $report_match) if ($gh_yaml_mode =~ /$value|\$\{\{/);
         $state = 1;
       }
     } elsif ($state == 1) {
@@ -131,7 +135,7 @@ sub check_yaml_key_value {
       $len = length $spaces;
       if (scalar @nests && $len > $nests[$#nests] && $v =~ /$value/) {
         $end += $len + length $v;
-        report($ARGV, $start_line, $start_pos, $end, $message);
+        report($ARGV, $start_line, $start_pos, $end, $message, $report_match);
       }
       pop @nests;
       $state = 0;
