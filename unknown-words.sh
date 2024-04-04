@@ -1149,6 +1149,10 @@ define_variables() {
   export comments_url="$pull_request_base|$comments_base|$issue_comments_base"
 }
 
+set_output_variable() {
+  echo "$1=$2" >> "$output_variables"
+}
+
 number_filter() {
   perl -pe 's<\{.*\}></(\\d+)>'
 }
@@ -2135,7 +2139,7 @@ build_file_list() {
 }
 
 run_spell_check() {
-  echo "internal_state_directory=$data_dir" >> "$output_variables"
+  set_output_variable internal_state_directory "$data_dir"
 
   synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
   echo "^\Q$synthetic_base/\E" >> "$patterns"
@@ -2285,7 +2289,7 @@ run_spell_check() {
     s{(^(?:.+?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}
     ' "$warning_output"
   cat "$warning_output"
-  echo "warnings=$warning_output" >> "$output_variables"
+  set_output_variable warnings "$warning_output"
   if to_boolean "$INPUT_USE_SARIF"; then
     SARIF_FILE="$(mktemp).sarif.json"
     UPLOAD_SARIF_LIMITED=$(mktemp)
@@ -2361,7 +2365,7 @@ remove_items() {
         <details><summary>These words are not needed and should be removed
         </summary>$(cat "$remove_words")$N🫥$N</details>
       " | strip_lead_and_blanks
-      echo "stale_words=$remove_words" >> "$output_variables"
+      set_output_variable stale_words "$remove_words"
     else
       rm "$fewer_misspellings_canary"
     fi
@@ -2588,11 +2592,11 @@ spelling_body() {
     fi
     if [ -s "$should_exclude_file" ]; then
       calculate_exclude_patterns
-      echo "skipped_files=$should_exclude_file" >> "$output_variables"
+      set_output_variable skipped_files "$should_exclude_file"
       if ! grep -qE '\w' "$should_exclude_patterns"; then
         echo '::error title=Excludes generation failed::Please file a bug (excludes-generation-failed)' >&2
       else
-        echo "should_exclude_patterns=$should_exclude_patterns" >> "$output_variables"
+        set_output_variable should_exclude_patterns "$should_exclude_patterns"
         exclude_files_text="update file exclusions"
         output_excludes="$(echo "
           <details><summary>Some files were automatically ignored :see_no_evil:</summary>
@@ -3321,7 +3325,7 @@ check_spelling_report() {
       echo "jq -s failed collecting extra_dictionaries_cover_entries from:"
       cat "$cover_log"
     ) >&2
-    echo "suggested_dictionaries=$extra_dictionaries_json" >> "$output_variables"
+    set_output_variable suggested_dictionaries "$extra_dictionaries_json"
   fi
 
   instructions=$(
@@ -3339,7 +3343,7 @@ check_spelling_report() {
     begin_group 'Fewer misspellings'
     title='There are now fewer misspellings than before'
   fi
-  echo "unknown_words=$tokens_file" >> "$output_variables"
+  set_output_variable unknown_words "$tokens_file"
   if [ "$unknown_count" -eq 0 ]; then
     unknown_word_body=''
   else
