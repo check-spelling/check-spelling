@@ -530,6 +530,32 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "missing-on-pull-request-event",
+              "name": "MissingOnPullRequestEvent",
+              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#missing-on-pull-request-event",
+              "shortDescription": {
+                "text": "Missing on pull_request event"
+              },
+              "fullDescription": {
+                "text": "Action is configured with `suppress_push_for_open_pull_request` but there is no configured on: pull_request event handler."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add `pull_request` / `pull_request_target` to the `on:` section of the workflow\n- Remove `suppress_push_for_open_pull_request:` from the configuration.\n- If you have the event handler configured and you see this, please file a bug (including your workflow file).\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }
