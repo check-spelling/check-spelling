@@ -586,3 +586,32 @@ runs:
         ref: ${{ env.PRIVATE_SARIF_REF }}
         sha: ${{ env.PRIVATE_SARIF_SHA }}
         token: ${{ inputs.sarif-token || inputs.GITHUB_TOKEN }}
+    - name: dump-sarif
+      if: (success() || (failure() && env.MERGE_FAILED != '1')) && (github.run_attempt > 1 || env.ACT) && env.UPLOAD_SARIF_LIMITED != ''
+      shell: bash
+      run: |
+        (
+          echo '<details><summary>sarif file</summary>'
+          echo
+          echo '```'
+          sarif_file_size=$(
+            case $(uname -s) in
+            *BSD*|Darwin)
+              stat -f %z "$UPLOAD_SARIF_LIMITED"
+              ;;
+            *)
+              stat -c %s "$UPLOAD_SARIF_LIMITED"
+              ;;
+            esac
+          )
+          sarif_file_limit=1000000
+          if [ $sarif_file_size -gt $sarif_file_limit ]; then
+            sarif_records=$(jq '.runs[0].results|length' "$UPLOAD_SARIF_LIMITED")
+            sarif_records_truncated=$(( $sarif_records * $sarif_file_limit / $sarif_file_size ))
+            jq -c ".runs[0].results = .runs[0].results[0:$sarif_records_truncated]" "$UPLOAD_SARIF_LIMITED"
+          else
+            cat "$UPLOAD_SARIF_LIMITED"
+          fi
+          echo '```'
+          echo '</details>'
+        ) >> "$GITHUB_STEP_SUMMARY"
