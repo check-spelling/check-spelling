@@ -1,5 +1,7 @@
 #!/bin/bash
 
+act-summary
+
 out=$(mktemp)
 err=$(mktemp)
 
