@@ -1,0 +1,26 @@
+#!/bin/sh
+if [ -z "$ACT" ] ||
+   [ /var/run/act/workflow/SUMMARY.md != "$GITHUB_STEP_SUMMARY" ] ||
+   [ 0 != $(id -u) ]; then
+  exit
+fi
+if [ ! -e /var/run/act/ ]; then
+  exit
+fi
+if [ -z "$ACT_STEP_SUMMARY" ]; then
+  ACT_STEP_SUMMARY=$(mktemp -d)
+  echo "ACT_STEP_SUMMARY=$ACT_STEP_SUMMARY" >> "${GITHUB_ENV:-/dev/stderr}"
+  mkdir -p "$ACT_STEP_SUMMARY"
+fi
+(
+  cd "$ACT_STEP_SUMMARY"
+  last=$(
+    ls |
+    sort -n |
+    tail -1
+  )
+  next=$(( ${last:-0} + 1))
+  rm -f "$GITHUB_STEP_SUMMARY"
+  ln -s "$ACT_STEP_SUMMARY/$next" "$GITHUB_STEP_SUMMARY"
+  touch "$GITHUB_STEP_SUMMARY"
+)

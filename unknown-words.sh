@@ -9,6 +9,8 @@ export spellchecker="${spellchecker:-$THIS_ACTION_PATH}"
 basic_setup() {
   if [ "$(id -u)" != 0 ]; then
     SUDO=sudo
+  else
+    act-summary
   fi
   $SUDO "$spellchecker/fast-install.pl"
 
