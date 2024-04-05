@@ -1,5 +1,11 @@
 #!/bin/sh
 if [ "$INPUT_TASK" != 'hash-dictionaries' ]; then
+  if ! command -v php > /dev/null; then
+    echo "[$(date)] installing php..."
+    apt-get update -q >/dev/null 2>/dev/null &&
+    apt-get install -q -y php-cli >/dev/null 2>/dev/null &&
+    echo "[$(date)] ... installed php"
+  fi
   (cd $THIS_ACTION_PATH/t/with-dictionaries; /usr/bin/env php -S '[::]':8123 )&
   php_pid=$!
 fi
