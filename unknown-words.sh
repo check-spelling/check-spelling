@@ -1711,7 +1711,6 @@ set_up_reporter() {
       INPUT_USE_SARIF=
     fi
   fi
-  echo "::add-matcher::$spellchecker/reporter-misc.json"
   if ! to_boolean "$INPUT_USE_SARIF"; then
     echo "::add-matcher::$spellchecker/reporter.json"
   fi
