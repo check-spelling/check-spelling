@@ -117,6 +117,18 @@
                     "message": 1
                 }
             ]
+        },
+        {
+            "owner": "check-spelling-bash",
+            "pattern": [
+                {
+                    "regexp": "^\\S*?/check-spelling/(([^:]+): line (\\d+): syntax (error) near unexpected token .*)",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3,
+                    "severity": 4
+                }
+            ]
         }
     ]
 }
