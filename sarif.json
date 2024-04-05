@@ -296,7 +296,8 @@
                   "code-reviews"
                 ]
               }
-            },            {
+            },
+            {
               "id": "check-file-path",
               "name": "CheckFilePath",
               "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#check-file-path",
