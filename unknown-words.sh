@@ -3332,8 +3332,13 @@ check_spelling_report() {
   instructions=$(
     make_instructions
   )
-  (echo "$patch_add" | tr " " "\n" | grep . || true) > "$tokens_file"
-  unknown_count="$(line_count < "$tokens_file")"
+  if echo unrecognized-spelling | grep -E -q "$warnings_list"; then
+    patch_add=''
+    unknown_count=0
+  else
+    (echo "$patch_add" | tr " " "\n" | grep . || true) > "$tokens_file"
+    unknown_count="$(line_count < "$tokens_file")"
+  fi
   get_has_errors
   title='Please review'
   if [ -n "$patch_add" ]; then
