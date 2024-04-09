@@ -2133,7 +2133,13 @@ build_file_list() {
     fi
     if [ -n "$BEFORE" ]; then
       echo "Only checking files changed from $BEFORE" >&2
-      git diff -z --name-only refs/private/before
+      git diff -z --name-status refs/private/before |
+      perl -e 'while (<>) {
+        while (s/(\w+?)\0(.*?)\0//) {
+          next if $1 =~ /D/;
+          print "$2\0";
+          }
+        }'
     else
       INPUT_ONLY_CHECK_CHANGED_FILES=''
       git 'ls-files' -z 2> /dev/null
