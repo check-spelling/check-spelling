@@ -2730,10 +2730,15 @@ spelling_body() {
       accept_words_text="accept $add_spell_check_this_text these unrecognized words as correct$cleanup_text"
     fi
     if [ "$can_offer_to_apply" = 1 ]; then
-      if [ -n "$accept_words_text" ] && [ -n "$exclude_files_text" ]; then
-        accept_conjunction=' and '
-        if [ -n "$add_spell_check_this_text" ]; then
-          accept_conjunction=', and '
+      if [ -n "$accept_words_text" ]; then
+        if [ "$INPUT_INCLUDE_ADVICE" = 'unrecognized-spelling' ]; then
+          include_advice=true
+        fi
+        if [ -n "$exclude_files_text" ]; then
+          accept_conjunction=' and '
+          if [ -n "$add_spell_check_this_text" ]; then
+            accept_conjunction=', and '
+          fi
         fi
       fi
       accept_heading="To $accept_words_text$accept_conjunction$exclude_files_text"
@@ -2749,12 +2754,18 @@ spelling_body() {
         $B
         </details>
         " | strip_lead)"
-      if [ -s "$advice_path" ]; then
-        output_advice="$N$(cat "$advice_path")$n"
+      if [ "$INPUT_INCLUDE_ADVICE" = 'metadata' ]; then
+        include_advice=true
       fi
       if offer_quote_reply; then
         output_quote_reply_placeholder="$n<!--QUOTE_REPLY-->$n"
       fi
+    fi
+    if [ "$INPUT_INCLUDE_ADVICE" = 'always' ] || [ -n "$has_errors" ]; then
+      include_advice=true
+    fi
+    if [ -n "$include_advice" ] && [ -s "$advice_path" ]; then
+      output_advice="$N$(cat "$advice_path")$n"
     fi
     OUTPUT=$(echo "$n$report_header$n$OUTPUT### $details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_forbidden_patterns$output_candidate_pattern_suggestions$output_warnings$output_advice
       " | perl -pe 's/^\s+$/\n/;'| uniq)
