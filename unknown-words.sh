@@ -1740,6 +1740,7 @@ set_up_files() {
         echo '::warning ::could not find apply.json (this can happen under `act`)'
       else
         THIS_GITHUB_JOB_ID=$(jq -r ".job // \"$THIS_GITHUB_JOB_ID\"" "$data_dir/apply.json")
+        INPUT_ONLY_CHECK_CHANGED_FILES=$(jq -r ".only_check_changed_files // \"$INPUT_ONLY_CHECK_CHANGED_FILES\"" "$data_dir/apply.json")
       fi
     ;;
     *)
