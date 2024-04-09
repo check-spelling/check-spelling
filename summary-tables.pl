@@ -47,7 +47,7 @@ if ($budget) {
 print $prefix;
 for $table_file (sort @tables) {
     my $header = "<details><summary>:open_file_folder: $table_file</summary>\n\n".
-        "token|path\n".
+        "note|path\n".
         "-|-\n";
     my $header_length = length $header;
     my $file_path = "$summary_tables/$table_file";
