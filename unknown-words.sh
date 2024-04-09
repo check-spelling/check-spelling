@@ -1007,6 +1007,10 @@ build_artifact_suffix() {
   artifact_suffix="-$(echo "$INPUT_REPORT_TITLE_SUFFIX" | perl -pe 's/^\s+|\s+$//; s/[^a-z]+/-/gi;')"
 }
 
+events_to_regular_expression() {
+  perl -pe 's/[^-a-z]+/|/g;s/^\||\|$//g;s/^$/\$^/'
+}
+
 define_variables() {
   if [ -f "$output_variables" ]; then
     return
@@ -1132,7 +1136,7 @@ define_variables() {
     timing_report="$data_dir/timing_report.csv"
   fi
 
-  warnings_list="$(echo "$INPUT_WARNINGS,$INPUT_NOTICES" | perl -pe 's/[^-a-z]+/|/g;s/^\||\|$//g')"
+  warnings_list="$(echo "$INPUT_WARNINGS,$INPUT_NOTICES" | events_to_regular_expression)"
 
   report_header="# @check-spelling-bot Report"
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
@@ -2634,15 +2638,37 @@ spelling_body() {
       if [ -n "$has_errors" ]; then
         event_title='Errors'
         event_icon=':x:'
-      else
+      elif jq -r 'keys[]' "$counter_summary_file" |
+        grep -E -q "$(echo "$INPUT_WARNINGS" | events_to_regular_expression)"; then
         event_title='Warnings'
+        event_icon=':warning:'
+      else
+        event_title='Notices'
         event_icon=':information_source:'
       fi
       if [ -s "$counter_summary_file" ]; then
         warnings_details="$(echo "
           [$event_icon ${event_title}](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) | Count
           -|-
-          $(jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file" | WARNINGS_LIST="$warnings_list" perl -pe 'next if /$ENV{WARNINGS_LIST}/; s/information_source/x/')
+          $(
+            jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file" |
+            NOTICES_LIST="$(
+              echo "$INPUT_NOTICES" | events_to_regular_expression
+            )" WARNINGS_LIST="$(
+              echo "$INPUT_WARNINGS" | events_to_regular_expression
+            )" perl -e '
+            my $notices=$ENV{NOTICES_LIST};
+            my $warnings=$ENV{WARNINGS_LIST};
+            while (<>) {
+              if (/$warnings/) {
+                s/information_source/warning/;
+              } elsif (!/$notices/) {
+                s/information_source/x/;
+              }
+              print;
+            }
+            '
+          )
 
           See [$event_icon Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) for more information.
           " | strip_lead)"
