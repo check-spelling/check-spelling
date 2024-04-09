@@ -306,6 +306,10 @@ inputs:
     description: "Wait for GitHub Advanced Security to process SARIF output"
     required: false
     default: false
+  include-advice:
+    description: "When to include advice (`always`, has `error`, could update `metadata`)"
+    required: false
+    default: "metadata"
 
 outputs:
   unknown_words:
