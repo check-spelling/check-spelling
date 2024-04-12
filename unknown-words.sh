@@ -375,7 +375,13 @@ comment_task() {
   fewer_misspellings_canary="$(mktemp)"
   quit_without_error=1
   get_has_errors
-  if [ -z "$has_errors" ] && [ -z "$patch_add" ]; then
+  if [ -n "$has_warnings" ] &&
+    to_boolean "$INPUT_ALWAYS_REPORT_COMMENT"; then
+    VERBOSE=1
+  fi
+  if [ -z "$has_errors" ] &&
+    [ -z "$patch_add" ] &&
+    [ -z "$VERBOSE" ]; then
     quit
   fi
   check_spelling_report
@@ -1135,8 +1141,6 @@ define_variables() {
   if to_boolean "$INPUT_REPORT_TIMING"; then
     timing_report="$data_dir/timing_report.csv"
   fi
-
-  warnings_list="$(echo "$INPUT_WARNINGS,$INPUT_NOTICES" | events_to_regular_expression)"
 
   report_header="# @check-spelling-bot Report"
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
@@ -2284,7 +2288,10 @@ run_spell_check() {
   commit_messages="$commit_messages" \
   pr_details_path="$pr_details_path" \
   synthetic_base="$synthetic_base" \
-  WARNINGS_LIST="$warnings_list" \
+  IGNORED_LIST="$(echo "$INPUT_IGNORED" | events_to_regular_expression)" \
+  ERRORS_LIST="$(echo "$INPUT_ERRORS" | events_to_regular_expression)" \
+  NOTICES_LIST="$(echo "$INPUT_NOTICES" | events_to_regular_expression)" \
+  WARNINGS_LIST="$(echo "$INPUT_WARNINGS" | events_to_regular_expression)" \
   perl -pi -e '
     my $GITHUB_SERVER_URL=$ENV{GITHUB_SERVER_URL};
     my $GITHUB_REPOSITORY=$ENV{GITHUB_REPOSITORY};
@@ -2297,8 +2304,18 @@ run_spell_check() {
     if (defined $pr_details_path) {
       s<^$synthetic_base/pull-request/(\d+)/(?:description|summary).txt><$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$1#>;
     }
-    next if /\((?:$ENV{WARNINGS_LIST})\)$/;
-    s{(^(?:.+?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\sWarning(\s-\s.+\s\(.*\))}{$1 Error$2}
+    if (/\((?:$ENV{IGNORED_LIST})\)$/) {
+      $_ = "" if m{(^(?:.*?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\s(?:Error|Notice|Warning)(\s-\s.+\s\(.*\))}
+    }
+    if (/\((?:$ENV{ERRORS_LIST})\)$/) {
+      s{(^(?:.*?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\s(?:Notice|Warning)(\s-\s.+\s\(.*\))}{$1 Error$2}
+    }
+    if (/\((?:$ENV{NOTICES_LIST})\)$/) {
+      s{(^(?:.*?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\s(?:Error|Warning)(\s-\s.+\s\(.*\))}{$1 Notice$2}
+    }
+    if (/\((?:$ENV{WARNINGS_LIST})\)$/) {
+      s{(^(?:.*?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\s(?:Error|Notice)(\s-\s.+\s\(.*\))}{$1 Warning$2}
+    }
     ' "$warning_output"
   cat "$warning_output"
   set_output_variable warnings "$warning_output"
@@ -2387,8 +2404,22 @@ get_action_log_overview() {
 }
 
 get_has_errors() {
-  if [ -z "$has_errors" ] && [ -s "$counter_summary_file" ] && jq -r 'keys | .[]' "$counter_summary_file" | grep -E -v "$warnings_list" 2> /dev/null | grep -q .; then
-    has_errors=1
+  if [ -z "$has_errors" ] &&
+    [ -s "$counter_summary_file" ] &&
+    [ -z "$counter_summary_keys" ]; then
+    counter_summary_keys=$(mktemp_json)
+    jq -r 'keys | .[]' "$counter_summary_file" > "$counter_summary_keys"
+    if grep -E -q -v "$(echo "$INPUT_IGNORED,$INPUT_WARNINGS,$INPUT_NOTICES" | events_to_regular_expression)" "$counter_summary_keys" 2> /dev/null; then
+      has_errors=1
+    elif grep -E -q "$(
+      echo "$INPUT_WARNINGS" | events_to_regular_expression
+    )" "$counter_summary_keys" 2> /dev/null; then
+      has_warnings=1
+    elif grep -E -q "$(
+      echo "$INPUT_NOTICES" | events_to_regular_expression
+    )" "$counter_summary_keys" 2> /dev/null; then
+      has_notices=1
+    fi
   fi
 }
 
@@ -3374,7 +3405,7 @@ check_spelling_report() {
   instructions=$(
     make_instructions
   )
-  if echo unrecognized-spelling | grep -E -q "$warnings_list"; then
+  if echo unrecognized-spelling | grep -E -q "$(echo "$INPUT_IGNORED,$INPUT_NOTICES,$INPUT_WARNINGS" | events_to_regular_expression)"; then
     patch_add=''
     unknown_count=0
   else
@@ -3410,6 +3441,7 @@ $B
   if [ -n "$has_errors" ] || [ "$unknown_count" -gt 0 ]; then
     spelling_warning "$title" "$unknown_word_body" "$N$(remove_items)$n" "$instructions"
   else
+    quit_without_error=1
     if [ -n "$INPUT_EXPERIMENTAL_COMMIT_NOTE" ]; then
       instructions="$(generate_curl_instructions)"
 
