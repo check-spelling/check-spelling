@@ -205,14 +205,22 @@ inputs:
     description: "Only report an unknown word this many times"
     required: false
     default: "5"
+  errors:
+    description: "List of events to treat as errors"
+    required: false
+    default: ""
   warnings:
-    description: "List of events that are warnings (items that are neither warnings nor notices will result in an :x:)"
+    description: "List of events to treat as warnings"
     required: false
     default: bad-regex,binary-file,deprecated-feature,large-file,limited-references,no-newline-at-eof,noisy-file,non-alpha-in-dictionary,token-is-substring,unexpected-line-ending,whitespace-in-dictionary,minified-file,unsupported-configuration
   notices:
-    description: "List of events that are notices (items that are neither warnings nor notices will result in an :x:)"
+    description: "List of events to treat as notices"
     required: false
     default: candidate-pattern
+  ignored:
+    description: "List of events to ignore"
+    required: false
+    default: ""
   quit_without_error:
     description: "Suppress failure code exit code -- it will be available via outputs.result_code"
     required: false
@@ -310,6 +318,10 @@ inputs:
     description: "When to include advice (`always`, has `error`, could update `metadata`)"
     required: false
     default: "metadata"
+  always-report-comment:
+    description: "Post comments for warnings and notices"
+    required: false
+    default: false
 
 outputs:
   unknown_words:
