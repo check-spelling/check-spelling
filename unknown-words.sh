@@ -817,7 +817,7 @@ handle_comment() {
   git reset --hard
 
   summary_url=$(echo "$trigger" | perl -ne '
-    next unless m{($ENV{GITHUB_SERVER_URL}/[^/]+/[^/]+/actions/runs/\d+(?:/attempts/\d+|)(?:#\S+|))};
+    next unless m{($ENV{GITHUB_SERVER_URL}/[^/]+/[^/]+/actions/runs/\d+(?:/attempts/\d+|)(?:#[-\w]+|))};
     print $1;
   ')
   comment_url=$(echo "$trigger" | comment_api_url)
