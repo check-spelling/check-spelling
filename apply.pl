@@ -359,7 +359,7 @@ sub get_artifacts {
                 'gh', 'api',
                 "/repos/$repo/actions/runs/$run/artifacts",
                 '-q',
-                '.artifacts.[]|select(.name=="check-spelling-comment")|.expired'
+                '.artifacts.[]|select(.name=="'.$artifact_name.'")|.expired'
             );
             if ($expired_json ne '') {
                 chomp $expired_json;
