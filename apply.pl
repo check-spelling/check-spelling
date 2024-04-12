@@ -374,7 +374,14 @@ sub get_artifacts {
             exit 2;
         }
         if ($gh_err_text =~ /no artifact matches any of the names or patterns provided/) {
-            print "$program: The referenced repository ($repo) run ($run) does not have a corresponding artifact ($artifact_name). If it was deleted, that's unfortunate. Consider pushing a change to the branch to trigger a new run?\n";
+            $github_server_url = $ENV{GITHUB_SERVER_URL} || '';
+            my $run_link;
+            if ($github_server_url) {
+                $run_link = "[$run]($github_server_url/$repo/actions/runs/$run)";
+            } else {
+                $run_link = "$run";
+            }
+            print "$program: The referenced repository ($repo) run ($run_link) does not have a corresponding artifact ($artifact_name). If it was deleted, that's unfortunate. Consider pushing a change to the branch to trigger a new run?\n";
             print "If you don't think anyone deleted the artifact, please file a bug to https://github.com/check-spelling/check-spelling/issues/new including as much information about how you triggered this error as possible.\n";
             exit 3;
         }
