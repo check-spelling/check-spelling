@@ -110,6 +110,16 @@
             ]
         },
         {
+            "owner": "check-spelling-perl-used-only-once",
+            "severity": "warning",
+            "pattern": [
+                {
+                    "regexp": "(Name \".*?\" used only once: possible typo at .*)",
+                    "message": 1
+                }
+            ]
+        },
+        {
             "owner": "github-internal-server-error",
             "pattern": [
                 {
