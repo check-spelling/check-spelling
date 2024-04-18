@@ -2753,6 +2753,7 @@ spelling_body() {
         You could add these patterns to $b$new_patterns_file$b:
         $B
         # Automatically suggested patterns
+
         $(
         cat "$candidate_summary"
         )
