@@ -2260,6 +2260,7 @@ run_spell_check() {
     hunspell_dictionary_path="$hunspell_dictionary_path" \
     check_file_names="$check_file_names" \
     splitter_configuration="$splitter_configuration" \
+    early_warnings="$early_warnings" \
   xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
     expect="$expect_path" \
     warning_output="$warning_output" \
