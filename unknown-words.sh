@@ -1898,32 +1898,39 @@ set_up_files() {
           print $url;
         '
       )"
-      if [ -z "$DICTIONARY_URL" ] && [ -n "$ACT" ]; then
+      if [ -z "$DICTIONARY_URL" ]; then
+        if [ -n "$ACT" ]; then
+          (
+            echo "This workflow appears to be running under nektos/act"
+            echo "Unfortunately, this run has hit: https://github.com/nektos/act/issues/655"
+            echo
+            echo "In order to run locally, please use:"
+            echo
+            if [ -n "$THIS_GITHUB_JOB_ID" ]; then
+              echo "jobs:"
+              echo "  $THIS_GITHUB_JOB_ID:"
+              echo "    steps:"
+            fi
+            echo "      with:"
+            echo "        dictionary_url: fill_this_in"
+            if [ -z "$INPUT_CONFIG" ]; then
+              echo "        config: fill_this_in"
+            fi
+            if [ -z "$INPUT_DICTIONARY_SOURCE_PREFIXES" ]; then
+              echo "        dictionary_source_prefixes: fill_this_in"
+            fi
+            if [ -z "$INPUT_DICTIONARY_VERSION" ]; then
+              echo "        dictionary_version: fill_this_in"
+            fi
+            echo
+            echo "You can use the defaults from https://github.com/check-spelling/check-spelling/blob/HEAD/action.yml"
+            echo "Note: you may need to omit backslashes for the dictionary_url."
+          ) >&2
+          exit 1
+        fi
         (
-          echo "This workflow appears to be running under nektos/act"
-          echo "Unfortunately, this run has hit: https://github.com/nektos/act/issues/655"
-          echo
-          echo "In order to run locally, please use:"
-          echo
-          if [ -n "$THIS_GITHUB_JOB_ID" ]; then
-            echo "jobs:"
-            echo "  $THIS_GITHUB_JOB_ID:"
-            echo "    steps:"
-          fi
-          echo "      with:"
-          echo "        dictionary_url: fill_this_in"
-          if [ -z "$INPUT_CONFIG" ]; then
-            echo "        config: fill_this_in"
-          fi
-          if [ -z "$INPUT_DICTIONARY_SOURCE_PREFIXES" ]; then
-            echo "        dictionary_source_prefixes: fill_this_in"
-          fi
-          if [ -z "$INPUT_DICTIONARY_VERSION" ]; then
-            echo "        dictionary_version: fill_this_in"
-          fi
-          echo
-          echo "You can use the defaults from https://github.com/check-spelling/check-spelling/blob/HEAD/action.yml"
-          echo "Note: you may need to omit backslashes for the dictionary_url."
+          echo 'This script was run without essential configuration'
+          echo 'Please ensure `INPUT_DICTIONARY_URL` is set'
         ) >&2
         exit 1
       fi
