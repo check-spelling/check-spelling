@@ -4,6 +4,10 @@
 # It is conceptually `f` which runs `w` (spelling-unknown-word-splitter)
 # plus `fchurn` which uses `dn` mostly rolled together.
 set -e
+
+if [ -z "$THIS_ACTION_PATH$spellchecker" ]; then
+  export THIS_ACTION_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
+fi
 export spellchecker="${spellchecker:-$THIS_ACTION_PATH}"
 
 basic_setup() {
