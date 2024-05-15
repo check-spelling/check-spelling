@@ -8,7 +8,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  perl:
     name: Perl
     permissions:
       contents: read
@@ -102,3 +102,60 @@ jobs:
         name: "check-spelling-coverage-${{ github.run_id }}"
         path: |
           cover_db
+
+  standalone:
+    name: Standalone
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    if: contains(github.event_name, 'pull_request') || github.event_name == 'push'
+    steps:
+    - name: checkout-merge
+      if: contains(github.event_name, 'pull_request')
+      uses: actions/checkout@v4
+      with:
+        ref: refs/pull/${{github.event.pull_request.number}}/merge
+    - name: checkout
+      if: github.event_name == 'push'
+      uses: actions/checkout@v4
+    - name: test
+      id: test
+      shell: bash
+      run: |
+        cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+        # Standalone self-test of unknown-words
+
+        :information_source: Standalone does not have access to workflow configuration.
+        As such, it doesn't know about extra dictionaries.
+
+        EOF
+        step_summary="$GITHUB_STEP_SUMMARY"
+        output="$GITHUB_OUTPUT"
+        for github_var in $(
+          git ls-files -z |
+          xargs -0 grep GITHUB_ |
+          perl -pe 's/[^_A-Z]+/\n/g' |
+          grep ^GITHUB_ |
+          sort -u
+        ); do
+          eval unset $github_var
+        done
+        unset ACT
+        export GITHUB_STEP_SUMMARY="$step_summary"
+        export GITHUB_OUTPUT="$output"
+        ./unknown-words.sh || true
+        grep -q '@check-spelling-bot Report' "$GITHUB_STEP_SUMMARY"
+    - name: upload artifact
+      id: upload-artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: standalone-artifact
+        path: |
+          ${{ steps.test.outputs.internal_state_directory }}
+    - name: artifact note
+      if: steps.upload-artifact.outcome == 'success'
+      run: |
+        cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+        # apply.pl and artifact
+        You should be able to use [\`apply.pl\`](https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/apply.pl) with standalone-artifact.
+        EOF

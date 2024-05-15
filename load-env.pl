@@ -1,8 +1,11 @@
 #!/usr/bin/env perl
 use JSON::PP;
 my $input = $ENV{INPUTS};
-exit unless $input;
-my %inputs = %{decode_json $input};
+my %inputs;
+if ($input) {
+    %inputs = %{decode_json $input};
+}
+
 for my $key (keys %inputs) {
     next unless $key;
     my $val = $inputs{$key};
@@ -25,4 +28,32 @@ for my $key (keys %inputs) {
     $val =~ s/'/'"'"'/g;
     $var = uc $var;
     print qq<export INPUT_$var='$val';\n>;
+}
+
+my $action_json_path = $ENV{action_yml_json};
+my $action_json;
+open $action_json_file, '<', $action_json_path;
+{
+    local $/ = undef;
+    $action_json = <$action_json_file>;
+    close $action_json_file;
+}
+my %action = %{decode_json $action_json};
+my %action_inputs = %{$action{inputs}};
+for my $key (sort keys %action_inputs) {
+    my %ref = %{$action_inputs{$key}};
+    next unless defined $ref{default};
+    next if defined $inputs{$key};
+    my $var = $key;
+    next if $var =~ /[-_](?:key|token)$/i;
+    if ($var =~ s/-/_/g) {
+        next if defined $inputs{$var};
+    }
+    my $val = $ref{default};
+    next if $val eq '';
+    $val =~ s/([\$])/\\$1/g;
+    $val =~ s/'/'"'"'/g;
+    $var = 'INPUT_'.(uc $var);
+    next if defined $ENV{$var};
+    print qq<export $var='$val';\n>;
 }

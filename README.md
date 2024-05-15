@@ -172,14 +172,7 @@ There is a [wiki](https://github.com/check-spelling/check-spelling/wiki) contain
 
 ## Running locally
 
-Yes you can!
-
-### Running locally with Act
-
-1. [Install Act](https://github.com/nektos/act#installation)
-1. `act`
-
-:warning: This may break at times as **act** may be missing support for newer GitHub Actions features.
+Read about [running check-spelling locally](https://docs.check-spelling.dev/Feature:-Run-locally.html).
 
 ## Prerelease
 

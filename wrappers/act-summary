@@ -9,7 +9,7 @@ if [ ! -e /var/run/act/ ]; then
 fi
 if [ -z "$ACT_STEP_SUMMARY" ]; then
   ACT_STEP_SUMMARY=$(mktemp -d)
-  echo "ACT_STEP_SUMMARY=$ACT_STEP_SUMMARY" >> "${GITHUB_ENV:-/dev/stderr}"
+  echo "ACT_STEP_SUMMARY=$ACT_STEP_SUMMARY" >> "$GITHUB_ENV"
   mkdir -p "$ACT_STEP_SUMMARY"
 fi
 (
