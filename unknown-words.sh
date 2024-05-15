@@ -11,12 +11,20 @@ fi
 export spellchecker="${spellchecker:-$THIS_ACTION_PATH}"
 
 basic_setup() {
+  if [ -z "$GITHUB_ENV" ]; then
+    export GITHUB_EVENT_NAME=push
+    export GITHUB_EVENT_PATH=/dev/null
+    export GITHUB_ENV=/dev/stderr
+  fi
+
+  if ! command -v act-summary > /dev/null; then
+    PATH="$spellchecker/wrappers:$PATH"
+  fi
   if [ "$(id -u)" != 0 ]; then
     SUDO=sudo
   else
     act-summary
   fi
-  $SUDO "$spellchecker/fast-install.pl"
 
   . "$spellchecker/common.sh"
 }
@@ -223,7 +231,22 @@ dispatcher() {
 
 load_env() {
   input_variables="$(mktemp)"
-  "$spellchecker/load-env.pl" > "$input_variables"
+  action_yml_json="$(mktemp_json)"
+  if [ -z "$INPUTS" ] && [ -n "$workflow_path" ]; then
+    export INPUTS="$(
+      cat "$workflow_path" |
+        "$yaml_to_json" |
+        jq '.jobs.spelling.steps[] |
+        select(
+          (.uses | test ("/check-spelling@"))
+        )? |
+        .with'
+    )"
+  fi
+  cat "$spellchecker/action.yml" |
+    "$yaml_to_json" \
+    > "$action_yml_json"
+  action_yml_json="$action_yml_json" "$spellchecker/load-env.pl" > "$input_variables"
   . "$input_variables"
 }
 
@@ -1026,6 +1049,9 @@ define_variables() {
     return
   fi
   . "$spellchecker/update-state.sh"
+  yaml_to_json="$spellchecker/yaml-to-json.pl"
+  action_workflow_path_file="$(mktemp)"
+  workflow_path=$(get_workflow_path)
   load_env
   GITHUB_TOKEN="${GITHUB_TOKEN:-"$INPUT_GITHUB_TOKEN"}"
   if [ -n "$GITHUB_TOKEN" ]; then
@@ -1092,6 +1118,9 @@ define_variables() {
   if [ -z "$extra_dictionary_limit" ]; then
     extra_dictionary_limit=5
   fi
+  if [ -e "$action_workflow_path_file" ]; then
+    mv "$action_workflow_path_file" "$data_dir/workflow-path.txt"
+  fi
   action_workflow_path_file="$data_dir/workflow-path.txt"
   workflow_path=$(get_workflow_path)
 
@@ -1155,7 +1184,6 @@ define_variables() {
   fi
   INPUT_TASK="${INPUT_TASK:-"$INPUT_CUSTOM_TASK"}"
   if [ -z "$GITHUB_OUTPUT" ]; then
-    echo 'Warning - $GITHUB_OUTPUT is required for this workflow to work' >&2
     GITHUB_OUTPUT=$(mktemp)
     GH_OUTPUT_STUB=1
   fi
@@ -1487,7 +1515,7 @@ add_app() {
 add_perl_lib() {
   if ! perl -M"$1" -e '' 2>/dev/null; then
     if [ -n "$HAS_APT" ]; then
-      apps="$apps $2"
+      apps="$apps lib$(echo "$1"|perl -pe 's/::/-/;$_=(lc $_)')-perl"
     else
       perl_libs="$perl_libs $1"
     fi
@@ -1503,14 +1531,15 @@ check_perl_libraries() {
     HAS_APT=1
   fi
 
-  add_perl_lib HTTP::Date libhttp-date-perl
-  add_perl_lib URI::Escape liburi-escape-xs-perl
+  add_perl_lib HTTP::Date
+  add_perl_lib URI::Escape
+  add_perl_lib YAML::PP
   if to_boolean "$INPUT_USE_SARIF"; then
-    add_perl_lib Hash::Merge libhash-merge-perl
+    add_perl_lib Hash::Merge
   fi
   if need_hunspell; then
     add_app hunspell
-    add_perl_lib Text::Hunspell libtext-hunspell-perl
+    add_perl_lib Text::Hunspell
   fi
 }
 
@@ -1518,7 +1547,9 @@ set_up_tools() {
   apps=""
 
   add_app curl ca-certificates
+  add_app file
   add_app git
+  add_app zip
   if need_hunspell; then
     add_app hunspell
   fi
@@ -1855,6 +1886,7 @@ set_up_files() {
     INPUT_NOT_UPPER_OR_LOWER_PATTERN="$INPUT_NOT_UPPER_OR_LOWER_PATTERN" \
     INPUT_PUNCTUATION_PATTERN="$INPUT_PUNCTUATION_PATTERN" \
     INPUT_USE_SARIF='' \
+    spellchecker="$spellchecker" \
     "$word_splitter" 2> /dev/null |
     INPUT_USE_SARIF='' INPUT_DISABLE_CHECKS=noisy-file "$word_collator" 2> "$expect_notes" > "$expect_collated"
     perl -pe 's/ \(.*\)//' "$expect_collated" > "$expect_path"
@@ -2282,6 +2314,7 @@ run_spell_check() {
     check_file_names="$check_file_names" \
     splitter_configuration="$splitter_configuration" \
     early_warnings="$early_warnings" \
+    spellchecker="$spellchecker" \
   xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
     expect="$expect_path" \
     warning_output="$warning_output" \
@@ -2424,7 +2457,9 @@ remove_items() {
 }
 
 get_action_log_overview() {
-  echo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+  if [ -n "$GITHUB_SERVER_URL" ] && [ -n "$GITHUB_REPOSITORY" ] && [ -n "$GITHUB_RUN_ID" ]; then
+    echo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+  fi
 }
 
 get_has_errors() {
@@ -2483,6 +2518,9 @@ get_job_info_and_step_info() {
 }
 
 get_action_log() {
+  if [ -z "$GITHUB_SERVER_URL" ]; then
+    return
+  fi
   if [ -z "$action_log" ]; then
     if [ -s "$action_log_ref" ]; then
       action_log="$(cat "$action_log_ref")"
@@ -2501,7 +2539,9 @@ get_action_log() {
         fi
       fi
       echo "$action_log" > "$action_log_ref"
-      echo "${job_log##*/}" > "$job_id_ref"
+      if [ -n "$job_log" ]; then
+        echo "${job_log##*/}" > "$job_id_ref"
+      fi
     fi
   fi
   echo "$action_log"
@@ -2546,8 +2586,17 @@ spelling_body() {
   message="$1"
   extra="$2"
   err="$3"
-  action_log_markdown="the [:scroll:action log]($(get_action_log))"
-  memo="[:memo: job summary]($jobs_summary_link#summary-$(cat "$job_id_ref" 2>/dev/null))"
+  action_log_url="$(get_action_log)"
+  if [ -n "$action_log_url" ]; then
+    action_log_markdown="the [:scroll:action log]($action_log_url)"
+  else
+    action_log_markdown=""
+  fi
+  if [ -e "$job_id_ref" ]; then
+    memo="[:memo: job summary]($jobs_summary_link#summary-$(cat "$job_id_ref" 2>/dev/null))"
+  else
+    memo=':memo: job summary'
+  fi
   if to_boolean "$INPUT_USE_SARIF"; then
     pr_number=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
     if [ -n "$pr_number" ]; then
@@ -2571,7 +2620,12 @@ spelling_body() {
     pull_request|pull_request_target)
       details_note="See the [:open_file_folder: files]($(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")/files/) view, $action_log_markdown, $sarif_report or $memo for details.";;
     push)
-      details_note="See $action_log_markdown${sarif_report:+,} $sarif_report or $memo for details.";;
+      if [ -n "$action_log_markdown" ]; then
+        details_note="See $action_log_markdown${sarif_report:+,} $sarif_report or $memo for details."
+      else
+        details_note=""
+      fi
+      ;;
     *)
       details_note=$(echo "<!-- If you can see this, please [file a bug](https://github.com/$GH_ACTION_REPOSITORY/issues/new)
         referencing this comment url, as the code does not expect this to happen. -->" | strip_lead);;
@@ -2595,8 +2649,11 @@ spelling_body() {
       remote_url_https="$(jq -r '.repository.clone_url // empty' "$GITHUB_EVENT_PATH")"
       remote_ref="$GITHUB_REF"
     fi
-    if [ -z "$remote_url_ssh" ]; then
+    if [ -z "$remote_url_ssh$remote_url_https" ]; then
       remote_url_ssh="$(git remote get-url --push origin 2>/dev/null || true)"
+      if [ -z "$remote_url_ssh" ]; then
+        remote_url_https="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+      fi
     fi
     if [ -z "$remote_url_https" ]; then
       remote_url_https="$(echo "$remote_url_ssh" | perl -pe 's{(?:git\@|^)github\.com:}{https://github.com/}')"
@@ -2738,10 +2795,15 @@ spelling_body() {
       if [ -n "$has_errors" ] && [ -z "$message" ]; then
         message="$warnings_details"
       else
+        if [ -n "$details_note" ]; then
+          details_heading="#### $details_note"
+        else
+          details_heading=""
+        fi
         output_warnings="$(echo "
         <details><summary>$event_title ($(grep -c ':' "$counter_summary_file"))</summary>
 
-        #### $details_note
+        $details_heading
 
         $warnings_details
         </details>
@@ -2827,7 +2889,12 @@ spelling_body() {
     if [ -n "$include_advice" ] && [ -s "$advice_path" ]; then
       output_advice="$N$(cat "$advice_path")$n"
     fi
-    OUTPUT=$(echo "$n$report_header$n$OUTPUT### $details_note$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_forbidden_patterns$output_candidate_pattern_suggestions$output_warnings$output_advice
+    if [ -n "$details_note" ]; then
+      details_heading="### $details_note"
+    else
+      details_heading=""
+    fi
+    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_heading$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_forbidden_patterns$output_candidate_pattern_suggestions$output_warnings$output_advice
       " | perl -pe 's/^\s+$/\n/;'| uniq)
 }
 
@@ -3302,6 +3369,9 @@ collapse_comment() {
 }
 
 should_collapse_previous_and_not_comment() {
+  if [ -z "$GITHUB_SERVER_URL" ]; then
+    return
+  fi
   if [ -z "$COMMENTS_URL" ]; then
     set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
   fi
@@ -3353,8 +3423,19 @@ generate_curl_instructions() {
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
     jobs_summary_link_suffix="#$INPUT_REPORT_TITLE_SUFFIX"
   fi
-  echo "curl -s -S -L 'https://raw.githubusercontent.com/$GH_ACTION_REPOSITORY/$GH_ACTION_REF/apply.pl' |
-  perl - '$jobs_summary_link$jobs_summary_link_suffix'" >> "$instructions"
+  if [ -n "$GITHUB_SERVER_URL" ]; then
+    apply_argument="$jobs_summary_link$jobs_summary_link_suffix"
+  else
+    apply_argument="$data_dir/artifact.zip"
+  fi
+  (
+  if [ -z "$GITHUB_ACTIONS" ]; then
+    echo -n "$spellchecker/apply.pl '$apply_argument'"
+  else
+    echo -n "curl -s -S -L 'https://raw.githubusercontent.com/${GH_ACTION_REPOSITORY:-check-spelling/check-spelling}/${GH_ACTION_REF:-main}/apply.pl' |
+  perl - '$apply_argument'"
+  fi
+  ) >> "$instructions"
   echo "$instructions"
 }
 
