@@ -1112,8 +1112,8 @@ define_variables() {
   patterns_path="$temp/patterns.txt"
   advice_path="$temp/advice.md"
   advice_path_txt="$temp/advice.txt"
-  word_splitter="$spellchecker/spelling-unknown-word-splitter.pl"
-  word_collator="$spellchecker/spelling-collator.pl"
+  word_splitter="$spellchecker/wrappers/spelling-unknown-word-splitter"
+  word_collator="$spellchecker/wrappers/spelling-collator"
   expect_collator="$spellchecker/expect-collator.pl"
   strip_word_collator_suffix="$spellchecker/strip-word-collator-suffix.pl"
   find_token="$spellchecker/find-token.pl"
@@ -1121,13 +1121,16 @@ define_variables() {
   cleanup_file="$spellchecker/cleanup-file.pl"
   file_size="$spellchecker/file-size.pl"
   check_dictionary="$spellchecker/check-dictionary.pl"
-  check_yaml_key_value="$spellchecker/check-yaml-key-value.pl"
-  get_yaml_value="$spellchecker/get-yaml-value.pl"
+  check_yaml_key_value="$spellchecker/wrappers/check-yaml-key-value"
+  get_yaml_value="$spellchecker/wrappers/get-yaml-value"
   quote_meta="$spellchecker/quote-meta.pl"
-  summary_tables="$spellchecker/summary-tables.pl"
-  generate_sarif="$spellchecker/generate-sarif.pl"
+  summary_tables="$spellchecker/wrappers/summary-tables"
+  generate_sarif="$spellchecker/wrappers/generate-sarif"
   get_commits_for_check_commit_message="$spellchecker/get-commits-for-check-commit-message.pl"
-  scope_files="$spellchecker/exclude.pl"
+  scope_files="$spellchecker/wrappers/exclude"
+  calculate_delay="$spellchecker/wrappers/calculate-delay"
+  dictionary_coverage="$spellchecker/wrappers/dictionary-coverage"
+  suggest_excludes="$spellchecker/wrappers/suggest-excludes"
   run_output="$temp/unknown.words.txt"
   diff_output="$temp/output.diff"
   tokens_file="$data_dir/tokens.txt"
@@ -1580,7 +1583,7 @@ call_curl() {
       fi
       return
     fi
-    delay="$("$spellchecker/calculate-delay.pl" "$response_headers")"
+    delay="$("$calculate_delay" "$response_headers")"
     (echo "call_curl received a $response_code and will wait for ${delay}s:"; grep -E -i 'x-github-request-id|x-rate-limit-|retry-after' "$response_headers") >&2
     sleep "$delay"
     curl_attempt="$(( curl_attempt + 1 ))"
@@ -2397,7 +2400,7 @@ calculate_exclude_patterns() {
   remove_excludes_file="$remove_exclude_patterns" \
   should_exclude_patterns="$should_exclude_patterns" \
   current_exclude_patterns="$excludes" \
-    "$spellchecker/suggest-excludes.pl" ||
+    "$suggest_excludes" ||
     echo "::error title=Excludes generation failed::Please file a bug (excludes-generation-failed)" >&2
 }
 
@@ -3395,7 +3398,7 @@ check_spelling_report() {
         begin_group 'Check for extra dictionaries'
         (
           cd "$check_extra_dictionaries_dir";
-          aliases="$dictionary_alias_pattern" extra_dictionaries="$check_extra_dictionaries" "$spellchecker/dictionary-coverage.pl" "$run_output" |
+          aliases="$dictionary_alias_pattern" extra_dictionaries="$check_extra_dictionaries" "$dictionary_coverage" "$run_output" |
           perl -e 'print sort {
             $a =~ /^(\d+)-(\d+)-(\d+)-(.*)/;
             my ($a1, $a2, $a3, $a4) = ($1, $2, $3, $4);
