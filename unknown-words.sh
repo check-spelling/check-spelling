@@ -1493,6 +1493,9 @@ install_tools() {
       echo "$apps" | xargs ${SUDO:+"$SUDO"} apt-get -qq install --no-install-recommends -y >/dev/null 2>/dev/null
       echo "Installed:$apps" >&2
       apps=
+    elif command_v apk; then
+      echo "$apps" | xargs apk add
+      apps=
     elif command_v brew; then
       echo "$apps" | xargs brew install
       apps=
@@ -1506,11 +1509,32 @@ install_tools() {
   fi
 }
 
+if command_v "apk"; then
+add_app() {
+  if ! apk -e info "$1" >/dev/null; then
+    apps="$apps $@"
+  fi
+}
+  apk add \
+    bash \
+    cmd:env \
+    curl \
+    file \
+    github-cli \
+    grep \
+    make \
+    perl \
+    perl-app-cpanminus \
+    wget \
+    zip \
+  ;
+else
 add_app() {
   if ! command_v "$1"; then
     apps="$apps $@"
   fi
 }
+fi
 
 add_perl_lib() {
   if ! perl -M"$1" -e '' 2>/dev/null; then
