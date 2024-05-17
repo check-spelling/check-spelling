@@ -1585,13 +1585,18 @@ call_curl() {
 
 set_up_jq() {
   if ! command_v jq || jq --version | perl -ne 'exit 0 unless s/^jq-//;exit 1 if /^(?:[2-9]|1\d|1\.(?:[6-9]|1\d+))/; exit 0'; then
-    jq_url=https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
-    spellchecker_bin="$spellchecker/bin"
-    jq_bin="$spellchecker_bin/jq"
-    mkdir -p "$spellchecker_bin"
-    download_or_quit_with_error "$jq_url" "$jq_bin"
-    chmod 0755 "$jq_bin"
-    PATH="$spellchecker_bin:$PATH"
+    if [ "$(uname)" == "Linux" ]; then
+      jq_url=https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+      spellchecker_bin="$spellchecker/bin"
+      jq_bin="$spellchecker_bin/jq"
+      mkdir -p "$spellchecker_bin"
+      download_or_quit_with_error "$jq_url" "$jq_bin"
+      chmod 0755 "$jq_bin"
+      PATH="$spellchecker_bin:$PATH"
+    else
+      add_app jq
+      install_tools
+    fi
   fi
 }
 
@@ -3477,10 +3482,10 @@ if [ "$INPUT_TASK" = hash-dictionaries ]; then
 fi
 basic_setup
 set_up_ua
+set_up_tools
 define_variables
 set_up_reporter
 check_inputs
-set_up_tools
 dispatcher
 set_up_files
 welcome
