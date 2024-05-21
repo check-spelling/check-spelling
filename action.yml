@@ -396,7 +396,7 @@ runs:
       run: |
         THIS_ACTION_PATH=$(realpath "$GITHUB_ACTION_PATH")
         echo "THIS_ACTION_PATH=$THIS_ACTION_PATH" >> "$GITHUB_ENV"
-        echo "PATH=$THIS_ACTION_PATH/wrappers:$PATH" >> "$GITHUB_ENV"
+        echo "$THIS_ACTION_PATH/wrappers" >> "$GITHUB_PATH"
         echo "THIS_GITHUB_JOB_ID=$THIS_GITHUB_JOB_ID" >> "$GITHUB_ENV"
       env:
         THIS_GITHUB_JOB_ID: ${{ github.job }}
