@@ -19,8 +19,21 @@ call_gh_api() {
     fi
   fi
   call_gh_api() {
-    gh api "/repos/$GITHUB_REPOSITORY/$1" > "$out" 2> "$err"
+    if [ -n "$1" ]; then
+      slash='/'
+    else
+      slash=''
+    fi
+    verb="/repos/$GITHUB_REPOSITORY$slash$1"
+    (
+      if [ -n "$2" ]; then
+        gh api "$verb" --template "$2"
+      else
+        gh api "$verb"
+      fi
+    ) > "$out" 2> "$err"
   }
+  call_gh_api "$@"
 }
 
 maybe_json() {
@@ -80,6 +93,21 @@ check_for_empty_github_token() {
   fi
 }
 
+check_wiki() {
+  if [ "${GITHUB_REPOSITORY#*/*.wiki}" = '' ]; then
+    full_github_repository="$GITHUB_REPOSITORY"
+    GITHUB_REPOSITORY=${GITHUB_REPOSITORY%*.wiki}
+    if call_gh_api '' '{{.has_wiki}}'; then
+      if [ "$(cat "$out" 2>/dev/null)" = false ]; then
+        (
+          echo '## Checkout Failed: wiki is probably disabled for repository'
+          echo "See gh api '/repos/$GITHUB_REPOSITORY' --template '{{.has_wiki}}'"
+        ) >> "$GITHUB_STEP_SUMMARY"
+        exit 1
+      fi
+    fi
+  fi
+}
 check_repository_existence() {
   if ! call_gh_api 'properties/values'; then
     (
@@ -132,6 +160,7 @@ check_for_not_our_ref() {
 
 check_ssh_key
 check_for_empty_github_token
+check_wiki
 check_repository_existence
 check_repository_read_permission
 check_for_not_our_ref "$GITHUB_SHA"
