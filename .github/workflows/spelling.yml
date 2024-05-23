@@ -130,6 +130,7 @@ jobs:
             cspell:php/dict/php.txt
             cspell:node/node.txt
             cspell:python/src/python/python-lib.txt
+            cspell:shell/dict/shell-all-words.txt
           check_commit_messages: ${{ env.workflow_check_commit_messages }}
           ignore-pattern: '[^\p{Ll}\p{Lm}\p{Lt}\p{Lu}]'
           upper-pattern: '[\p{Lu}\p{Lt}\p{Lm}]'
