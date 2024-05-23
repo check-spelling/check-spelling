@@ -3429,8 +3429,10 @@ compare_new_output() {
     sorted_expect="$temp/expect.sorted.txt"
     (sed -e 's/#.*//' "$expect_path" | sort_unique) > "$sorted_expect"
     expect_path="$sorted_expect"
+    sorted_run_output=$(mktemp)
+    cat "$run_output" | sort_unique > "$sorted_run_output"
 
-    diff -w -U0 "$expect_path" "$run_output" |
+    diff -w -U0 "$expect_path" "$sorted_run_output" |
       grep_v_spellchecker > "$diff_output"
   end_group
 }
