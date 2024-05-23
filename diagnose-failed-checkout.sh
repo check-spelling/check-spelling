@@ -112,10 +112,29 @@ check_repository_read_permission() {
   fi
 }
 
+check_for_not_our_ref() {
+  if git fetch origin "$1" 2>&1 | grep -q 'not our ref'; then
+  (
+    echo '## Checkout Failed: Current commit is not present in remote repository'
+    echo "Current git remote: $(git remote get-url origin)"
+    echo "Checked commit: $1"
+    if [ -n "$ACT" ]; then
+      echo '* You may need to change which remote repository act is working from.'
+      echo '* You may want to push the commit to the active git repository.'
+      echo
+      echo 'To verify:'
+      echo 'pushd $(mktemp -d) && git init && git remote add origin '"'$(git remote get-url origin)' && (git fetch origin --negotiate-only --negotiation-tip=$1; git fetch origin '$1')"
+    fi
+  ) >> "$GITHUB_STEP_SUMMARY"
+  exit 1
+  fi
+}
+
 check_ssh_key
 check_for_empty_github_token
 check_repository_existence
 check_repository_read_permission
+check_for_not_our_ref "$GITHUB_SHA"
 
 (
   echo '## Checkout Failed'
