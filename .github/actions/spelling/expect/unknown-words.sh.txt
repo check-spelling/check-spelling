@@ -2,8 +2,6 @@ apps
 codeql
 cpanm
 cpanminus
-elif
-esac
 excludelist
 fchurn
 githubcli
@@ -17,7 +15,6 @@ noreply
 notest
 nproc
 physicalcpu
-PIPESTATUS
 rawfile
 sarifs
 spellchecker
