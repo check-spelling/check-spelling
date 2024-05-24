@@ -14,7 +14,7 @@
             {
               "id": "unrecognized-spelling",
               "name": "UnrecognizedSpelling",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#unrecognized-spelling",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#unrecognized-spelling",
               "shortDescription": {
                 "text": "Unrecognized Spelling"
               },
@@ -23,7 +23,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct spelling\n- Add to [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n- Mask using [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct spelling\n- Add to [expect](https://docs.check-spelling.dev/Configuration#expect)\n- Mask using [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n\n"
               },
               "defaultConfiguration": {
                 "level": "error"
@@ -40,7 +40,7 @@
             {
               "id": "forbidden-pattern",
               "name": "ForbiddenPattern",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#forbidden-pattern",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#forbidden-pattern",
               "shortDescription": {
                 "text": "Forbidden Pattern"
               },
@@ -49,7 +49,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Alter text so the pattern does not match\n- Add a [pattern](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns) to patterns.txt that matches (a portion of) the flagged content to accept it\n- Delete, edit, or comment out the pattern\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Alter text so the pattern does not match\n- Add a [pattern](https://docs.check-spelling.dev/Configuration#patterns) to patterns.txt that matches (a portion of) the flagged content to accept it\n- Delete, edit, or comment out the pattern\n\n"
               },
               "defaultConfiguration": {
                 "level": "error"
@@ -66,7 +66,7 @@
             {
               "id": "noisy-file",
               "name": "NoisyFile",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#noisy-file",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#noisy-file",
               "shortDescription": {
                 "text": "Noisy File"
               },
@@ -75,7 +75,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Add more words to the dictionary\n- Use patterns to mask tokens.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Add more words to the dictionary\n- Use patterns to mask tokens.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -92,7 +92,7 @@
             {
               "id": "noisy-file-list",
               "name": "NoisyFile",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#noisy-file-list",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#noisy-file-list",
               "shortDescription": {
                 "text": "Noisy File List"
               },
@@ -101,7 +101,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Disable [`check_file_names`](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Add more words from file paths/names to the dictionary\n- Use patterns to mask tokens.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Disable [`check_file_names`](https://docs.check-spelling.dev/Configuration#excludes)\n- Add more words from file paths/names to the dictionary\n- Use patterns to mask tokens.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -118,7 +118,7 @@
             {
               "id": "large-file",
               "name": "LargeFile",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#large-file",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#large-file",
               "shortDescription": {
                 "text": "Large File"
               },
@@ -127,7 +127,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Adjust 'largest_file' in action configuration if you want to check the file."
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Adjust 'largest_file' in action configuration if you want to check the file."
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -144,7 +144,7 @@
             {
               "id": "limited-references",
               "name": "LimitedReferences",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#limited-references",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#limited-references",
               "shortDescription": {
                 "text": "Limited References"
               },
@@ -153,7 +153,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add word to the [dictionary](https://github.com/check-spelling/check-spelling/wiki/Configuration#allow)\n- Correct the spelling\n- To see more instances, increase action configuration \"unknown_word_limit\".\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add word to the [dictionary](https://docs.check-spelling.dev/Configuration#allow)\n- Correct the spelling\n- To see more instances, increase action configuration \"unknown_word_limit\".\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -170,7 +170,7 @@
             {
               "id": "candidate-pattern",
               "name": "CandidatePattern",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#candidate-pattern",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#candidate-pattern",
               "shortDescription": {
                 "text": "Candidate Pattern"
               },
@@ -179,7 +179,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the pattern to [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- Remove the pattern from candidates.patterns\n\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the pattern to [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n- Remove the pattern from candidates.patterns\n\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -196,7 +196,7 @@
             {
               "id": "bad-regex",
               "name": "BadRegex",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#bad-regex",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#bad-regex",
               "shortDescription": {
                 "text": "Bad Regex"
               },
@@ -205,7 +205,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- See [bad-regex](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#bad-regex)\n- Remove the pattern.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n- See [bad-regex](https://docs.check-spelling.dev/Event-descriptions#bad-regex)\n- Remove the pattern.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -222,7 +222,7 @@
             {
               "id": "dictionary-not-found",
               "name": "DictionaryNotFound",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#dictionary-not-found",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#dictionary-not-found",
               "shortDescription": {
                 "text": "Dictionary not found"
               },
@@ -231,7 +231,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://github.com/check-spelling/check-spelling/wiki/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -248,7 +248,7 @@
             {
               "id": "no-newline-at-eof",
               "name": "NoNewlineAtEOF",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#no-newline-at-eof",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#no-newline-at-eof",
               "shortDescription": {
                 "text": "No newline at EOF"
               },
@@ -274,7 +274,7 @@
             {
               "id": "non-alpha-in-dictionary",
               "name": "NonAlphaInDictionary",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#non-alpha-in-dictionary",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#non-alpha-in-dictionary",
               "shortDescription": {
                 "text": "Non-alpha in dictionary"
               },
@@ -300,7 +300,7 @@
             {
               "id": "check-file-path",
               "name": "CheckFilePath",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#check-file-path",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#check-file-path",
               "shortDescription": {
                 "text": "Check File Path"
               },
@@ -309,7 +309,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\nNote that this check is against the file path not the displayed line.\n- Rename file/directory to correct spelling\n- Add to [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n- Mask using [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\nNote that this check is against the file path not the displayed line.\n- Rename file/directory to correct spelling\n- Add to [expect](https://docs.check-spelling.dev/Configuration#expect)\n- Mask using [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n\n"
               },
               "defaultConfiguration": {
                 "level": "error"
@@ -326,7 +326,7 @@
             {
               "id": "minified-file",
               "name": "MinifiedFile",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#minified-file",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#minified-file",
               "shortDescription": {
                 "text": "Minified File"
               },
@@ -335,7 +335,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Add 'minified-file' to 'disable_checks' in the configuration.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Add 'minified-file' to 'disable_checks' in the configuration.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -352,7 +352,7 @@
             {
               "id": "duplicate-extra-dictionary",
               "name": "DuplicateExtraDictionary",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#duplicate-extra-dictionary",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#duplicate-extra-dictionary",
               "shortDescription": {
                 "text": "Duplicate Extra Dictionary"
               },
@@ -378,7 +378,7 @@
             {
               "id": "utf16-surrogate",
               "name": "Utf16Surrogate",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#utf16-surrogate",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#utf16-surrogate",
               "shortDescription": {
                 "text": "UTF-16 Surrogate"
               },
@@ -387,7 +387,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -404,7 +404,7 @@
             {
               "id": "binary-file",
               "name": "BinaryFile",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#binary-file",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#binary-file",
               "shortDescription": {
                 "text": "Binary File"
               },
@@ -413,7 +413,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Disable `use_file_magic`\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Disable `use_file_magic`\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -430,7 +430,7 @@
             {
               "id": "token-is-substring",
               "name": "TokenIsSubstring",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#token-is-substring",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#token-is-substring",
               "shortDescription": {
                 "text": "Token is a substring"
               },
@@ -439,7 +439,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n- Correct any overeager [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- See [Feature: Warning about substring matches](https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Warning-about-substring-matches)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [expect](https://docs.check-spelling.dev/Configuration#expect)\n- Correct any overeager [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n- See [Feature: Warning about substring matches](https://docs.check-spelling.dev/Feature%3A-Warning-about-substring-matches)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -456,7 +456,7 @@
             {
               "id": "slow-file",
               "name": "SlowFile",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#slow-file",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#slow-file",
               "shortDescription": {
                 "text": "Slow file"
               },
@@ -465,7 +465,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Adjust [patterns](https://github.com/check-spelling/check-spelling/wiki/Configuration#patterns)\n- Adjust the [timeout](https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Parsing-Timeouts#configuration)\n- See [Feature: Parsing Timeouts](https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Parsing-Timeouts)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Adjust [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n- Adjust the [timeout](https://docs.check-spelling.dev/Feature%3A-Parsing-Timeouts#configuration)\n- See [Feature: Parsing Timeouts](https://docs.check-spelling.dev/Feature%3A-Parsing-Timeouts)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -482,7 +482,7 @@
             {
               "id": "ignored-expect-variant",
               "name": "IgnoredExpectVariant",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#ignored-expect-variant",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#ignored-expect-variant",
               "shortDescription": {
                 "text": "Ignored Expect Variant"
               },
@@ -491,7 +491,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove the entry from [expect](https://github.com/check-spelling/check-spelling/wiki/Configuration#expect)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove the entry from [expect](https://docs.check-spelling.dev/Configuration#expect)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -508,7 +508,7 @@
             {
               "id": "no-files-to-check",
               "name": "NoFilesToCheck",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#no-files-to-check",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#no-files-to-check",
               "shortDescription": {
                 "text": "No files to check"
               },
@@ -517,7 +517,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove or fix patterns in [excludes](https://github.com/check-spelling/check-spelling/wiki/Configuration#excludes)\n- Remove or broaden patterns in [only](https://github.com/check-spelling/check-spelling/wiki/Configuration#only)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove or fix patterns in [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Remove or broaden patterns in [only](https://docs.check-spelling.dev/Configuration#only)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -534,7 +534,7 @@
             {
               "id": "missing-on-pull-request-event",
               "name": "MissingOnPullRequestEvent",
-              "helpUri": "https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#missing-on-pull-request-event",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#missing-on-pull-request-event",
               "shortDescription": {
                 "text": "Missing on pull_request event"
               },

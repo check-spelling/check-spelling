@@ -1,7 +1,7 @@
 name: Check Spelling
 
 # Comment management is handled through a secondary job, for details see:
-# https://github.com/check-spelling/check-spelling/wiki/Feature%3A-Restricted-Permissions
+# https://docs.check-spelling.dev/Feature%3A-Restricted-Permissions
 #
 # `jobs.comment-push` runs when a push is made to a repository and the `jobs.spelling` job needs to make a comment
 #   (in odd cases, it might actually run just to collapse a comment, but that's fairly rare)
@@ -12,7 +12,7 @@ name: Check Spelling
 #   it needs `pull-requests: write` in order to manipulate those comments.
 
 # Updating pull request branches is managed via comment handling.
-# For details, see: https://github.com/check-spelling/check-spelling/wiki/Feature:-Update-expect-list
+# For details, see: https://docs.check-spelling.dev/Feature:-Update-expect-list
 #
 # These elements work together to make it happen:
 #
@@ -31,7 +31,7 @@ name: Check Spelling
 #   In order to trigger workflows when the commit is made, you can provide a
 #   secret (typically, a write-enabled github deploy key).
 #
-#   For background, see: https://github.com/check-spelling/check-spelling/wiki/Feature:-Update-with-deploy-key
+#   For background, see: https://docs.check-spelling.dev/Feature:-Update-with-deploy-key
 
 # Sarif reporting
 #
@@ -40,7 +40,7 @@ name: Check Spelling
 # Requires enabling `security-events: write`
 # and configuring the action with `use_sarif: 1`
 #
-#   For information on the feature, see: https://github.com/check-spelling/check-spelling/wiki/Feature:-Sarif-output
+#   For information on the feature, see: https://docs.check-spelling.dev/Feature:-Sarif-output
 
 # Minimal workflow structure:
 #
