@@ -359,7 +359,7 @@ runs:
       if: env.ACT && (github.action_path || env.GITHUB_ACTION_PATH) && (env.GITHUB_ACTION_PATH != github.action_path)
       shell: bash
       run: |
-        echo '::error ::This version of nektos/act is broken. See https://github.com/check-spelling/check-spelling/wiki/Breaking-Change:-Dropping-support-for-broken-act'
+        echo '::error ::This version of nektos/act is broken. See https://docs.check-spelling.dev/Breaking-Change:-Dropping-support-for-broken-act'
         exit 1
     - name: act-windows-shim
       if: env.ACT
@@ -503,7 +503,7 @@ runs:
                 act-summary
                 (
                   echo '# Workflow is missing permissions'
-                  echo 'Please add `actions: read` to enable check-spelling to retrieve the artifact it needs to post a comment. [more info](https://github.com/check-spelling/check-spelling/wiki/Workflow-Permissions#contents-read)'
+                  echo 'Please add `actions: read` to enable check-spelling to retrieve the artifact it needs to post a comment. [more info](https://docs.check-spelling.dev/Workflow-Permissions#contents-read)'
                   echo
                   echo '#### Technical details'
                   echo '```'

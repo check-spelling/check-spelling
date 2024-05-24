@@ -18,9 +18,9 @@ strip_quotes() {
 
 (
   echo '# :warning: check-spelling `on: schedule` support is deprecated'
-  echo 'See https://github.com/check-spelling/check-spelling/wiki/Breaking-change:-Dropping-support-for-on:-schedule'
+  echo 'See https://docs.check-spelling.dev/Breaking-change:-Dropping-support-for-on:-schedule'
 ) >> "$GITHUB_STEP_SUMMARY"
-echo '::warning title=Deprecated Feature: `on: schedule`::See https://github.com/check-spelling/check-spelling/wiki/Breaking-change:-Dropping-support-for-on:-schedule'
+echo '::warning title=Deprecated Feature: `on: schedule`::See https://docs.check-spelling.dev/Breaking-change:-Dropping-support-for-on:-schedule'
 
 begin_group 'Retrieving open pull requests'
 pulls="$temp/pulls.json"
