@@ -170,11 +170,11 @@ dispatcher() {
             INPUT_USE_SARIF=
             set_up_reporter
           fi
-          echo '::error title=Unsafe Permissions: check-spelling::This workflow configuration is unsafe. Please see https://github.com/check-spelling/check-spelling/wiki/Feature:-Restricted-Permissions'
+          echo '::error title=Unsafe Permissions: check-spelling::This workflow configuration is unsafe. Please see https://docs.check-spelling.dev/Feature:-Restricted-Permissions'
           github_step_summary_likely_fatal \
             'Unsafe Permissions' \
             'This workflow configuration is unsafe.' \
-            ':information_source: Please see https://github.com/check-spelling/check-spelling/wiki/Feature:-Restricted-Permissions'
+            ':information_source: Please see https://docs.check-spelling.dev/Feature:-Restricted-Permissions'
           quit 5
         fi
       fi
@@ -693,7 +693,7 @@ show_github_actions_push_disclaimer() {
   fi
   OUTPUT="## :hourglass: check-spelling changes applied
 
-  As [configured](https://github.com/check-spelling/check-spelling/wiki/Feature:-Update-expect-list#github_token), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
+  As [configured](https://docs.check-spelling.dev/Feature:-Update-expect-list#github_token), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
 
   <details><summary>$OWNER_TEXT can address this for future interactions :magic_wand:</summary>
 
@@ -1455,7 +1455,7 @@ github_step_summary_likely_fatal() {
 
 github_step_summary_likely_fatal_event() {
   category="$3"
-  github_step_summary_likely_fatal "$1" "$2" ":warning: For more information, see [$category](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#$category)."
+  github_step_summary_likely_fatal "$1" "$2" ":warning: For more information, see [$category](https://docs.check-spelling.dev/Event-descriptions#$category)."
 }
 
 download_or_quit_with_error() {
@@ -2575,7 +2575,7 @@ repo_clone_note() {
   echo "
         ... in a clone of the [$remote_url_ssh]($remote_url_https) repository
         on the $b$remote_ref$b branch ([:information_source: how do I use this?](
-        https://github.com/check-spelling/check-spelling/wiki/Accepting-Suggestions)):
+        https://docs.check-spelling.dev/Accepting-Suggestions)):
   "
 }
 
@@ -2789,10 +2789,10 @@ spelling_body() {
       fi
       if [ -s "$counter_summary_file" ]; then
         warnings_details="$(echo "
-          [$event_icon ${event_title}](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) | Count
+          [$event_icon ${event_title}](https://docs.check-spelling.dev/Event-descriptions) | Count
           -|-
           $(
-            jq -r 'to_entries[] | "[:information_source: \(.key)](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file" |
+            jq -r 'to_entries[] | "[:information_source: \(.key)](https://docs.check-spelling.dev/Event-descriptions#\(.key)) | \(.value)"' "$counter_summary_file" |
             NOTICES_LIST="$(
               echo "$INPUT_NOTICES" | events_to_regular_expression
             )" WARNINGS_LIST="$(
@@ -2811,7 +2811,7 @@ spelling_body() {
             '
           )
 
-          See [$event_icon Event descriptions](https://github.com/check-spelling/check-spelling/wiki/Event-descriptions) for more information.
+          See [$event_icon Event descriptions](https://docs.check-spelling.dev/Event-descriptions) for more information.
           " | strip_lead)"
       else
         warnings_details="_Could not get warning list from ${counter_summary_file}_"
