@@ -30,6 +30,7 @@ jobs:
           echo "
           Module::Build::Tiny
           Devel::Cover
+          Devel::Cover::Report::Html
           IO::Capture::Stderr
           Hash::Merge
           Text::Hunspell
@@ -95,6 +96,7 @@ jobs:
           done
         )
         perl `command -v cover` -test
+        perl `command -v cover` -report html
     - name: store-coverage
       uses: actions/upload-artifact@v4
       timeout-minutes: 5
