@@ -110,4 +110,10 @@ something
 close $fh;
 CheckSpelling::DictionaryCoverage::main($filename, 't/sample.dic');
 $capture->stop();
-is((join "\n", $capture ? $capture->read() : ()), '', 'coverage for .dic');
+my $dictionary_coverage = (join "\n", $capture ? $capture->read() : ());
+if ($dictionary_coverage =~ /hunspell-unavailable/) {
+  is($dictionary_coverage, 'Could not load Text::Hunspell for `t/sample.dic` (hunspell-unavailable)
+', 'hunspell-unavailable')
+} else {
+  is($dictionary_coverage, '', 'coverage for .dic');
+}
