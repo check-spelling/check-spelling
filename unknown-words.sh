@@ -1804,10 +1804,14 @@ set_up_files() {
       spell_check_this_json="$data_dir/spell_check_this.json"
       if [ -e "$spell_check_this_json" ]; then
         spell_check_this_repo=$(mktemp -d)
-        spelling_config=$(jq -r .config "$spell_check_this_json")
-        spell_check_this_repo_url=$(jq -r .url "$spell_check_this_json")
-        spell_check_this_repo_branch=$(jq -r .branch "$spell_check_this_json")
-        spell_check_this_config=$(jq -r .path "$spell_check_this_json")
+        spelling_config=$(jq -r '.config // empty' "$spell_check_this_json")
+        spell_check_this_repo_url=$(jq -r '.url // empty' "$spell_check_this_json")
+        spell_check_this_repo_branch=$(jq -r '.branch  // empty' "$spell_check_this_json")
+        spell_check_this_config=$(jq -r '.path // empty' "$spell_check_this_json")
+        if [ -n "$spell_check_this_repo_url" ] &&
+          [ -n "$spell_check_this_repo_branch" ]; then
+          add_spell_check_this_text="use the spell-check-this repository"
+        fi
       fi
       if [ ! -e "$data_dir/apply.json" ]; then
         echo '::warning ::could not find apply.json (this can happen under `act`)'
@@ -1861,7 +1865,7 @@ set_up_files() {
             --arg path "$spell_check_this_config" \
           '.config=$config|.url=$url|.branch=$branch|.path=$path|del(..|select(.==""))' > "$data_dir/spell_check_this.json"
         fi
-        add_spell_check_this_text=" using the spell-check-this repository,"
+        add_spell_check_this_text="use the spell-check-this repository"
       fi
     fi
   fi
@@ -2606,6 +2610,7 @@ $2"
     echo "$OUTPUT"
   fi
 }
+
 spelling_body() {
   message="$1"
   extra="$2"
@@ -2658,7 +2663,7 @@ spelling_body() {
     output_remove_items="$N$(remove_items)"
   fi
     if [ -n "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
-      cleanup_text=" and remove the previously acknowledged and now absent words"
+      cleanup_text="remove the previously acknowledged and now absent words"
     fi
     if [ -n "$GITHUB_HEAD_REF" ]; then
       remote_url_ssh="$(jq -r '.pull_request.head.repo.ssh_url // empty' "$GITHUB_EVENT_PATH")"
@@ -2873,21 +2878,15 @@ spelling_body() {
     fi
     if ! to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES" && [ -n "$patch_add" ]; then
       can_offer_to_apply=1
-      accept_words_text="accept $add_spell_check_this_text these unrecognized words as correct$cleanup_text"
+      accept_words_text='accept these unrecognized words as correct'
     fi
     if [ "$can_offer_to_apply" = 1 ]; then
       if [ -n "$accept_words_text" ]; then
         if [ "$INPUT_INCLUDE_ADVICE" = 'unrecognized-spelling' ]; then
           include_advice=true
         fi
-        if [ -n "$exclude_files_text" ]; then
-          accept_conjunction=' and '
-          if [ -n "$add_spell_check_this_text" ]; then
-            accept_conjunction=', and '
-          fi
-        fi
       fi
-      accept_heading="To $accept_words_text$accept_conjunction$exclude_files_text"
+      accept_heading="To $(build-english-list "$add_spell_check_this_text" "$accept_words_text" "$exclude_files_text" "$cleanup_text")"
       output_accept_script="$(echo "
         <details><summary>$accept_heading,
         you could run the following commands</summary>
