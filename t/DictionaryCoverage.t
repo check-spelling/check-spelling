@@ -7,7 +7,7 @@ use File::Temp qw/ tempfile tempdir /;
 use File::Basename;
 use Test::More;
 use IO::Capture::Stderr;
-plan tests => 10;
+plan tests => 11;
 use_ok('CheckSpelling::DictionaryCoverage');
 
 my $name = '/dev/null';
@@ -100,6 +100,18 @@ is((join "\n", $capture->read()), 'Could not read /dev/no-such-file
 
 $capture = IO::Capture::Stderr->new();
 $capture->start();
+CheckSpelling::DictionaryCoverage::main($filename, "/dev/no-such-file.dic");
+$capture->stop();
+my $dictionary_coverage = (join "\n", $capture ? $capture->read() : ());
+if ($dictionary_coverage =~ /hunspell-unavailable/) {
+is($dictionary_coverage, 'Could not load Text::Hunspell for `/dev/no-such-file.dic` (hunspell-unavailable)
+', 'no-such-file');
+} else {
+is($dictionary_coverage, "Couldn't open dictionary `/dev/no-such-file.dic` (dictionary-not-found)
+", 'no-such-file');
+}
+$capture = IO::Capture::Stderr->new();
+$capture->start();
 ($fh, $filename) = tempfile();
 print $fh 'world
 hello
@@ -110,7 +122,7 @@ something
 close $fh;
 CheckSpelling::DictionaryCoverage::main($filename, 't/sample.dic');
 $capture->stop();
-my $dictionary_coverage = (join "\n", $capture ? $capture->read() : ());
+$dictionary_coverage = (join "\n", $capture ? $capture->read() : ());
 if ($dictionary_coverage =~ /hunspell-unavailable/) {
   is($dictionary_coverage, 'Could not load Text::Hunspell for `t/sample.dic` (hunspell-unavailable)
 ', 'hunspell-unavailable')
