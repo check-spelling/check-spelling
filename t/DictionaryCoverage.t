@@ -3,11 +3,12 @@
 use strict;
 use warnings;
 
+use File::Copy;
 use File::Temp qw/ tempfile tempdir /;
 use File::Basename;
 use Test::More;
 use Capture::Tiny ':all';
-plan tests => 11;
+plan tests => 12;
 use_ok('CheckSpelling::DictionaryCoverage');
 
 my $name = '/dev/null';
@@ -117,4 +118,15 @@ if ($dictionary_coverage =~ /hunspell-unavailable/) {
 ', 'hunspell-unavailable')
 } else {
   is($dictionary_coverage, '', 'coverage for .dic');
+}
+copy('t/sample.dic', 't/sample2.dic');
+($stdout, $stderr, @result) = capture { CheckSpelling::DictionaryCoverage::main($filename, 't/sample2.dic'); };
+$dictionary_coverage = $stderr;
+if ($dictionary_coverage =~ /hunspell-unavailable/) {
+  is($dictionary_coverage, 'Could not load Text::Hunspell for `t/sample2.dic` (hunspell-unavailable)
+', 'hunspell-unavailable')
+} else {
+  is($dictionary_coverage, 'error: t/sample2.aff: cannot open
+error: t/sample2.aff: cannot open
+', 'coverage for .dic');
 }
