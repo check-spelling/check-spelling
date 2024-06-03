@@ -8,7 +8,7 @@ use File::Temp qw/ tempfile /;
 use Test::More;
 use CheckSpelling::Util;
 
-plan tests => 3;
+plan tests => 4;
 use_ok('CheckSpelling::SuggestExcludes');
 
 my $tests = dirname(__FILE__);
@@ -102,3 +102,5 @@ is(CheckSpelling::Util::list_with_terminator("\n", @results),
 CheckSpelling::Util::list_with_terminator("\n", @expected_results));
 is(CheckSpelling::Util::list_with_terminator("\n", @drop_patterns),
 CheckSpelling::Util::list_with_terminator("\n", @expect_drop_patterns));
+
+is(CheckSpelling::SuggestExcludes::path_to_pattern('a'), '^\Qa\E$');
