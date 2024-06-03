@@ -104,6 +104,9 @@ jobs:
       if: success() || failure()
       run: |
         perl `command -v cover` -report html
+        if [ -e cover_db/coverage.html ]; then
+          t/html-to-markdown.pl cover_db/coverage.html >> "$GITHUB_STEP_SUMMARY"
+        fi
         echo 'ran=1' >> "$GITHUB_OUTPUT"
     - name: store-coverage
       if: (success() || failure()) && (steps.coverage.outputs.ran == 1)
