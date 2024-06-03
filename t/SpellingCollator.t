@@ -7,7 +7,7 @@ use File::Temp qw/ tempfile tempdir /;
 use IO::Capture::Stderr;
 
 use Test::More;
-plan tests => 32;
+plan tests => 34;
 
 sub fill_file {
   my ($file, $content) = @_;
@@ -281,3 +281,24 @@ pear:1:1 ... 4, Warning - `pear` is not a recognized word. (check-file-path)
 pear:1:1 ... 3, Warning - `pea` matches a line_forbidden.patterns entry: `^pe.`. (forbidden-pattern)
 ');
 truncate($forbidden_patterns, 0);
+
+($fh, $file_names) = tempfile;
+print $fh 'apple
+apple
+apple
+pear';
+close $fh;
+$directory = stage_test($file_names, '{words: 3, unrecognized: 2, unknown: 2, unique: 2}', '', "
+:1:1 ... 4: 'apple'
+:2:1 ... 4: 'apple'
+:3:1 ... 4: 'apple'
+:4:1 ... 4: 'apple'
+");
+$ENV{'unknown_word_limit'} = 3;
+($output, $error_lines) = run_test($directory);
+check_output_file($warning_output, "$file_names
+$file_names:1:1 ... 4, Warning - `apple` is not a recognized word. (unrecognized-spelling)
+");
+check_output_file($more_warnings, "$file_names:2:1 ... 4, Warning - `apple` is not a recognized word. (unrecognized-spelling)
+$file_names:3:1 ... 4, Warning - `apple` is not a recognized word. (unrecognized-spelling)
+");
