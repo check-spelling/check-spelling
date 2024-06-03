@@ -53,6 +53,7 @@ jobs:
               perl -e "use $module; 1;" > /dev/null 2>/dev/null || echo $module
             done | xargs
           )
+          command -v cover >/dev/null 2>/dev/null || APT_PACKAGES="libdevel-cover-perl $APT_PACKAGES"
           [ -z "$cpan_modules" ] || command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
           command -v jd && HAS_JD=1 || HAS_JD=
           (
