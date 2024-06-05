@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use File::Temp qw/ tempfile tempdir /;
-use IO::Capture::Stderr;
+use Capture::Tiny ':all';
 
 use Test::More;
 plan tests => 34;
@@ -35,18 +35,12 @@ sub stage_test {
 sub run_test {
   my ($directories) = @_;
   my $output = '';
-  open(my $outputFH, '>', \$output) or die; # This shouldn't fail
-  my $oldFH = select $outputFH;
-  my $capture = IO::Capture::Stderr->new();
-  $capture->start();
-  {
+  my ($stdout, $stderr, @result) = capture {
     open my $fh, "<", \$directories;
     local *ARGV = $fh;
     CheckSpelling::SpellingCollator::main();
-  }
-  $capture->stop();
-  select $oldFH;
-  return ($output, (join "\n", $capture->read()));
+  };
+  return ($stdout, $stderr);
 }
 
 sub read_file {
@@ -117,7 +111,6 @@ my $directories = "$directory
 fill_file($early_warnings, "goose (animal)\n");
 my ($output, $error_lines) = run_test($directories);
 is($error_lines, 'Not a directory: /dev/null
-
 Could not find: /dev/no-such-dev
 ');
 check_output_file($warning_output, 'goose (animal)
