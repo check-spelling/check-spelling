@@ -457,7 +457,7 @@ sub main {
             my $artifact_dir = tempdir(CLEANUP => 1);
             my ($fh, $gh_err) = tempfile();
             close $fh;
-            system('unzip', '-d', $artifact_dir, $artifact, 'artifact.zip');
+            system('unzip', '-q', '-d', $artifact_dir, $artifact, 'artifact.zip');
             @artifacts = ("$artifact_dir/artifact.zip");
         } else {
             @artifacts = ($artifact);
