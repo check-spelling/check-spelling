@@ -13,8 +13,14 @@ my $summary_tables = tempdir();
 my $table;
 my @tables;
 
-my $url_base = "$ENV{GITHUB_SERVER_URL}/$ENV{GITHUB_REPOSITORY}/blame";
-my $rev = $ENV{GITHUB_HEAD_REF} || $ENV{GITHUB_SHA};
+my $prefix = '';
+my $line_delimiter = ':';
+if ($ENV{GITHUB_SERVER_URL} ne '' && $ENV{GITHUB_REPOSITORY} ne '') {
+    my $url_base = "$ENV{GITHUB_SERVER_URL}/$ENV{GITHUB_REPOSITORY}/blame";
+    my $rev = $ENV{GITHUB_HEAD_REF} || $ENV{GITHUB_SHA};
+    $prefix = "$url_base/$rev/";
+    $line_delimiter = '#L';
+}
 
 while (<>) {
     next unless m{^(.+):(\d+):(\d+) \.\.\. (\d+),\s(Error|Warning|Notice)\s-\s(.+)\s\(([-a-z]+)\)$};
@@ -28,7 +34,7 @@ while (<>) {
         print $table "$message | $file#$line\n"
     } else {
         $file = uri_escape($file, "^A-Za-z0-9\-\._~/");
-        print $table "$message | $url_base/$rev/$file#L$line\n"
+        print $table "$message | $prefix$file$line_delimiter$line\n"
     }
     close $table;
 }
