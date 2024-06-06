@@ -471,17 +471,27 @@ get_workflow_path() {
           "$workflow_url" > "$workflow_json"; then
           jq -r .path "$workflow_json" | tee "$action_workflow_path_file"
         fi
-      else
+      elif [ -d .github/workflows ]; then
         possible_workflows=$(mktemp)
-        github_job_pattern="^\s\s*$GITHUB_JOB\s*:\s*$"
-        if [ -n "$ACT" ]; then
-          # https://github.com/nektos/act/issues/1473
-          github_job_pattern="$github_job_pattern\|^\s\s*name\s*:\s*$GITHUB_JOB\s*$"
+        if [ -n "$GITHUB_JOB" ]; then
+          github_job_pattern="^\s\s*$GITHUB_JOB\s*:\s*$"
+          if [ -n "$ACT" ]; then
+            # https://github.com/nektos/act/issues/1473
+            github_job_pattern="$github_job_pattern\|^\s\s*name\s*:\s*$GITHUB_JOB\s*$"
+          fi
+        else
+          github_job_pattern="^\s\s*spelling\s*:\s*$"
         fi
         find .github/workflows \( -name '*.yml' -o -name '*.yaml' \) -type f ! -empty -print0 |
-          xargs -0 grep -l --null "^\s\s*uses\s*:\s*$GH_ACTION_REPOSITORY@$GH_ACTION_REF" |
-          xargs -0 grep -l --null "^name\s*:\s*$GITHUB_WORKFLOW\s*$" |
-          xargs -0 grep -l --null "$github_job_pattern" > "$possible_workflows"
+        (
+          if [ -n "$GH_ACTION_REPOSITORY" ] && [ -n "$GH_ACTION_REF" ]; then
+            xargs -0 grep -l --null "^\s\s*uses\s*:\s*$GH_ACTION_REPOSITORY@$GH_ACTION_REF" |
+            xargs -0 grep -l --null "^name\s*:\s*$GITHUB_WORKFLOW\s*$"
+          else
+            cat
+          fi
+        ) |
+            xargs -0 grep -l --null "$github_job_pattern" > "$possible_workflows"
         if [ "$(tr -cd '\000' < "$possible_workflows" | char_count)" -eq 1 ]; then
           xargs -0 < "$possible_workflows" | tee "$action_workflow_path_file"
         fi
