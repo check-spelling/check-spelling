@@ -193,9 +193,10 @@ who_am_i() {
   who_am_i_json="$(wrap_in_json 'query' "$who_am_i")"
   comment_author_id=$(
     call_curl \
+    "$GITHUB_GRAPHQL_URL" \
     -H "Content-Type: application/json" \
     --data-binary "$who_am_i_json" \
-    "$GITHUB_GRAPHQL_URL" |
+    |
     jq -r '.data.viewer.databaseId // empty'
   )
 }
@@ -204,9 +205,10 @@ get_is_comment_minimized() {
   comment_is_collapsed_query="query { node(id:$Q$1$Q) { ... on IssueComment { minimizedReason } } }"
   comment_is_collapsed_json="$(wrap_in_json 'query' "$comment_is_collapsed_query")"
   call_curl \
+  "$GITHUB_GRAPHQL_URL" \
   -H "Content-Type: application/json" \
   --data-binary "$comment_is_collapsed_json" \
-  "$GITHUB_GRAPHQL_URL" |
+  |
   jq -r '.data.node.minimizedReason'
 }
 
@@ -271,9 +273,10 @@ get_comment_url_from_id() {
   comment_url_from_id_query="query { node(id:$Q$id$Q) { ... on IssueComment { url } } }"
   comment_url_from_id_json="$(wrap_in_json 'query' "$comment_url_from_id_query")"
   call_curl \
+    "$GITHUB_GRAPHQL_URL" \
     -H "Content-Type: application/json" \
     --data-binary "$comment_url_from_id_json" \
-    "$GITHUB_GRAPHQL_URL" |
+    |
     jq -r '.data.node.url // empty'
 }
 
@@ -562,9 +565,10 @@ show_github_actions_push_disclaimer() {
   pr_query_json="$(wrap_in_json 'query' "$pr_query")"
   repository_edit_branch=$(
     call_curl \
+    "$GITHUB_GRAPHQL_URL" \
     -H "Content-Type: application/json" \
     --data-binary "$pr_query_json" \
-    "$GITHUB_GRAPHQL_URL" |
+    |
     jq -r '(.data.repository.pullRequest.headRepository.nameWithOwner + "/edit/" + .data.repository.pullRequest.headRefName)'
   )
 
@@ -662,9 +666,10 @@ are_issue_head_and_base_in_same_repo() {
 report_if_bot_comment_is_minimized() {
   minimized_info=$(mktemp_json)
   call_curl \
+  "$GITHUB_GRAPHQL_URL" \
   -H "Content-Type: application/json" \
   --data-binary "$(echo '{}' | jq --arg query "query { node(id: $Q$bot_comment_node_id$Q) { ... on IssueComment { isMinimized minimizedReason } } }" '.query = $query')" \
-  "$GITHUB_GRAPHQL_URL" > "$minimized_info"
+  > "$minimized_info"
 
   if [ "$(jq '.data.node.isMinimized' "$minimized_info")" == 'true' ]; then
     minimized_reason=$(jq -r '.data.node.minimizedReason | ascii_downcase // empty' "$minimized_info")
@@ -1461,15 +1466,31 @@ call_curl() {
   response_headers="$(mktemp)"
   response_body="$(mktemp)"
   curl_output="$(mktemp)"
+  curl_url="$1"
+  shift
   until [ "$curl_attempt" -ge 3 ]
   do
-    curl -D "$response_headers" -A "$curl_ua" -s -H "$(curl_auth)" "$@" -o "$response_body" > "$curl_output"
+    curl \
+      "$curl_url" \
+      -D "$response_headers" \
+      -A "$curl_ua" \
+      -s \
+      -H "$(curl_auth)" \
+      "$@" \
+      -o "$response_body" \
+      > "$curl_output"
     if [ ! -s "$response_body" ] && [ -s "$curl_output" ]; then
       mv "$curl_output" "$response_body"
     fi
     echo >> "$response_headers"
     response_code=$(perl -e '$_=<>; $_=0 unless s#^HTTP/[\d.]+ (\d+).*#$1#;print;' "$response_headers")
-    if [ "$response_code" -ne 429 ] && [ "$response_code" -ne 503 ]; then
+    if [ "$response_code" -eq 301 ] ||
+       [ "$response_code" -eq 302 ] ||
+       [ "$response_code" -eq 307 ] ||
+       [ "$response_code" -eq 308 ]; then
+      curl_url="$(perl -ne 'next unless /^location:\s*(\S+)/i; print $1' "$response_headers")"
+    elif [ "$response_code" -ne 429 ] &&
+       [ "$response_code" -ne 503 ]; then
       cat "$response_body"
       rm -f "$response_body"
       if [ -z "$keep_headers" ]; then
@@ -1534,7 +1555,9 @@ get_extra_dictionary() {
   if [ "$url" != "${url#"${GITHUB_SERVER_URL}"/*}" ]; then
     no_curl_auth=1
   fi
-  keep_headers=1 call_curl "$check_etag" "$check_etag_value" "$url" > "$dest"
+  keep_headers=1 call_curl \
+    "$url" \
+    > "$dest"
   if { [ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ] ; } 2> /dev/null; then
     echo "::error ::Failed to retrieve $extra_dictionary_url -- HTTP $response_code for $url (dictionary-not-found)" >> "$early_warnings"
     (
@@ -2639,25 +2662,28 @@ body_to_payload() {
 
 collaborator() {
   collaborator_url="$1"
-  call_curl -L \
+  call_curl \
+    "$collaborator_url" \
     -H "Accept: application/vnd.github.v3+json" \
-    "$collaborator_url" 2> /dev/null
+    2> /dev/null
 }
 
 pull_request() {
   pull_request_url="$1"
-  call_curl -L -S \
-    -H "Content-Type: application/json" \
-    "$pull_request_url"
+  call_curl \
+    "$pull_request_url" \
+    -S \
+    -H "Content-Type: application/json"
 }
 
 react() {
   url="$1"
   reaction="$2"
-  call_curl -L -S \
+  call_curl \
+    "$url"/reactions \
+    -S \
     -X POST \
     -H "Accept: application/vnd.github.squirrel-girl-preview+json" \
-    "$url"/reactions \
     -d '{"content":"'"$reaction"'"}'
 }
 
@@ -2665,10 +2691,11 @@ unlock_pr() {
   pr_locked="$(jq -r .pull_request.locked "$GITHUB_EVENT_PATH")"
   if to_boolean "$pr_locked"; then
     locked_pull_url="$(jq -r .pull_request._links.issue.href "$GITHUB_EVENT_PATH")"/lock
-    call_curl -L -S \
+    call_curl \
+      "$locked_pull_url" \
+      -S \
       -X DELETE \
-      -H "Accept: application/vnd.github.v3+json" \
-      "$locked_pull_url"
+      -H "Accept: application/vnd.github.v3+json"
   fi
 }
 
@@ -2682,11 +2709,12 @@ lock_pr() {
       lock_method=-H
       lock_data='Content-Length: 0'
     fi
-    call_curl -L -S \
+    call_curl \
+      "$locked_pull_url" \
+      -S \
       -X PUT \
       -H "Accept: application/vnd.github.v3+json" \
-      "$lock_method" "$lock_data" \
-      "$locked_pull_url"
+      "$lock_method" "$lock_data"
   fi
 }
 
@@ -2696,12 +2724,13 @@ comment() {
   if [ -n "$payload" ]; then
     method="$3"
   fi
-  call_curl -L -S \
+  call_curl \
+    "$comments_url" \
+    -S \
     ${method:+-X "$method"} \
     -H "Content-Type: application/json" \
     -H 'Accept: application/vnd.github.comfort-fade-preview+json' \
-    ${payload:+--data "@$payload"} \
-    "$comments_url"
+    ${payload:+--data "@$payload"}
 }
 
 track_comment() {
@@ -3012,9 +3041,9 @@ collapse_comment_mutation() {
 
 collapse_comment() {
   call_curl \
+  "$GITHUB_GRAPHQL_URL" \
   -H "Content-Type: application/json" \
-  --data-binary "$(collapse_comment_mutation "$@")" \
-  "$GITHUB_GRAPHQL_URL"
+  --data-binary "$(collapse_comment_mutation "$@")"
 }
 
 should_collapse_previous_and_not_comment() {
