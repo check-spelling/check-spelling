@@ -1348,6 +1348,11 @@ cleanup_file() {
     quit "$result"
   fi
 
+  if [ -n "$3" ]; then
+    cp "$maybe_bad" "$3" 2>/dev/null || touch "$3"
+    maybe_bad="$3"
+  fi
+
   type="$2"
   case "$type" in
     patterns|excludes|only)
@@ -1375,8 +1380,7 @@ get_project_files() {
           cd "$temp"
           repo="$(echo "$bucket" | perl -pe 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')"
           [ -d metadata ] || git clone --depth 1 "$repo" --single-branch --branch "$project" metadata
-          cleanup_file metadata/"$file".txt "$type"
-          cp metadata/"$file".txt "$dest" 2> /dev/null || touch "$dest"
+          cleanup_file metadata/"$file".txt "$type" "$dest"
         );;
       gs://*)
         echo "Retrieving $file from $from"
@@ -1392,8 +1396,7 @@ get_project_files() {
         append_to="$from"
         if [ -f "$from" ]; then
           echo "Retrieving $file from $from"
-          cleanup_file "$from" "$type"
-          cp "$from" "$dest"
+          cleanup_file "$from" "$type" "$dest"
           from_expanded="$from"
         else
           if [ ! -e "$from" ]; then
