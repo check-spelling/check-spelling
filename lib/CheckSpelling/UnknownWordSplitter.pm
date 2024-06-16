@@ -34,22 +34,9 @@ my ($last_file, $words, $unrecognized) = ('', 0, 0);
 
 my $disable_flags;
 
-sub file_to_list {
-  my ($re) = @_;
-  my @file;
-  return @file unless open(FILE, '<:utf8', $re);
-
-  local $/=undef;
-  my $file=<FILE>;
-  close FILE;
-  for (split /\R/, $file) {
-    next if /^#/;
-    chomp;
-    next unless s/^(.+)/(?:$1)/;
-    push @file, $_;
-  }
-
-  return @file;
+sub test_re {
+  my ($expression) = @_;
+  return eval { qr /$expression/ };
 }
 
 sub quote_re {
@@ -71,9 +58,22 @@ sub quote_re {
   return $expression;
 }
 
-sub test_re {
-  my ($expression) = @_;
-  return eval { qr /$expression/ };
+sub file_to_list {
+  my ($re) = @_;
+  my @file;
+  return @file unless open(FILE, '<:utf8', $re);
+
+  local $/=undef;
+  my $file=<FILE>;
+  close FILE;
+  for (split /\R/, $file) {
+    next if /^#/;
+    chomp;
+    next unless s/^(.+)/(?:$1)/;
+    push @file, $_;
+  }
+
+  return @file;
 }
 
 sub list_to_re {
