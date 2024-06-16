@@ -120,6 +120,18 @@
             ]
         },
         {
+            "owner": "check-spelling-perl-nested-quantifiers-in-regex",
+            "severity":"warning",
+            "pattern": [
+                {
+                    "regexp": "(Nested quantifiers in regex; marked by.*?) at (.*) line (\\d+)",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
             "owner": "github-internal-server-error",
             "pattern": [
                 {
