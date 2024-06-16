@@ -8,9 +8,10 @@ use Encode qw/decode_utf8 FB_DEFAULT/;
 use Cwd 'abs_path';
 use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
+use Capture::Tiny ':all';
 
 use Test::More;
-plan tests => 42;
+plan tests => 44;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -255,3 +256,15 @@ $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 is(-e "$output_dir/skipped", undef);
 
 $ENV{INPUT_USE_MAGIC_FILE}='';
+
+sub test_invalid_quantifiers {
+  ($fh, $filename) = tempfile();
+  print $fh ".{1,}*";
+  close $fh;
+  my $output = join "\n", CheckSpelling::UnknownWordSplitter::file_to_list($filename);
+  is($output, '');
+}
+
+my ($stdout, $stderr, @result) = capture { test_invalid_quantifiers };
+is($stderr, "Nested quantifiers in regex; marked by <-- HERE in m/.{1,}* <-- HERE / at $filename line 1 (bad-regular-expression)
+");

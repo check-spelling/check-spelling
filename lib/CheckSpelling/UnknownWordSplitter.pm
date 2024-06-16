@@ -66,11 +66,21 @@ sub file_to_list {
   local $/=undef;
   my $file=<FILE>;
   close FILE;
+  my $line_number = 0;
   for (split /\R/, $file) {
+    ++$line_number;
     next if /^#/;
     chomp;
     next unless s/^(.+)/(?:$1)/;
-    push @file, $_;
+    my $quoted = quote_re($1);
+    if (test_re $quoted) {
+      push @file, $_;
+    } else {
+      my $error = $@;
+      my $home = dirname(__FILE__);
+      $error =~ s/$home.*?\.pm line \d+\./$re line $line_number (bad-regular-expression)/;
+      print STDERR $error;
+    }
   }
 
   return @file;
