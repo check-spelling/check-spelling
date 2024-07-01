@@ -2387,6 +2387,9 @@ run_spell_check() {
     MESSAGE="$check_file_names_warning" \
     check_yaml_key_value "$workflow_path" >> "$more_warnings"
   fi
+  warning_output_sorted="$(mktemp)"
+  sort-file < "$warning_output" > "$warning_output_sorted"
+  mv "$warning_output_sorted" "$warning_output"
   cat "$more_warnings" >> "$warning_output"
   rm "$more_warnings"
   commit_messages="$commit_messages" \
