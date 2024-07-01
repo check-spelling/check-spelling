@@ -165,7 +165,7 @@ sub group_related_words {
   our $disable_word_collating;
   unless ($disable_word_collating) {
     # group related words
-    for my $char (sort keys %letter_map) {
+    for my $char (sort CheckSpelling::Util::number_biased keys %letter_map) {
       for my $plural_key (sort keys(%{$letter_map{$char}})) {
         my $key = stem_word $plural_key;
         next if $key eq $plural_key;
@@ -300,6 +300,8 @@ sub main {
   my @delayed_warnings;
   our %letter_map = ();
 
+  my %file_map = ();
+
   for my $directory (<>) {
     chomp $directory;
     next unless $directory =~ /^(.*)$/;
@@ -317,6 +319,12 @@ sub main {
     next unless open(NAME, '<:utf8', "$directory/name");
     my $file=<NAME>;
     close NAME;
+
+    $file_map{$file} = $directory;
+  }
+
+  for my $file (sort keys %file_map) {
+    my $directory = $file_map{$file};
     if ($timing_report) {
       $start_time = (stat "$directory/name")[9];
     }
