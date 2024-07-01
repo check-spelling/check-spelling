@@ -31,6 +31,7 @@ for my $key (keys %inputs) {
 }
 
 my $action_json_path = $ENV{action_yml_json};
+exit unless defined $action_json_path && -f $action_json_path;
 my $action_json;
 open $action_json_file, '<', $action_json_path;
 {

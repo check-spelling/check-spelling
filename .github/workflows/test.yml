@@ -115,9 +115,14 @@ jobs:
       id: coverage
       if: success() || failure()
       run: |
-        perl `command -v cover` -report html
+        cover_command=`command -v cover`
+        if [ -n "$cover_command" ]; then
+        perl `command -v cover` -ignore /usr/bin/shasum -report html
+        fi
         if [ -e cover_db/coverage.html ]; then
-          t/html-to-markdown.pl cover_db/coverage.html >> "$GITHUB_STEP_SUMMARY"
+          (
+            t/html-to-markdown.pl cover_db/coverage.html
+          ) >> "$GITHUB_STEP_SUMMARY"
         fi
         echo 'ran=1' >> "$GITHUB_OUTPUT"
     - name: store-coverage

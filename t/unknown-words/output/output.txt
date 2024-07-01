@@ -1,0 +1,81 @@
+::add-matcher::WORKSPACE/reporter.json
+Retrieving expect from WORKSPACE/t/unknown-words/config/expect.txt
+Retrieving excludes from WORKSPACE/t/unknown-words/config/excludes.txt
+::group::Retrieving check extra dictionaries
+::endgroup::
+Retrieving only from WORKSPACE/t/unknown-words/config/only.txt
+Retrieving line_forbidden from WORKSPACE/t/unknown-words/config/line_forbidden.patterns
+Checking spelling...
+::group::Spell checking (2) files
+TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/paths-of-checked-files.txt
+t/unknown-words/input/sample.file
+::endgroup::
+::group::Spell check
+t/unknown-words/input/sample.file:1:23 ... 34, Warning - `sample.file` matches a line_forbidden.patterns entry: `\bsample\.file\b`. (forbidden-pattern)
+t/unknown-words/input/sample.file:2:7 ... 11, Warning - `diid` is not a recognized word. (unrecognized-spelling)
+t/unknown-words/input/sample.file:2:12 ... 16, Warning - `youu` is not a recognized word. (unrecognized-spelling)
+t/unknown-words/input/sample.file:2:17 ... 21, Warning - `fixx` is not a recognized word. (unrecognized-spelling)
+t/unknown-words/input/sample.file:2:22 ... 27, Warning - `thiss` is not a recognized word. (unrecognized-spelling)
+::endgroup::
+::group::Compare expect with new output
+::endgroup::
+::group::New output
+::endgroup::
+::group::Unrecognized (4)
+::group::Building summary table
+::endgroup::
+Preparing a comment for push
+
+# @check-spelling-bot Report
+## :red_circle: Please review
+
+### Unrecognized words (4)
+
+diid
+fixx
+thiss
+youu
+
+<details><summary>These words are not needed and should be removed
+</summary>unexpectedlylong=
+</details><p></p>
+
+<details><summary>To accept these unrecognized words as correct and remove the previously acknowledged and now absent words,
+you could run the following commands</summary>
+
+... in a clone of the [https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository
+on the `GITHUB_BRANCH` branch ([:information_source: how do I use this?](
+https://docs.check-spelling.dev/Accepting-Suggestions)):
+
+``` sh
+WORKSPACE/apply.pl 'ARTIFACT_DIRECTORY/artifact.zip'
+
+```
+</details>
+
+<details><summary>Forbidden patterns :no_good: (1)</summary>
+
+In order to address this, you could change the content to not match the forbidden patterns (comments before forbidden patterns may help explain why they're forbidden), add patterns for acceptable instances, or adjust the forbidden patterns themselves.
+
+These forbidden patterns matched content:
+
+#### Should be `sample-file.txt`
+```
+\bsample\.file\b
+```
+
+</details>
+
+<details><summary>Errors (1)</summary>
+
+[:x: Errors](https://docs.check-spelling.dev/Event-descriptions) | Count
+-|-
+[:x: forbidden-pattern](https://docs.check-spelling.dev/Event-descriptions#forbidden-pattern) | 1
+
+See [:x: Event descriptions](https://docs.check-spelling.dev/Event-descriptions) for more information.
+
+</details>
+::endgroup::
+Please review
+::remove-matcher owner=check-spelling::
+::remove-matcher owner=check-spelling-https::
