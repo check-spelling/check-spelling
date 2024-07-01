@@ -2222,7 +2222,7 @@ append_commit_message_to_file_list() {
 }
 
 get_file_list() {
-  xargs -0 -n1 < "$file_list"
+  xargs -0 -n1 < "$file_list" | sort-file
 }
 
 build_file_list() {
