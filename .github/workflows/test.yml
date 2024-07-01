@@ -98,7 +98,18 @@ jobs:
             perl -I. -M$m -e ''
           done
         )
-        perl `command -v cover` -test
+        echo '::group::cover'
+        (
+          echo '<details><summary>cover</summary>'
+          echo
+          echo '```'
+        ) >> "$GITHUB_STEP_SUMMARY"
+        perl `command -v cover` -test 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+        (
+          echo '```'
+          echo '</details>'
+        ) >> "$GITHUB_STEP_SUMMARY"
+        echo ::endgroup::
     - name: calculate coverage
       id: coverage
       if: success() || failure()
