@@ -3222,7 +3222,7 @@ generate_sample_commit_help() {
   if [ "$current_branch" = "HEAD" ]; then
     current_branch="$(git rev-parse HEAD)"
   fi
-  git branch -f update-check-spelling-metadata "$remote_sha"
+  git branch -f update-check-spelling-metadata "${remote_sha:-HEAD}"
   git checkout update-check-spelling-metadata >/dev/null 2>/dev/null
   "$spellchecker/apply.pl" "$apply_archive"
   sender_login="$(jq -r '.sender.login // "check-spelling-bot"' "$GITHUB_EVENT_PATH")"
@@ -3254,6 +3254,7 @@ generate_sample_commit_help() {
   if [ "$git_stashed" != "$git_stashed_now" ]; then
     git stash pop >/dev/null 2>/dev/null
   fi
+  git branch -D update-check-spelling-metadata >/dev/null 2>/dev/null
   git remote set-url --delete --push origin .
 }
 
