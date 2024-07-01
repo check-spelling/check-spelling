@@ -1,0 +1,15 @@
+^\.github/
+^wrappers/
+\.aff$
+\.dic$
+\.expected$
+\.gitignore$
+\.json$
+\.list$
+\.md$
+\.patterns$
+(?i)\.pl$
+\.pm$
+\.sh$
+\.t$
+\.txt$

@@ -1,0 +1,5 @@
+t/unknown-words/input/sample.file:1:23 ... 34, Warning - `sample.file` matches a line_forbidden.patterns entry: `\bsample\.file\b`. (forbidden-pattern)
+t/unknown-words/input/sample.file:2:7 ... 11, Warning - `diid` is not a recognized word. (unrecognized-spelling)
+t/unknown-words/input/sample.file:2:12 ... 16, Warning - `youu` is not a recognized word. (unrecognized-spelling)
+t/unknown-words/input/sample.file:2:17 ... 21, Warning - `fixx` is not a recognized word. (unrecognized-spelling)
+t/unknown-words/input/sample.file:2:22 ... 27, Warning - `thiss` is not a recognized word. (unrecognized-spelling)
