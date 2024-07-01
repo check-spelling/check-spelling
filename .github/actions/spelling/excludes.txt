@@ -4,5 +4,5 @@ ignore$
 \.png$
 \.t$
 ^LICENSE\.txt$
-^t/with-dictionaries/
+^t/.*/
 ^\.github/
