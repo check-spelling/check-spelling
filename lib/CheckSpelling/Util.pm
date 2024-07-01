@@ -28,6 +28,38 @@ sub case_biased :prototype($$) ($a, $b) {
   lc($a) cmp lc($b) || $a cmp $b;
 }
 
+sub number_biased :prototype($$) ($a, $b) {
+  my ($aUnchecked, $bUnchecked) = ($a, $b);
+  while ($aUnchecked ne '' && $bUnchecked ne '') {
+    my ($aNumber, $bNumber);
+    if ($aUnchecked =~ m/^(\d+)(.*)/) {
+      $aNumber = $1;
+      $aUnchecked = $2;
+    }
+    if ($bUnchecked =~ m/^(\d+)(.*)/) {
+      $bNumber = $1;
+      $bUnchecked = $2;
+    }
+    if (defined $aNumber && defined $bNumber) {
+      return $aNumber <=> $bNumber if ($aNumber != $bNumber);
+    } else {
+      return $aNumber cmp $bUnchecked if defined $aNumber;
+      return $aUnchecked cmp $bNumber if defined $bNumber;
+      my ($aLetters, $bLetters);
+      if ($aUnchecked =~ m/^(\D+)(.*)/) {
+        $aLetters = $1;
+        $aUnchecked = $2;
+      }
+      if ($bUnchecked =~ m/^(\D+)(.*)/) {
+        $bLetters = $1;
+        $bUnchecked = $2;
+      }
+      return case_biased($aLetters, $bLetters) if (defined $aLetters && defined $bLetters && !($aLetters eq $bLetters));
+    }
+  }
+  return $aUnchecked cmp $bUnchecked;
+}
+
 sub list_with_terminator {
   my ($terminator, @list) = @_;
   return join "", map { "$_$terminator" } @list;
