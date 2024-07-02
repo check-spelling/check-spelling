@@ -43,6 +43,7 @@ jobs:
       shell: bash
       env:
         required_perl_modules: ${{ steps.perl-config.outputs.perl-modules }}
+        GH_TOKEN: ${{ github.token }}
       run: |
         extra_bin=~/.extra-bin
         mkdir -p "$extra_bin"
