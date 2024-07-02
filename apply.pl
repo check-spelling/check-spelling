@@ -57,6 +57,7 @@ sub download_with_curl {
     my ($url, $dest, $flags) = @_;
     $flags = '-fsL' unless defined $flags;
     system('curl',
+        '--connect-timeout', 3,
         '-A', $ua,
         $flags,
         '-o', $dest,
