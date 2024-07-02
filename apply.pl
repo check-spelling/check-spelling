@@ -186,6 +186,7 @@ sub gh_is_happy {
 sub tools_are_ready {
     my ($program) = @_;
     unless (gh_is_happy($program)) {
+        $! = 1;
         die "$program requires a happy gh, please try 'gh auth login'\n";
     }
 }
