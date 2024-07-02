@@ -357,6 +357,10 @@ sub get_artifacts {
         }
         close $fh;
 
+        if ($gh_err_text =~ /error connecting to / && $gh_err_text =~ /check your internet connection/) {
+            print "$program: Internet access may be limited. Check your connection (this often happens with lousy cable internet service providers where their CG-NAT or whatever strands the modem).\n\n$gh_err_text";
+            exit 5;
+        }
         if ($gh_err_text =~ /no valid artifacts found to download/) {
             my $expired_json = join '', run_pipe(
                 'gh', 'api',
