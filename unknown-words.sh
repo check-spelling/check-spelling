@@ -3232,7 +3232,7 @@ generate_sample_commit_help() {
   get_github_user_and_email "$sender_login"
   git_commit_out=$(mktemp)
   git_commit_err=$(mktemp)
-  created_at="$(date)" git_commit "check-spelling run ($GITHUB_EVENT_NAME) for $remote_ref" > "$git_commit_out" 2> "$git_commit_err" ||
+  created_at="$(date)" git_commit "check-spelling run ($GITHUB_EVENT_NAME) for ${remote_ref:-HEAD}" > "$git_commit_out" 2> "$git_commit_err" ||
     git_commit_status=$?
   if [ -z "$git_commit_status" ]; then
     git_apply_commit="$(mktemp)"
