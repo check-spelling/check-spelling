@@ -181,6 +181,13 @@ sub die_with_message {
         print "\n$gh_err_text";
         exit 6;
     }
+    if ($gh_err_text =~ /dial unix .*: connect: .*/) {
+        print "$program: Unix http socket is not working.\n";
+        my $gh_http_unix_socket = `gh config get http_unix_socket`;
+        print "  http_unix_socket: $gh_http_unix_socket\n";
+        print "\n$gh_err_text";
+        exit 7;
+    }
 }
 
 sub gh_is_happy_internal {

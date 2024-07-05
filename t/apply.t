@@ -10,7 +10,7 @@ use File::Basename;
 use Test::More;
 use Capture::Tiny ':all';
 
-plan tests => 10;
+plan tests => 14;
 
 my $spellchecker = dirname(dirname(abs_path(__FILE__)));
 
@@ -45,6 +45,7 @@ is($result, 1, 'apply.pl (exit code) expired');
 my $gh_token = $ENV{GH_TOKEN};
 delete $ENV{GH_TOKEN};
 my $real_home = $ENV{HOME};
+my $real_http_socket = `gh config get http_unix_socket`;
 $ENV{HOME} = $sandbox;
 ($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
 
@@ -53,7 +54,21 @@ like($stderr, qr{$spellchecker/apply.pl requires a happy gh, please try 'gh auth
 is($result, 1, 'apply.pl (exit code) not authenticated');
 $ENV{GH_TOKEN} = $gh_token;
 
+if (-d "$real_home/.config/gh/") {
+  mkdir "$sandbox/.config";
+  `rsync -a '$real_home/.config/gh/' '$sandbox/.config/gh/'`;
+}
+
+`gh config set http_unix_socket /dev/null`;
+($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
+
+like($stdout, qr{$spellchecker/apply.pl: Unix http socket is not working\.}, 'apply.pl (stdout) bad_socket');
+like($stdout, qr{http_unix_socket: /dev/null}, 'apply.pl (stdout) bad_socket');
+is($stderr, '', 'apply.pl (stderr) bad_socket');
+is($result, 7, 'apply.pl (exit code) bad_socket');
 $ENV{HOME} = $real_home;
+
+`gh config set http_unix_socket '$real_http_socket'`;
 
 $ENV{https_proxy}='http://localhost:9123';
 ($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
