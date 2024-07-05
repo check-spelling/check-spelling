@@ -1140,9 +1140,9 @@ define_variables() {
   patterns="$splitter_configuration/patterns.txt"
   forbidden_path="$splitter_configuration/forbidden.txt"
   candidates_path="$splitter_configuration/candidates.txt"
-  excludes="$spellchecker/excludes.txt"
+  excludes=${excludes:-$(mktemp)}
   excludes_path="$temp/excludes.txt"
-  only="$spellchecker/only.txt"
+  only=${only:-$(mktemp)}
   only_path="$temp/only.txt"
   dictionary_path="$temp/dictionary.txt"
   allow_path="$temp/allow.txt"
