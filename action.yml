@@ -384,7 +384,7 @@ runs:
       shell: bash
     - name: checkout
       id: checkout-replacement
-      if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && env.replace_v3_actions_checkout
+      if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && env.replace_v4_actions_checkout
       uses: check-spelling/actions-checkout@v4
       with:
         path: ${{ inputs.experimental_path }}
