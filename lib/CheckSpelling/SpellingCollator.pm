@@ -409,10 +409,8 @@ sub main {
         # || ($unrecognized > $words / 2)
     ) {
       unless ($disable_noisy_file) {
-        if ($file eq $file_list) {
-          push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping file names because there seems to be more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). (noisy-file-list)\n"
-        } else {
-          push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because there seems to be more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). (noisy-file)\n";
+        push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because there seems to be more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). (noisy-file)\n";
+        if ($file ne $file_list) {
           print SHOULD_EXCLUDE "$file\n";
         }
         push @directories, $directory;
