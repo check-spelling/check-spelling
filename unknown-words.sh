@@ -2380,7 +2380,15 @@ run_spell_check() {
     "$word_collator" |\
   "$strip_word_collator_suffix" > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
-  check_file_names_warning="$(perl -i -e 'while (<>) { if (/\(noisy-file-list\)$/) { s/.*, Warning/Warning/; print STDERR; } else { print; } }' "$warning_output")"
+  check_file_names_warning="$(check_file_names="$check_file_names" perl -i -e '
+    while (<>) {
+      if (s/^$ENV{check_file_names}:\d+:\d+ \.\.\. \d+, (Warning - Skipping) `$ENV{check_file_names}`(.*)(\))/$1 file names$2-list$3/) {
+        print STDERR;
+      } else {
+        print;
+      }
+    }' "$warning_output" 2>&1
+  )"
   if [ -n "$check_file_names_warning" ]; then
     KEY=check_file_names \
     VALUE="$INPUT_CHECK_FILE_NAMES" \
