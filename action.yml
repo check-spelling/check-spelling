@@ -322,6 +322,10 @@ inputs:
     description: "Post comments for warnings and notices"
     required: false
     default: false
+  word-splitter-timeout:
+    description: "Per file spell checking time limit"
+    required: false
+    default: 30
 
 outputs:
   unknown_words:
