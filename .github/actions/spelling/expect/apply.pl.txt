@@ -1,3 +1,4 @@
 catfile
+gensym
 pathext
 SYSTEMROOT
