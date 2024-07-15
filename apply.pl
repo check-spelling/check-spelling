@@ -362,16 +362,16 @@ sub get_artifacts {
     if ($suffix) {
         $artifact_name .= "-$suffix";
     }
-    ($gh_err_text, $ret) = capture_merged_system(
+    while (1) {
+        ($gh_err_text, $ret) = capture_merged_system(
             'gh', 'run', 'download',
             '-D', $artifact_dir,
             '-R', $repo,
             $run,
             '-n', $artifact_name
         );
-    return glob("$artifact_dir/artifact*.zip") unless ($ret >> 8);
+        return glob("$artifact_dir/artifact*.zip") unless ($ret >> 8);
 
-    if (1) {
         die_with_message($gh_err_text);
         if ($gh_err_text =~ /no valid artifacts found to download/) {
             my $expired_json = run_pipe(
@@ -404,9 +404,48 @@ sub get_artifacts {
             print "If you don't think anyone deleted the artifact, please file a bug to https://github.com/check-spelling/check-spelling/issues/new including as much information about how you triggered this error as possible.\n";
             exit 3;
         }
-        print "$program: Unknown error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
-        print $gh_err_text;
-        exit 4;
+        unless ($gh_err_text =~ /HTTP 403: API rate limit exceeded for .*?./) {
+            print "$program: Unknown error, please file a bug to https://github.com/check-spelling/check-spelling/issues/new\n";
+            print $gh_err_text;
+            exit 4;
+        }
+        my $request_id = $1 if ($gh_err_text =~ /\brequest ID\s+(\S+)/);
+        my $timestamp = $1 if ($gh_err_text =~ /\btimestamp\s+(.*? UTC)/);
+        my $has_gh_token = defined $ENV{GH_TOKEN} || defined $ENV{GITHUB_TOKEN};
+        my $meta_url = 'https://api.github.com/meta';
+        while (1) {
+            my @curl_args = qw(curl);
+            unless ($has_gh_token) {
+                my $gh_token = `gh auth token`;
+                push @curl_args, '-u', "token:$gh_token" unless $?;
+            }
+            push @curl_args, '-I', $meta_url;
+            my ($curl_stdout, $curl_stderr, $curl_result);
+            ($curl_stdout, $curl_stderr, $curl_result) = capture_system(@curl_args);
+            my $delay = 1;
+            if ($curl_stdout =~ m{^HTTP/\S+\s+200}) {
+                if ($curl_stdout =~ m{^x-ratelimit-remaining:\s+(\d+)$}m) {
+                    my $ratelimit_remaining = $1;
+                    last if ($ratelimit_remaining > 10);
+
+                    $delay = 5;
+                    print STDERR "Sleeping for $delay seconds because $ratelimit_remaining is close to 0\n";
+                } else {
+                    print STDERR "Couldn't find x-ratelimit-remaining, will sleep for $delay\n";
+                }
+            } elsif ($curl_stdout =~ m{^HTTP/\S+\s+403}) {
+                if ($curl_stdout =~ /^retry-after:\s+(\d+)/m) {
+                    $delay = $1;
+                    print STDERR "Sleeping for $delay seconds (presumably due to API rate limit)\n";
+                } else {
+                    print STDERR "Couldn't find retry-after, will sleep for $delay\n";
+                }
+            } else {
+                my $response = $1 if $curl_stdout =~ m{^(HTTP/\S+)};
+                print STDERR "Unexpected response ($response) from $meta_url; sleeping for $delay\n";
+            }
+            sleep $delay;
+        }
     }
 }
 

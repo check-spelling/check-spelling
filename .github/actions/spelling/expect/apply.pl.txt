@@ -2,4 +2,5 @@ catfile
 gensym
 pathext
 proxyconnect
+ratelimit
 SYSTEMROOT
