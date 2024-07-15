@@ -1,6 +1,8 @@
 #!/usr/bin/env perl
 ":" || q@<<"=END_OF_PERL"@;
 
+use Symbol 'gensym';
+use IPC::Open3;
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
 use File::Spec::Functions qw(catfile path);
@@ -84,26 +86,39 @@ sub strip_comments {
     return $filename;
 }
 
-sub run_program_capture_output {
-    my ($output, $error, @arguments) = @_;
-    $ENV{'OUTPUT'} = $output;
-    $ENV{'ERROR'} = $error;
-    system('/bin/sh', $0, @arguments);
+sub capture_system {
+    my @args = @_;
+    my $pid = open3(my $child_in, my $child_out, my $child_err = gensym, @args);
+    my (@err, @out);
+    while (my $output = <$child_out>) {
+        push @out, $output;
+    }
+    while (my $error = <$child_err>) {
+        push @err, $error;
+    }
+    waitpid( $pid, 0 );
+    my $child_exit_status = $?;
+    my $output_joined = join '', @out;
+    my $error_joined = join '', @err;
+    return ($output_joined, $error_joined, $child_exit_status);
 }
 
-sub run_and_swallow_output {
-    run_program_capture_output('/dev/null', '/dev/null', @_);
+sub capture_merged_system {
+    my ($output_joined, $error_joined, $child_exit_status) = capture_system(@_);
+    my $joiner = ($output_joined ne '') ? "\n" : '';
+    return ($output_joined.$joiner.$error_joined, $child_exit_status);
 }
 
 sub compare_files {
     my ($one, $two) = @_;
     my $one_stripped = strip_comments($one);
     my $two_stripped = strip_comments($two);
-    run_and_swallow_output(
-        'diff',
-        '-qwB',
-        $one_stripped, $two_stripped
-    );
+    my $exit;
+    (undef, undef, $exit) = capture_system(
+            'diff',
+            '-qwB',
+            $one_stripped, $two_stripped
+        );
     if ($? == -1) {
         print "could not compare '$one' and '$two': $!\n";
         return 0;
@@ -150,22 +165,20 @@ sub check_current_script {
 }
 
 sub gh_is_happy_internal {
-    my ($gh_status) = @_;
-    run_program_capture_output($gh_status, $gh_status, 'gh', 'auth', 'status');
-    return $?;
+    my ($output, $exit) = capture_merged_system(qw(gh auth status));
+    return ($exit, $output);
 }
 
 sub gh_is_happy {
     my ($program) = @_;
-    my $gh_status = tempfile_name();
-    my $gh_auth_status = gh_is_happy_internal($gh_status);
+    my ($gh_auth_status, $gh_status_lines) = gh_is_happy_internal();
     return 1 if $gh_auth_status == 0;
     my @problematic_env_variables;
     for my $variable (qw(GH_TOKEN GITHUB_TOKEN GITHUB_ACTIONS CI)) {
         if (defined $ENV{$variable}) {
             delete $ENV{$variable};
             push @problematic_env_variables, $variable;
-            $gh_auth_status = gh_is_happy_internal($gh_status);
+            ($gh_auth_status, $gh_status_lines) = gh_is_happy_internal();
             return 1 if $gh_auth_status == 0;
 
             print STDERR "$0: gh program did not like these environment variables: ".join(', ', @problematic_env_variables)." -- consider unsetting them.\n";
@@ -175,9 +188,7 @@ sub gh_is_happy {
 
     if ($gh_auth_status != 0) {
         if ($gh_auth_status >> 8) {
-            open my $fh, '<', $gh_status;
-            print while (<$fh>);
-            close $fh;
+            print $gh_status_lines;
             return 0;
         }
     }
@@ -197,15 +208,9 @@ sub maybe_unlink {
 }
 
 sub run_pipe {
-    my $out = tempfile_name();
-    run_program_capture_output($out, '/dev/null', @_);
-    my @lines;
-    open my $fh, '<', $out;
-    while (<$fh>) {
-        push @lines, $_;
-    }
-    close $fh;
-    return @lines;
+    my @args = @_;
+    my ($out, undef, $exit) = capture_system(@args);
+    return $out;
 }
 
 sub unzip_pipe {
@@ -217,26 +222,23 @@ sub unzip_pipe {
     );
 }
 
-sub unzip_pipe_string {
-    return join '', unzip_pipe(@_);
-}
-
 sub retrieve_spell_check_this {
     my ($artifact, $config_ref) = @_;
-    my $spell_check_this_config = unzip_pipe_string($artifact, 'spell_check_this.json');
+    my $spell_check_this_config = unzip_pipe($artifact, 'spell_check_this.json');
     return unless $spell_check_this_config =~ /\{.*\}/s;
     my %config;
     eval { %config = %{decode_json $spell_check_this_config}; } || die "decode_json failed in retrieve_spell_check_this with '$spell_check_this_config'";
     my ($repo, $branch, $destination, $path) = ($config{url}, $config{branch}, $config{config}, $config{path});
     my $spell_check_this_dir = tempdir();
-    run_and_swallow_output(
-        'git', 'clone',
-        '--depth', '1',
-        '--no-tags',
-        $repo,
-        '--branch', $branch,
-        $spell_check_this_dir
-    );
+    my $exit;
+    (undef, undef, $exit) = capture_system(
+            'git', 'clone',
+            '--depth', '1',
+            '--no-tags',
+            $repo,
+            '--branch', $branch,
+            $spell_check_this_dir
+        );
     if ($?) {
         die "git clone $repo#$branch failed";
     }
@@ -254,9 +256,9 @@ sub add_to_excludes {
     my ($artifact, $config_ref) = @_;
     my %config = %{$config_ref};
     my $excludes = $config{"excludes_file"};
-    my $should_exclude_patterns = unzip_pipe_string($artifact, 'should_exclude.patterns');
+    my $should_exclude_patterns = unzip_pipe($artifact, 'should_exclude.patterns');
     unless ($should_exclude_patterns =~ /\w/) {
-        $should_exclude_patterns = unzip_pipe_string($artifact, 'should_exclude.txt');
+        $should_exclude_patterns = unzip_pipe($artifact, 'should_exclude.txt');
         return unless $should_exclude_patterns =~ /\w/;
         $should_exclude_patterns =~ s{^(.*)}{^\\Q$1\\E\$}gm;
     }
@@ -278,7 +280,7 @@ sub add_to_excludes {
 
 sub remove_stale {
     my ($artifact, $config_ref) = @_;
-    my @stale = split /\s+/s, unzip_pipe_string($artifact, 'remove_words.txt');
+    my @stale = split /\s+/s, unzip_pipe($artifact, 'remove_words.txt');
     return unless @stale;
     my %config = %{$config_ref};
     my @expect_files = @{$config{"expect_files"}};
@@ -308,7 +310,7 @@ sub remove_stale {
 
 sub add_expect {
     my ($artifact, $config_ref) = @_;
-    my @add = unzip_pipe($artifact, 'tokens.txt');
+    my @add = split /\s+/s, (unzip_pipe($artifact, 'tokens.txt'));
     return unless @add;
     my %config = %{$config_ref};
     my $new_expect_file = $config{"new_expect_file"};
@@ -316,7 +318,8 @@ sub add_expect {
     make_path (dirname($new_expect_file));
     if (-s $new_expect_file) {
         open FILE, q{<}, $new_expect_file;
-        @words = <FILE>;
+        local $/ = undef;
+        @words = split /\s+/, <FILE>;
         close FILE;
     }
     my %items;
@@ -325,7 +328,7 @@ sub add_expect {
     @words = sort case_biased keys %items;
     open FILE, q{>}, $new_expect_file;
     for my $word (@words) {
-        print FILE "$word" if $word =~ /\S/;
+        print FILE "$word\n" if $word =~ /\S/;
     };
     close FILE;
     system("git", "add", $new_expect_file);
@@ -340,29 +343,22 @@ sub get_artifacts {
     if ($suffix) {
         $artifact_name .= "-$suffix";
     }
-    my $out = tempfile_name();
+    ($gh_err_text, $ret) = capture_merged_system(
+            'gh', 'run', 'download',
+            '-D', $artifact_dir,
+            '-R', $repo,
+            $run,
+            '-n', $artifact_name
+        );
+    return glob("$artifact_dir/artifact*.zip") unless ($ret >> 8);
 
-    run_program_capture_output($out, $out,
-        'gh', 'run', 'download',
-        '-D', $artifact_dir,
-        '-R', $repo,
-        $run,
-        '-n', $artifact_name
-    );
-    my $ret = $?;
-    if (($ret >> 8)) {
-        open my $fh, '<', $out;
-        while (<$fh>) {
-            $gh_err_text .= $_;
-        }
-        close $fh;
-
+    if (1) {
         if ($gh_err_text =~ /error connecting to / && $gh_err_text =~ /check your internet connection/) {
             print "$program: Internet access may be limited. Check your connection (this often happens with lousy cable internet service providers where their CG-NAT or whatever strands the modem).\n\n$gh_err_text";
             exit 5;
         }
         if ($gh_err_text =~ /no valid artifacts found to download/) {
-            my $expired_json = join '', run_pipe(
+            my $expired_json = run_pipe(
                 'gh', 'api',
                 "/repos/$repo/actions/runs/$run/artifacts",
                 '-q',
@@ -396,14 +392,13 @@ sub get_artifacts {
         print $gh_err_text;
         exit 4;
     }
-    return glob("$artifact_dir/artifact*.zip");
 }
 
 sub update_repository {
     my ($artifact) = @_;
     die if $artifact =~ /'/;
     our $program;
-    my $apply = unzip_pipe_string($artifact, 'apply.json');
+    my $apply = unzip_pipe($artifact, 'apply.json');
     unless ($apply =~ /\{.*\}/s) {
         print STDERR "$program: Could not retrieve valid apply.json from artifact\n";
         $apply = '{
@@ -417,7 +412,7 @@ sub update_repository {
     eval { $config_ref = decode_json($apply); } ||
         die "$program: decode_json failed in update_repository with '$apply'";
 
-    my $git_repo_root = join '', run_pipe('git', 'rev-parse', '--show-toplevel');
+    my $git_repo_root = run_pipe('git', 'rev-parse', '--show-toplevel');
     chomp $git_repo_root;
     die "$program: Could not find git repo root..." unless $git_repo_root =~ /\w/;
     chdir $git_repo_root;
