@@ -27,7 +27,8 @@ function request() {
         $code = $_ENV['CODE'];
     }
     $d = getenv('DELAY') ?: 2;
-    $c = "/tmp/canary.$code";
+    $canary_home = getenv('CANARY_HOME') ?: '/tmp';
+    $c = "$canary_home/canary.$code";
     if (file_exists($c)) {
         clearstatcache();
         $last=filemtime($c);
