@@ -1731,7 +1731,7 @@ get_hunspell_stem() {
 }
 
 get_extra_dictionaries() {
-  dictionaries_dir="$spellchecker/dictionaries/$1"
+  dictionaries_dir="${dictionaries_base_dir:-"$spellchecker/dictionaries"}/$1"
   extra_dictionaries="$(echo "$2" | words_to_lines)"
   dictionaries_canary="$3"
   mkdir -p "$dictionaries_dir"
