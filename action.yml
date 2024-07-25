@@ -295,6 +295,10 @@ inputs:
     description: 'Report processing time for files'
     required: false
     default: ""
+  unrecognized-words-before-collapsing:
+    description: 'Control how many unrecognized words can be displayed without wrapping in a collapsed widget'
+    required: false
+    default: 10
 
 outputs:
   unknown_words:
