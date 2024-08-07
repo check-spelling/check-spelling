@@ -7,3 +7,4 @@ local/
 /CheckSpelling/
 MYMETA.*
 t/unknown-words/run/
+dictionaries
