@@ -179,10 +179,10 @@ sub gh_is_happy {
             delete $ENV{$variable};
             push @problematic_env_variables, $variable;
             ($gh_auth_status, $gh_status_lines) = gh_is_happy_internal();
-            return 1 if $gh_auth_status == 0;
-
-            print STDERR "$0: gh program did not like these environment variables: ".join(', ', @problematic_env_variables)." -- consider unsetting them.\n";
-            return 1;
+            if ($gh_auth_status == 0) {
+                print STDERR "$0: gh program did not like these environment variables: ".join(', ', @problematic_env_variables)." -- consider unsetting them.\n";
+                return 1;
+            }
         }
     }
 
