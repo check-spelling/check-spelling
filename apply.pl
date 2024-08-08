@@ -332,7 +332,8 @@ sub add_expect {
 }
 
 sub get_artifacts {
-    my ($program, $repo, $run, $suffix) = @_;
+    my ($repo, $run, $suffix) = @_;
+    our $program;
     my $artifact_dir = tempdir(CLEANUP => 1);
     my $gh_err_text;
     my $artifact_name = 'check-spelling-comment';
@@ -395,8 +396,9 @@ sub get_artifacts {
 }
 
 sub update_repository {
-    my ($program, $artifact) = @_;
+    my ($artifact) = @_;
     die if $artifact =~ /'/;
+    our $program;
     my $apply = unzip_pipe_string($artifact, 'apply.json');
     unless ($apply =~ /\{.*\}/s) {
         print STDERR "$program: Could not retrieve valid apply.json from artifact\n";
@@ -424,7 +426,9 @@ sub update_repository {
 }
 
 sub main {
-    my ($program, $bash_script, $first, $run) = @_;
+    our $program;
+    my ($bash_script, $first, $run);
+    ($program, $bash_script, $first, $run) = @_;
     my $syntax = "$program <RUN_URL | OWNER/REPO RUN | ARTIFACT.zip>";
     # Stages
     # - 1 check for tools basic
@@ -474,12 +478,12 @@ sub main {
         die $syntax unless defined $repo && defined $run;
         # - 3 check for tool readiness (is `gh` working)
         tools_are_ready($program);
-        @artifacts = get_artifacts($program, $repo, $run, $suffix);
+        @artifacts = get_artifacts($repo, $run, $suffix);
     }
 
     # - 5 do work
     for my $artifact (@artifacts) {
-        update_repository($program, $artifact);
+        update_repository($artifact);
     }
 }
 
