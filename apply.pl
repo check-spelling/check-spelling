@@ -174,7 +174,9 @@ sub die_with_message {
 }
 
 sub gh_is_happy_internal {
-    my ($output, $exit) = capture_merged_system(qw(gh auth status));
+    my ($output, $exit) = capture_merged_system(qw(gh api /installation/repositories));
+    return ($exit, $output) if $exit == 0;
+    ($output, $exit) = capture_merged_system(qw(gh api /user));
     return ($exit, $output);
 }
 
@@ -205,7 +207,8 @@ sub tools_are_ready {
     my ($program) = @_;
     unless (gh_is_happy($program)) {
         $! = 1;
-        die "$program requires a happy gh, please try 'gh auth login'\n";
+        my $or_gh_token = (defined $ENV{CI} && $ENV{CI}) ? ' or set the GH_TOKEN environment variable' : '';
+        die "$program requires a happy gh, please try 'gh auth login'$or_gh_token\n";
     }
 }
 
