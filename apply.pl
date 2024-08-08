@@ -161,7 +161,7 @@ sub gh_is_happy {
     my $gh_auth_status = gh_is_happy_internal($gh_status);
     return 1 if $gh_auth_status == 0;
     my @problematic_env_variables;
-    for my $variable (qw(GH_TOKEN GITHUB_TOKEN)) {
+    for my $variable (qw(GH_TOKEN GITHUB_TOKEN GITHUB_ACTIONS CI)) {
         if (defined $ENV{$variable}) {
             delete $ENV{$variable};
             push @problematic_env_variables, $variable;
