@@ -12,7 +12,7 @@ use Capture::Tiny ':all';
 
 plan tests => 14;
 
-my $spellchecker = dirname(dirname(abs_path(__FILE__)));
+our $spellchecker = dirname(dirname(abs_path(__FILE__)));
 
 my $sandbox = tempdir();
 chdir($sandbox);
@@ -28,6 +28,9 @@ sub run_apply {
   my ($stdout, $stderr, @results) = capture {
     system(@args);
   };
+  our $spellchecker;
+  $stdout =~ s!$spellchecker/apply\.pl!SPELLCHECKER/apply.pl!g;
+  $stderr =~ s!$spellchecker/apply\.pl!SPELLCHECKER/apply.pl!g;
   $stdout =~ s!Current apply script differs from '.*?/apply\.pl' \(locally downloaded to \`.*`\)\. You may wish to upgrade\.\n!!;
 
   my $result = $results[0] >> 8;
@@ -37,7 +40,7 @@ sub run_apply {
 
 my $sandbox_name = basename $sandbox;
 my $temp_name = basename $temp;
-is($stdout, "$spellchecker/apply.pl: GitHub Run Artifact expired. You will need to trigger a new run.
+is($stdout, "SPELLCHECKER/apply.pl: GitHub Run Artifact expired. You will need to trigger a new run.
 ", 'apply.pl (stdout) expired');
 is($stderr, '', 'apply.pl (stderr) expired');
 is($result, 1, 'apply.pl (exit code) expired');
@@ -50,7 +53,7 @@ $ENV{HOME} = $sandbox;
 ($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
 
 like($stdout, qr{gh auth login|set the GH_TOKEN environment variable}, 'apply.pl (stdout) not authenticated');
-like($stderr, qr{$spellchecker/apply.pl requires a happy gh, please try 'gh auth login'}, 'apply.pl (stderr) not authenticated');
+like($stderr, qr{SPELLCHECKER/apply.pl requires a happy gh, please try 'gh auth login'}, 'apply.pl (stderr) not authenticated');
 is($result, 1, 'apply.pl (exit code) not authenticated');
 $ENV{GH_TOKEN} = $gh_token;
 
@@ -62,7 +65,7 @@ if (-d "$real_home/.config/gh/") {
 `gh config set http_unix_socket /dev/null`;
 ($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
 
-like($stdout, qr{$spellchecker/apply.pl: Unix http socket is not working\.}, 'apply.pl (stdout) bad_socket');
+like($stdout, qr{SPELLCHECKER/apply.pl: Unix http socket is not working\.}, 'apply.pl (stdout) bad_socket');
 like($stdout, qr{http_unix_socket: /dev/null}, 'apply.pl (stdout) bad_socket');
 is($stderr, '', 'apply.pl (stderr) bad_socket');
 is($result, 7, 'apply.pl (exit code) bad_socket');
@@ -73,7 +76,7 @@ $ENV{HOME} = $real_home;
 $ENV{https_proxy}='http://localhost:9123';
 ($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
 
-like($stdout, qr{$spellchecker/apply.pl: Proxy is not accepting connections\.}, 'apply.pl (stdout) bad_proxy');
+like($stdout, qr{SPELLCHECKER/apply.pl: Proxy is not accepting connections\.}, 'apply.pl (stdout) bad_proxy');
 like($stdout, qr{https_proxy: 'http://localhost:9123'}, 'apply.pl (stdout) bad_proxy');
 is($stderr, '', 'apply.pl (stderr) bad_proxy');
 is($result, 6, 'apply.pl (exit code) bad_proxy');
