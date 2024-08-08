@@ -164,6 +164,15 @@ sub check_current_script {
     }
 }
 
+sub die_with_message {
+    our $program;
+    my ($gh_err_text) = @_;
+    if ($gh_err_text =~ /error connecting to / && $gh_err_text =~ /check your internet connection/) {
+        print "$program: Internet access may be limited. Check your connection (this often happens with lousy cable internet service providers where their CG-NAT or whatever strands the modem).\n\n$gh_err_text";
+        exit 5;
+    }
+}
+
 sub gh_is_happy_internal {
     my ($output, $exit) = capture_merged_system(qw(gh auth status));
     return ($exit, $output);
@@ -173,6 +182,8 @@ sub gh_is_happy {
     my ($program) = @_;
     my ($gh_auth_status, $gh_status_lines) = gh_is_happy_internal();
     return 1 if $gh_auth_status == 0;
+    die_with_message($gh_status_lines);
+
     my @problematic_env_variables;
     for my $variable (qw(GH_TOKEN GITHUB_TOKEN GITHUB_ACTIONS CI)) {
         if (defined $ENV{$variable}) {
@@ -186,12 +197,7 @@ sub gh_is_happy {
         }
     }
 
-    if ($gh_auth_status != 0) {
-        if ($gh_auth_status >> 8) {
-            print $gh_status_lines;
-            return 0;
-        }
-    }
+    print $gh_status_lines;
     return 0;
 }
 
@@ -353,10 +359,7 @@ sub get_artifacts {
     return glob("$artifact_dir/artifact*.zip") unless ($ret >> 8);
 
     if (1) {
-        if ($gh_err_text =~ /error connecting to / && $gh_err_text =~ /check your internet connection/) {
-            print "$program: Internet access may be limited. Check your connection (this often happens with lousy cable internet service providers where their CG-NAT or whatever strands the modem).\n\n$gh_err_text";
-            exit 5;
-        }
+        die_with_message($gh_err_text);
         if ($gh_err_text =~ /no valid artifacts found to download/) {
             my $expired_json = run_pipe(
                 'gh', 'api',
