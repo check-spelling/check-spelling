@@ -288,14 +288,16 @@ sub add_to_excludes {
         return unless $should_exclude_patterns =~ /\w/;
         $should_exclude_patterns =~ s{^(.*)}{^\\Q$1\\E\$}gm;
     }
-    open EXCLUDES, '<', $excludes;
     my %excludes;
-    while (<EXCLUDES>) {
-        chomp;
-        next unless /./;
-        $excludes{$_."\n"} = 1;
+    if (-f $excludes) {
+        open EXCLUDES, '<', $excludes;
+        while (<EXCLUDES>) {
+            chomp;
+            next unless /./;
+            $excludes{$_."\n"} = 1;
+        }
+        close EXCLUDES;
     }
-    close EXCLUDES;
     for $pattern (split /\n/, $should_exclude_patterns) {
         next unless $pattern =~ /./;
         $excludes{$pattern."\n"} = 1;
