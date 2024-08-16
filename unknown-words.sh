@@ -2743,6 +2743,9 @@ spelling_body() {
         action_ref_hint=" for ${b}uses: ${action_ref}${b}"
         inline_with_hint=" in its ${b}with${b}"
       fi
+      if [ -z "$workflow_path" ]; then
+        creating_a_workflow_and=' creating a workflow (e.g. from https://github.com/check-spelling/spell-check-this/blob/main/.github/workflows/spelling.yml (`https://raw.githubusercontent.com/check-spelling/spell-check-this/main/.github/workflows/spelling.yml`)) and'
+      fi
       if [ -n "$INPUT_EXTRA_DICTIONARIES" ]; then
         extra_dictionaries_hint=' to `extra_dictionaries`'
       else
@@ -2759,7 +2762,7 @@ spelling_body() {
         -|-|-|-
         $(perl -pe 's/ \((\d+)\) covers (\d+) of them \((\d+) uniquely\)/|$1|$2|$3|/ || s/ \((\d+)\) covers (\d+) of them/|$1|$2||/' "$extra_dictionaries_cover_entries_limited")
 
-        Consider adding them$workflow_path_hint$job_id_hint$action_ref_hint$inline_with_hint$extra_dictionaries_hint:
+        Consider$creating_a_workflow_and adding them$workflow_path_hint$job_id_hint$action_ref_hint$inline_with_hint$extra_dictionaries_hint:
         $B yml$with_hint$n$(
           perl -pe 's/\s.*//;s/^/                  /;s{\[(.*)\]\(.*}{$1}' "$extra_dictionaries_cover_entries_limited"
         )
