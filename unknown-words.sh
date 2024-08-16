@@ -1927,6 +1927,7 @@ set_up_files() {
     INPUT_NOT_LOWER_PATTERN="$INPUT_NOT_LOWER_PATTERN" \
     INPUT_NOT_UPPER_OR_LOWER_PATTERN="$INPUT_NOT_UPPER_OR_LOWER_PATTERN" \
     INPUT_PUNCTUATION_PATTERN="$INPUT_PUNCTUATION_PATTERN" \
+    INPUT_USE_MAGIC_FILE=0 \
     INPUT_USE_SARIF='' \
     spellchecker="$spellchecker" \
     "$word_splitter" 2> /dev/null |
