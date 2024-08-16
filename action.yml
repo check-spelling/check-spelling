@@ -260,7 +260,7 @@ inputs:
   use_magic_file:
     description: "Use magic file to skip binary files"
     required: false
-    default: ""
+    default: 1
   caller_container:
     description: "Hack for nektos/act - pass the outputs.docker_container to give check-spelling a way to retrieve data it needs to report a comment"
     required: false
