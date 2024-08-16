@@ -102,8 +102,9 @@ jobs:
       - name: test-clean
         shell: bash
         run: |
-          cp -R . ../introspected/;
+          git clone . ../introspected/
           mv ../introspected .
+          cp .git/config introspected/.git
       - name: test-merge
         if: ${{ contains(github.event_name, 'pull_request') }}
         uses: check-spelling/checkout-merge@v0.0.6
