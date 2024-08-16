@@ -288,6 +288,7 @@ sub add_to_excludes {
         return unless $should_exclude_patterns =~ /\w/;
         $should_exclude_patterns =~ s{^(.*)}{^\\Q$1\\E\$}gm;
     }
+    my $need_to_add_excludes;
     my %excludes;
     if (-f $excludes) {
         open EXCLUDES, '<', $excludes;
@@ -297,6 +298,8 @@ sub add_to_excludes {
             $excludes{$_."\n"} = 1;
         }
         close EXCLUDES;
+    } else {
+        $need_to_add_excludes = 1;
     }
     for $pattern (split /\n/, $should_exclude_patterns) {
         next unless $pattern =~ /./;
@@ -304,6 +307,8 @@ sub add_to_excludes {
     }
     open EXCLUDES, '>', $excludes;
     print EXCLUDES join "", sort case_biased keys %excludes;
+    close EXCLUDES;
+    system('git', 'add', '--', $excludes) if $need_to_add_excludes;
 }
 
 sub remove_stale {
