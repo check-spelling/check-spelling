@@ -1136,6 +1136,7 @@ define_variables() {
   workflow_path=$(get_workflow_path)
 
   dict=$(mktemp)
+  splitter_sandbox=$(mktemp -d)
   splitter_configuration=$(mktemp -d)
   patterns="$splitter_configuration/patterns.txt"
   forbidden_path="$splitter_configuration/forbidden.txt"
@@ -1931,6 +1932,7 @@ set_up_files() {
     INPUT_PUNCTUATION_PATTERN="$INPUT_PUNCTUATION_PATTERN" \
     INPUT_USE_MAGIC_FILE=0 \
     INPUT_USE_SARIF='' \
+    sandbox="$splitter_sandbox" \
     spellchecker="$spellchecker" \
     "$word_splitter" 2> /dev/null |
     INPUT_USE_SARIF='' INPUT_DISABLE_CHECKS=noisy-file "$word_collator" 2> "$expect_notes" > "$expect_collated"

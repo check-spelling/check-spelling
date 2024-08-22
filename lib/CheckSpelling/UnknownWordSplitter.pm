@@ -188,6 +188,7 @@ sub hunspell_dictionary {
 sub init {
   my ($configuration) = @_;
   our ($word_match, %unique, $patterns_re, @forbidden_re_list, $forbidden_re, @candidates_re_list, $candidates_re);
+  our $sandbox = CheckSpelling::Util::get_file_from_env('sandbox', '');
   our $hunspell_dictionary_path = CheckSpelling::Util::get_file_from_env('hunspell_dictionary_path', '');
   our $timeout = CheckSpelling::Util::get_val_from_env('splitter_timeout', 30);
   if ($hunspell_dictionary_path) {
@@ -316,7 +317,8 @@ sub split_file {
     $unrecognized, $shortest, $largest_file, $words,
     $word_match, %unique, %unique_unrecognized, $forbidden_re,
     @forbidden_re_list, $patterns_re, %dictionary,
-    $candidates_re, @candidates_re_list, $check_file_names, $use_magic_file, $disable_minified_file
+    $candidates_re, @candidates_re_list, $check_file_names, $use_magic_file, $disable_minified_file,
+    $sandbox,
   );
   our ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
 
@@ -327,7 +329,7 @@ sub split_file {
   my @candidates_re_lines = (0) x scalar @candidates_re_list;
   my @forbidden_re_hits = (0) x scalar @forbidden_re_list;
   my @forbidden_re_lines = (0) x scalar @forbidden_re_list;
-  my $temp_dir = tempdir();
+  my $temp_dir = tempdir(DIR=>$sandbox);
   print STDERR "checking file: $file\n" if defined $ENV{'DEBUG'};
   open(NAME, '>:utf8', "$temp_dir/name");
     print NAME $file;
