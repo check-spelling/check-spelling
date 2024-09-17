@@ -1727,13 +1727,22 @@ set_up_files() {
       shortest_word="${INPUT_SHORTEST_WORD:-3}"
       shortest_word_minus_one=$(( $shortest_word - 1 ))
       longest_word="$INPUT_LONGEST_WORD"
+      allow_ed_suffix=$(
+        if apostrophe="'" perl -e '
+          my $a = $ENV{apostrophe};
+          exit 0 if $a =~ /$ENV{INPUT_PUNCTUATION_PATTERN}/;
+          exit 1;
+        '; then
+          echo "(?!'ed$)"
+        fi
+      )
       echo '# Expect entries should be one entry per line'
       echo '# Please do not mix a capitalized word with an initially capitalized word'
-      echo "(?:$INPUT_UPPER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}$INPUT_UPPER_PATTERN(?:$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word_minus_one,$longest_word}"
+      echo "(?:$INPUT_UPPER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}$INPUT_UPPER_PATTERN(?:$INPUT_LOWER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word_minus_one,$longest_word}"
       echo
       echo '# Expect entries should be one entry per line'
       echo '# Please do not merge an uppercase / capitalized word after a lowercase word'
-      echo "(?:$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}(?:(?:$INPUT_UPPER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}|$INPUT_UPPER_PATTERN(?:$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN){$shortest_word_minus_one,$longest_word})"
+      echo "(?:$INPUT_LOWER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}(?:(?:$INPUT_UPPER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}|$INPUT_UPPER_PATTERN(?:$INPUT_LOWER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word_minus_one,$longest_word})"
       echo
       echo '# Expect entries should not include non-word characters'
       echo "(?$bang$INPUT_UPPER_PATTERN|$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN|\\s|=)."
