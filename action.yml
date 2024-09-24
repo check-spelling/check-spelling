@@ -254,7 +254,7 @@ inputs:
     required: false
     default: ""
   use_sarif:
-    description: "Publish Sarif report"
+    description: "Publish SARIF report"
     required: false
     default: ""
   use_magic_file:
@@ -554,7 +554,7 @@ runs:
           ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling-comment', inputs.report_title_suffix) || 'check-spelling-comment' }}
         path: |
           ${{ steps.spelling.outputs.internal_state_directory }}
-    - name: Shim Sarif
+    - name: Shim SARIF
       id: shim-sarif
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && env.PRIVATE_SARIF_SHA != ''
       shell: bash
