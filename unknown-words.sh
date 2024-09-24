@@ -1920,7 +1920,12 @@ set_up_files() {
       echo '# Expect entries should not include non-word characters'
       echo "(?$bang$INPUT_UPPER_PATTERN|$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN|\\s|=)."
     ) > "$expect_splitter_configuration/forbidden.txt"
-    echo "$expect_files" | xargs env \
+    echo "$expect_files" |
+    xargs env -i \
+    SHELL="$SHELL" \
+    PATH="$PATH" \
+    LC_ALL="C" \
+    HOME="$HOME" \
     splitter_configuration="$expect_splitter_configuration" \
     INPUT_LONGEST_WORD="$INPUT_LONGEST_WORD" \
     INPUT_SHORTEST_WORD="$INPUT_SHORTEST_WORD" \
