@@ -359,12 +359,14 @@ runs:
       if: env.ACT && (github.action_path || env.GITHUB_ACTION_PATH) && (env.GITHUB_ACTION_PATH != github.action_path)
       shell: bash
       run: |
+        : Warn about broken versions of act
         echo '::error ::This version of nektos/act is broken. See https://docs.check-spelling.dev/Breaking-Change:-Dropping-support-for-broken-act'
         exit 1
     - name: act-windows-shim
       if: env.ACT
       shell: bash
       run: |
+        : Try to help act on Windows
         THIS_ACTION_PATH=$(realpath "$GITHUB_ACTION_PATH")
         chmod +x $THIS_ACTION_PATH/*.sh $THIS_ACTION_PATH/*.pl $THIS_ACTION_PATH/wrappers/*
         perl -pi -e's/\015\012/\012/g' $THIS_ACTION_PATH/*.sh $THIS_ACTION_PATH/*.pl $THIS_ACTION_PATH/wrappers/*
@@ -373,6 +375,7 @@ runs:
       if: inputs.alternate_engine
       shell: bash
       run: |
+        : Set up alternate engine
         echo "repo=$(echo '${{ inputs.alternate_engine }}' | perl -pe 's/\@.*//')" >> "$GITHUB_OUTPUT"
         echo "branch=$(echo '${{ inputs.alternate_engine }}' | perl -ne 'next unless s/.*\@//; print')" >> "$GITHUB_OUTPUT"
     - name: alternate-engine
@@ -389,11 +392,13 @@ runs:
       if: inputs.alternate_engine
       shell: bash
       run: |
+        : Install alternate engine
         rsync --delete --exclude=.git -a alternate-engine/ "$GITHUB_ACTION_PATH"/
         rm -rf alternate-engine/
     - name: shim-path
       shell: bash
       run: |
+        : Shim path
         THIS_ACTION_PATH=$(realpath "$GITHUB_ACTION_PATH")
         echo "THIS_ACTION_PATH=$THIS_ACTION_PATH" >> "$GITHUB_ENV"
         echo "$THIS_ACTION_PATH/wrappers" >> "$GITHUB_PATH"
@@ -467,11 +472,13 @@ runs:
         MESSAGE: ${{ steps.checkout-merge.outputs.message }}
       shell: bash
       run: |
+        : Report checkout merge failure
         echo ::error "::$MESSAGE"
     - name: save sha
       if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task) && inputs.use_sarif
       shell: bash
       run: |
+        : Save SHA
         cd "${{ inputs.experimental_path }}"
         git show HEAD
         PRIVATE_SARIF_REF="refs/pull/${{ github.event.pull_request.number }}/merge"
@@ -481,6 +488,7 @@ runs:
     - name: prepare
       if: inputs.task && inputs.task != 'spelling' && (!env.ACT || github.token)
       run: |
+        : Set up internal state directory
         mkdir -p /tmp/data;
         echo "INPUT_INTERNAL_STATE_DIRECTORY=/tmp/data" >> "$GITHUB_ENV"
       shell: bash
@@ -559,6 +567,7 @@ runs:
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && env.PRIVATE_SARIF_SHA != ''
       shell: bash
       run: |
+        : Shim SARIF
         cd "${{ inputs.experimental_path }}"
         git reset "$PRIVATE_SARIF_SHA"
     - name: artifact-sarif
@@ -612,6 +621,7 @@ runs:
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && (github.run_attempt > 1 || env.ACT) && env.UPLOAD_SARIF_LIMITED != ''
       shell: bash
       run: |
+        : Report SARIF information in github step summary - when rerun or run using act
         act-summary
         (
           echo '<details><summary>sarif file</summary>'
@@ -643,6 +653,7 @@ runs:
       if: (success() || failure()) && env.ACT_STEP_SUMMARY
       shell: bash
       run: |
+        : Act step summary
         cd "$ACT_STEP_SUMMARY"
         for a in $(ls | sort -n); do
           if [ -s "$a" ]; then
