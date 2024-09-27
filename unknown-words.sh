@@ -1707,7 +1707,7 @@ get_extra_dictionary() {
     "$url" \
     > "$dest"
   if { [ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ] ; } 2> /dev/null; then
-    echo "::error ::Failed to retrieve $extra_dictionary_url -- HTTP $response_code for $url (dictionary-not-found)" >> "$early_warnings"
+    echo "::error ::Failed to retrieve $extra_dictionary_url -- HTTP $response_code for $url ($dictionary_class-dictionary-not-found)" >> "$early_warnings"
     (
       echo "Failed to retrieve $extra_dictionary_url ($url)"
       cat "$response_headers"
@@ -1731,7 +1731,8 @@ get_hunspell_stem() {
 }
 
 get_extra_dictionaries() {
-  dictionaries_dir="${dictionaries_base_dir:-"$spellchecker/dictionaries"}/$1"
+  dictionary_class="$1"
+  dictionaries_dir="${dictionaries_base_dir:-"$spellchecker/dictionaries"}/$dictionary_class"
   extra_dictionaries="$(echo "$2" | words_to_lines)"
   dictionaries_canary="$3"
   mkdir -p "$dictionaries_dir"
@@ -2050,7 +2051,11 @@ set_up_files() {
           github_step_summary_likely_fatal_event \
             'Dictionary not found' \
             "$message" \
-            'dictionary-not-found'
+            'extra-dictionary-not-found'
+          github_step_summary_likely_fatal_event \
+            'Dictionary not found' \
+            "$message" \
+            'fallback-dictionary-not-found'
           if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
             end_group
             begin_group 'Check default extra dictionaries'
