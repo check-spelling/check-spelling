@@ -246,6 +246,84 @@
               }
             },
             {
+              "id": "check-dictionary-not-found",
+              "name": "DictionaryNotFound",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#dictionary-not-found",
+              "shortDescription": {
+                "text": "Dictionary not found"
+              },
+              "fullDescription": {
+                "text": "The specified dictionary could not be found."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "extra-dictionary-not-found",
+              "name": "DictionaryNotFound",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#dictionary-not-found",
+              "shortDescription": {
+                "text": "Dictionary not found"
+              },
+              "fullDescription": {
+                "text": "The specified dictionary could not be found."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "fallback-dictionary-not-found",
+              "name": "DictionaryNotFound",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#dictionary-not-found",
+              "shortDescription": {
+                "text": "Dictionary not found"
+              },
+              "fullDescription": {
+                "text": "The specified dictionary could not be found."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
               "id": "no-newline-at-eof",
               "name": "NoNewlineAtEOF",
               "helpUri": "https://docs.check-spelling.dev/Event-descriptions#no-newline-at-eof",
