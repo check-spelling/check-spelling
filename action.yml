@@ -426,7 +426,7 @@ runs:
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
         filter: ${{ contains(inputs.check_commit_messages, 'commits') && 'tree:0' || '' }}
         token: ${{ inputs.checkout-token || inputs.GITHUB_TOKEN }}
-        ref: |
+        ref:
           ${{
             github.event_name == 'issue_comment' &&
             github.event.issue.pull_request &&
@@ -445,7 +445,7 @@ runs:
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
         filter: ${{ contains(inputs.check_commit_messages, 'commits') && 'tree:0' || '' }}
         token: ${{ inputs.checkout-token || inputs.GITHUB_TOKEN }}
-        ref: |
+        ref:
           ${{
             github.event_name == 'issue_comment' &&
             github.event.issue.pull_request &&
