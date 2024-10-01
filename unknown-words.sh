@@ -2259,6 +2259,13 @@ run_spell_check() {
       git log --format='%H' refs/private/before..refs/private/after > "$log_revs"
       if [ -n "$workflow_path" ]; then
         workflow_blame=$(mktemp)
+        partial_clone_filter_key=remote.origin.partial"clone"filter
+        partial_clone_filter_value=$(git config "$partial_clone_filter_key" || true)
+        if echo "$partial_clone_filter_value" | grep -q tree:0; then
+          git config --unset "$partial_clone_filter_key"
+          git fetch -q --refetch origin HEAD
+          git config "$partial_clone_filter_key" "$partial_clone_filter_value"
+        fi
         git blame HEAD -- "$workflow_path" > "$workflow_blame"
         workflow_commits_revs=$(mktemp)
         "$get_commits_for_check_commit_message" "$workflow_blame" | sort -u |xargs -n1 git rev-parse > "$workflow_commits_revs"

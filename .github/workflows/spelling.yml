@@ -98,6 +98,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: ${{ !contains(env.workflow_check_commit_messages, 'commits') && '1' || '0' }}
+          filter: ${{ contains(env.workflow_check_commit_messages, 'commits') && 'tree:0' || '' }}
       - name: test-clean
         shell: bash
         run: |
