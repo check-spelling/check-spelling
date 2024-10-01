@@ -1141,17 +1141,18 @@ define_variables() {
   forbidden_path="$splitter_configuration/forbidden.txt"
   candidates_path="$splitter_configuration/candidates.txt"
   excludes=${excludes:-$(mktemp)}
-  excludes_path="$temp/excludes.txt"
+  temp_sandbox=$(mktemp -d)
+  excludes_path="$temp_sandbox/excludes.txt"
   only=${only:-$(mktemp)}
-  only_path="$temp/only.txt"
-  dictionary_path="$temp/dictionary.txt"
-  allow_path="$temp/allow.txt"
-  reject_path="$temp/reject.txt"
-  expect_path="$temp/expect.words.txt"
-  excludelist_path="$temp/excludes.txt"
-  patterns_path="$temp/patterns.txt"
-  advice_path="$temp/advice.md"
-  advice_path_txt="$temp/advice.txt"
+  only_path="$temp_sandbox/only.txt"
+  dictionary_path="$temp_sandbox/dictionary.txt"
+  allow_path="$temp_sandbox/allow.txt"
+  reject_path="$temp_sandbox/reject.txt"
+  expect_path="$temp_sandbox/expect.words.txt"
+  excludelist_path="$temp_sandbox/excludes.txt"
+  patterns_path="$temp_sandbox/patterns.txt"
+  advice_path="$temp_sandbox/advice.md"
+  advice_path_txt="$temp_sandbox/advice.txt"
   word_splitter="$spellchecker/wrappers/spelling-unknown-word-splitter"
   word_collator="$spellchecker/wrappers/spelling-collator"
   expect_collator="$spellchecker/expect-collator.pl"
@@ -1171,8 +1172,8 @@ define_variables() {
   calculate_delay="$spellchecker/wrappers/calculate-delay"
   dictionary_coverage="$spellchecker/wrappers/dictionary-coverage"
   suggest_excludes="$spellchecker/wrappers/suggest-excludes"
-  run_output="$temp/unknown.words.txt"
-  diff_output="$temp/output.diff"
+  run_output="$temp_sandbox/unknown.words.txt"
+  diff_output="$temp_sandbox/output.diff"
   tokens_file="$data_dir/tokens.txt"
   remove_words="$data_dir/remove_words.txt"
   action_log_ref="$data_dir/action_log_ref.txt"
@@ -3470,7 +3471,7 @@ grep_v_string() {
 
 compare_new_output() {
   begin_group 'Compare expect with new output'
-    sorted_expect="$temp/expect.sorted.txt"
+    sorted_expect="$temp_sandbox/expect.sorted.txt"
     (sed -e 's/#.*//' "$expect_path" | sort_unique) > "$sorted_expect"
     expect_path="$sorted_expect"
     sorted_run_output=$(mktemp)
