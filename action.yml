@@ -424,6 +424,7 @@ runs:
         path: ${{ inputs.experimental_path }}
         ssh-key: ${{ inputs.ssh_key }}
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
+        filter: ${{ contains(inputs.check_commit_messages, 'commits') && 'tree:0' || '' }}
         token: ${{ inputs.checkout-token || inputs.GITHUB_TOKEN }}
         ref: |
           ${{
@@ -442,6 +443,7 @@ runs:
         path: ${{ inputs.experimental_path }}
         ssh-key: ${{ inputs.ssh_key }}
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
+        filter: ${{ contains(inputs.check_commit_messages, 'commits') && 'tree:0' || '' }}
         token: ${{ inputs.checkout-token || inputs.GITHUB_TOKEN }}
         ref: |
           ${{
