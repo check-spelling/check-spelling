@@ -55,7 +55,6 @@ jobs:
             done | xargs
           )
           command -v cover >/dev/null 2>/dev/null || APT_PACKAGES="libdevel-cover-perl $APT_PACKAGES"
-          [ -z "$cpan_modules" ] || command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
           command -v jd && HAS_JD=1 || HAS_JD=
           (
             if [ -z "$HAS_JD" ]; then
@@ -79,6 +78,9 @@ jobs:
               echo 'Could not install jd' >&2
             fi
           ) &
+          if command -v apt-get >/dev/null 2>/dev/null && ! command -v cpanm >/dev/null 2>/dev/null; then
+            APT_PACKAGES="cpanminus $APT_PACKAGES"
+          fi
           [ -z "$APT_PACKAGES" ] ||
           (
             if ! sudo apt-get install -y $APT_PACKAGES; then
@@ -86,6 +88,7 @@ jobs:
               sudo apt-get install -y $APT_PACKAGES
             fi
           )
+          [ -z "$cpan_modules" ] || command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
           [ -z "$cpan_modules" ] || perl `command -v cpanm` -S --notest $cpan_modules
           wait
         ) > /tmp/prework || (cat /tmp/prework && false)
