@@ -81,9 +81,10 @@ jobs:
           ) &
           [ -z "$APT_PACKAGES" ] ||
           (
-            sudo apt-get install -y $APT_PACKAGES ||
-            sudo apt-get update &&
-            sudo apt-get install -y $APT_PACKAGES
+            if ! sudo apt-get install -y $APT_PACKAGES; then
+              sudo apt-get update &&
+              sudo apt-get install -y $APT_PACKAGES
+            fi
           )
           [ -z "$cpan_modules" ] || perl `command -v cpanm` -S --notest $cpan_modules
           wait
