@@ -1159,7 +1159,7 @@ define_variables() {
   output_covers="$spellchecker/output-covers.pl"
   cleanup_file="$spellchecker/cleanup-file.pl"
   file_size="$spellchecker/file-size.pl"
-  check_dictionary="$spellchecker/check-dictionary.pl"
+  check_dictionary="$spellchecker/wrappers/check-dictionary"
   check_yaml_key_value="$spellchecker/wrappers/check-yaml-key-value"
   get_yaml_value="$spellchecker/wrappers/get-yaml-value"
   quote_meta="$spellchecker/quote-meta.pl"
