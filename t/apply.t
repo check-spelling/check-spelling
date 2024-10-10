@@ -10,7 +10,7 @@ use File::Basename;
 use Test::More;
 use Capture::Tiny ':all';
 
-plan tests => 3;
+plan tests => 10;
 
 my $spellchecker = dirname(dirname(abs_path(__FILE__)));
 
@@ -41,3 +41,24 @@ is($stdout, "$spellchecker/apply.pl: GitHub Run Artifact expired. You will need 
 ", 'apply.pl (stdout) expired');
 is($stderr, '', 'apply.pl (stderr) expired');
 is($result, 1, 'apply.pl (exit code) expired');
+
+my $gh_token = $ENV{GH_TOKEN};
+delete $ENV{GH_TOKEN};
+my $real_home = $ENV{HOME};
+$ENV{HOME} = $sandbox;
+($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
+
+like($stdout, qr{gh auth login|set the GH_TOKEN environment variable}, 'apply.pl (stdout) not authenticated');
+like($stderr, qr{$spellchecker/apply.pl requires a happy gh, please try 'gh auth login'}, 'apply.pl (stderr) not authenticated');
+is($result, 1, 'apply.pl (exit code) not authenticated');
+$ENV{GH_TOKEN} = $gh_token;
+
+$ENV{HOME} = $real_home;
+
+$ENV{https_proxy}='http://localhost:9123';
+($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
+
+like($stdout, qr{$spellchecker/apply.pl: Proxy is not accepting connections\.}, 'apply.pl (stdout) bad_proxy');
+like($stdout, qr{https_proxy: 'http://localhost:9123'}, 'apply.pl (stdout) bad_proxy');
+is($stderr, '', 'apply.pl (stderr) bad_proxy');
+is($result, 6, 'apply.pl (exit code) bad_proxy');
