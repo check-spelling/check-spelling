@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+use Cwd 'realpath';
+use File::Spec;
 use CheckSpelling::Util;
 use CheckSpelling::CheckDictionary;
 
@@ -11,6 +13,8 @@ $/ = undef;
 my $content = <FILE>;
 close FILE;
 open FILE, ">:encoding(UTF-8)", $file;
+
+$file = File::Spec->abs2rel(realpath($file));
 
 $ENV{comment_char} = '$^' unless $ENV{comment_char} =~ /\S/;
 
