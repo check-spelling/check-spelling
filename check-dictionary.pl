@@ -1,6 +1,11 @@
 #!/usr/bin/env perl
-open WARNINGS, ">>:encoding(UTF-8)", $ENV{early_warnings};
-my $file = $ARGV[0];
+
+use CheckSpelling::Util;
+use CheckSpelling::CheckDictionary;
+
+open WARNINGS, ">>:encoding(UTF-8)", CheckSpelling::Util::get_file_from_env('early_warnings', '/dev/stderr');
+$ARGV[0] =~ /^(.*)/;
+my $file = $1;
 open FILE, "<:encoding(UTF-8)", $file;
 $/ = undef;
 my $content = <FILE>;
@@ -12,18 +17,6 @@ $ENV{comment_char} = '$^' unless $ENV{comment_char} =~ /\S/;
 my $first_end = undef;
 my $messy = 0;
 $. = 0;
-
-sub process_line {
-    my ($file, $line) = @_;
-    $line =~ s/$ENV{comment_char}.*//;
-    if ($line =~ /^.*?($ENV{INPUT_IGNORE_PATTERN}+)/) {
-        my ($left, $right) = ($-[1] + 1, $+[1] + 1);
-        my $column_range="$left ... $right";
-        print WARNINGS "$file:$.:$column_range, Warning - Ignoring entry because it contains non-alpha characters. (non-alpha-in-dictionary)\n";
-        $line = "";
-    }
-    return $line;
-}
 
 my $remainder;
 if ($content !~ /(?:\r\n|\n|\r|\x0b|\f|\x85|\x{2028}|\x{2029})$/) {
@@ -37,11 +30,15 @@ while ($content =~ s/([^\r\n\x0b\f\x85\x{2028}\x{2029}]*)(\r\n|\n|\r|\x0b|\f|\x8
     } elsif ($end ne $first_end) {
         print WARNINGS "$file:$.:$-[0] ... $+[0], Warning - Entry has inconsistent line ending. (unexpected-line-ending)\n";
     }
-    $line = process_line($file, $line);
-    print FILE "$line\n";
+    my ($line, $warning) = CheckSpelling::CheckDictionary::process_line($file, $line);
+    if ($warning ne '') {
+        print WARNINGS $warning;
+    } elsif ($line ne '') {
+        print FILE "$line\n";
+    }
 }
 if ($remainder ne '') {
-    $remainder = process_line($file, $remainder);
+    $remainder = CheckSpelling::CheckDictionary::process_line($file, $remainder);
     print FILE $remainder;
 }
 close WARNINGS;
