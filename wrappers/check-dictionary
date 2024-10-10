@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/bin/env -S perl -I"$spellchecker/lib" "$spellchecker/check-dictionary.pl" "$@"
