@@ -1,4 +1,4 @@
-#!/usr/bin/env -S perl -T -Ilib
+#!/usr/bin/env -S perl -Ilib
 
 use strict;
 use warnings;
@@ -27,18 +27,13 @@ $ENV{'warning_output'} = $warnings;
 ($fh, $sarif_merged) = tempfile();
 print $fh CheckSpelling::Sarif::main("$base/sarif.json","$tests/sarif.json");
 close $fh;
-$ENV{'PATH'} = '/bin';
-if (-e '/opt/homebrew/bin/go') {
-    $ENV{'PATH'} .= ':/opt/homebrew/bin';
-}
+my $formated_sarif;
+($fh, $formated_sarif) = tempfile();
+close $fh;
+`jq -M . '$sarif_merged'|perl -pe 's/^\\s*//' > '$formated_sarif'`;
 
-my $go_bin_output=`go env GOPATH`;
-my $jd_output = '';
-# if go isn't available, we'll skip this...
-if ($go_bin_output) {
-    $go_bin_output =~ /(.*)/;
-    my $go_bin = $1;
-    $ENV{'PATH'} = "/bin:$go_bin/bin";
-    my $jd_output = `jd -set '$sarif_merged' '$tests/sarif.json.expected'`;
-}
+$ENV{'HOME'} =~ /^(.*)$/;
+my $home = $1;
+$ENV{'PATH'} = "/bin:$home/.extra-bin";
+my $jd_output = `jd -set '$formated_sarif' '$tests/sarif.json.expected'`;
 is($jd_output, '');

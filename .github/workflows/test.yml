@@ -64,8 +64,10 @@ jobs:
       id: test
       shell: bash
       run: |
+        extra_bin=~/.extra-bin
+        mkdir -p "$extra_bin"
+        PATH="$extra_bin:$PATH"
         (
-          PATH=$PATH:~/go/bin
           cpan_modules=$(
             for module in ${{ steps.perl-config.outputs.perl-modules }}; do
               perl -e "use $module; 1;" > /dev/null 2>/dev/null || echo $module
@@ -73,17 +75,36 @@ jobs:
           )
           [ -z "$cpan_modules" ] || command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
           command -v jd && HAS_JD=1 || HAS_JD=
-          [ -n "$HAS_JD" ] || command -v go >/dev/null 2>/dev/null || GO_PACKAGE=" golang"
-          APT_PACKAGES="$GO_PACKAGE"
+          (
+            if [ -z "$HAS_JD" ]; then
+              JD_BIN="$extra_bin"/jd
+              key_go_arch=GO"ARCH"
+              key_go_os=GO"OS"
+              if command -v go >/dev/null 2>/dev/null; then
+                go_os=$(go env "$key_go_os")
+                go_arch=$(go env "$key_go_arch")
+              else
+                go_os=$(uname | tr A-Z a-z)
+                go_arch=$(uname -m | tr A-Z a-z)
+                case "$go_arch" in
+                  x86_64)
+                    go_arch=amd64;;
+                  aarch64)
+                    go_arch=arm64;;
+                esac
+              fi
+              ./gh-release-downloader josephburnett/jd "$JD_BIN" "$go_os" "$go_arch" ||
+              echo 'Could not install jd' >&2
+            fi
+          ) &
           [ -z "$APT_PACKAGES" ] ||
           (
-            APT_PACKAGES="$GO_PACKAGE"
             sudo apt-get install -y $APT_PACKAGES ||
             sudo apt-get update &&
             sudo apt-get install -y $APT_PACKAGES
           )
           [ -z "$cpan_modules" ] || perl `command -v cpanm` -S --notest $cpan_modules
-          [ -n "$HAS_JD" ] || go install 'github.com/josephburnett/jd@latest' || echo 'Could not install jd' >&2
+          wait
         ) > /tmp/prework || (cat /tmp/prework && false)
         ./Build.PL
         ./Build build
