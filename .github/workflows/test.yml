@@ -99,8 +99,14 @@ jobs:
           done
         )
         perl `command -v cover` -test
+    - name: calculate coverage
+      id: coverage
+      if: success() || failure()
+      run: |
         perl `command -v cover` -report html
+        echo 'ran=1' >> "$GITHUB_OUTPUT"
     - name: store-coverage
+      if: (success() || failure()) && (steps.coverage.outputs.ran == 1)
       uses: actions/upload-artifact@v4
       timeout-minutes: 5
       with:
