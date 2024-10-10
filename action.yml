@@ -302,6 +302,9 @@ inputs:
   sarif-token:
     description: "Token for use with github/codeql-action/upload-sarif"
     required: false
+  checkout-token:
+    description: "Token for use with actions/checkout (the default is to use the github.token)"
+    required: false
 
 outputs:
   unknown_words:
@@ -398,7 +401,7 @@ runs:
         path: ${{ inputs.experimental_path }}
         ssh-key: ${{ inputs.ssh_key }}
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
-        token: ${{ inputs.GITHUB_TOKEN }}
+        token: ${{ inputs.checkout-token || inputs.GITHUB_TOKEN }}
         ref: |
           ${{
             github.event_name == 'issue_comment' &&
@@ -414,7 +417,7 @@ runs:
         path: ${{ inputs.experimental_path }}
         ssh-key: ${{ inputs.ssh_key }}
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
-        token: ${{ inputs.GITHUB_TOKEN }}
+        token: ${{ inputs.checkout-token || inputs.GITHUB_TOKEN }}
         ref: |
           ${{
             github.event_name == 'issue_comment' &&
