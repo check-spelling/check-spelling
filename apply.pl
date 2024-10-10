@@ -171,6 +171,16 @@ sub die_with_message {
         print "$program: Internet access may be limited. Check your connection (this often happens with lousy cable internet service providers where their CG-NAT or whatever strands the modem).\n\n$gh_err_text";
         exit 5;
     }
+    if ($gh_err_text =~ /proxyconnect tcp:.*connect: connection refused/) {
+        print "$program: Proxy is not accepting connections.\n";
+        for my $proxy (qw(http_proxy HTTP_PROXY https_proxy HTTPS_PROXY)) {
+            if (defined $ENV{$proxy}) {
+                print "  $proxy: '$ENV{$proxy}'\n";
+            }
+        }
+        print "\n$gh_err_text";
+        exit 6;
+    }
 }
 
 sub gh_is_happy_internal {

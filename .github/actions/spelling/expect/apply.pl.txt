@@ -1,4 +1,5 @@
 catfile
 gensym
 pathext
+proxyconnect
 SYSTEMROOT
