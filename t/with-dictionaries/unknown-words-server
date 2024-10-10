@@ -1,11 +1,17 @@
 #!/bin/sh
 export CANARY_HOME=$(mktemp -d)
 if [ "$INPUT_TASK" != 'hash-dictionaries' ]; then
+  if ! command -v lsof >/dev/null 2>/dev/null; then
+    APT_PACKAGES="lsof $APT_PACKAGES"
+  fi
   if ! command -v php > /dev/null; then
-    echo "[$(date)] installing php..."
+    APT_PACKAGES="php-cli $APT_PACKAGES"
+  fi
+  if [ -n "$APT_PACKAGES" ]; then
+    echo "[$(date)] installing $APT_PACKAGES..."
     apt-get update -q >/dev/null 2>/dev/null &&
-    apt-get install -q -y php-cli >/dev/null 2>/dev/null &&
-    echo "[$(date)] ... installed php"
+    apt-get install -q -y $APT_PACKAGES >/dev/null 2>/dev/null &&
+    echo "[$(date)] ... installed $APT_PACKAGES"
   fi
   old_server=$(
     lsof -iTCP -n -P |
