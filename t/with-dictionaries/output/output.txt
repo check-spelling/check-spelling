@@ -1,0 +1,15 @@
+::add-matcher::WORKSPACE/reporter.json
+::group::Retrieving check extra dictionaries
+::endgroup::
+::group::Retrieving extra dictionaries
+::endgroup::
+Retrieving only from WORKSPACE/t/with-dictionaries/config/only.txt
+Checking spelling...
+::group::Spell checking (1) files
+t/with-dictionaries/config/test.txt
+::endgroup::
+::group::Spell check
+
+::endgroup::
+::remove-matcher owner=check-spelling::
+::remove-matcher owner=check-spelling-https::

@@ -1,0 +1,28 @@
+DATESTAMP PHP PHP_VERSION Development Server (http://[::]:8123) started
+DATESTAMP [LOCAL_ADDRESS]:PORT Accepted
+DATESTAMP [LOCAL_ADDRESS]:PORT Accepted
+DATESTAMP [LOCAL_ADDRESS]:PORT Accepted
+DATESTAMP [LOCAL_ADDRESS]:PORT Accepted
+DATESTAMP [LOCAL_ADDRESS]:PORT Accepted
+DATESTAMP [LOCAL_ADDRESS]:PORT Accepted
+DATESTAMP [LOCAL_ADDRESS]:PORT Closing
+DATESTAMP [LOCAL_ADDRESS]:PORT Closing
+DATESTAMP [LOCAL_ADDRESS]:PORT Closing
+DATESTAMP [LOCAL_ADDRESS]:PORT Closing
+DATESTAMP [LOCAL_ADDRESS]:PORT Closing
+DATESTAMP [LOCAL_ADDRESS]:PORT Closing
+DATESTAMP [LOCAL_ADDRESS]:PORT [200]: GET /429.php
+DATESTAMP [LOCAL_ADDRESS]:PORT [200]: GET /503.php
+DATESTAMP [LOCAL_ADDRESS]:PORT [200]: GET /basic.txt
+DATESTAMP [LOCAL_ADDRESS]:PORT [200]: GET /sample.txt
+DATESTAMP [LOCAL_ADDRESS]:PORT [429]: GET /429.php
+DATESTAMP [LOCAL_ADDRESS]:PORT [503]: GET /503.php
+Downloaded http://localhost:8123/basic.txt (to ...)
+Retrieved http://localhost:8123/429.php
+Retrieved http://localhost:8123/503.php
+Retrieved http://localhost:8123/sample.txt
+Retry-After: 2
+Retry-After: 2
+call_curl received a 429 and will wait for 5s:
+call_curl received a 503 and will wait for 5s:
+result_code=0
