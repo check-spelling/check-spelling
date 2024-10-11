@@ -34,5 +34,11 @@ https://perldoc\.perl\.org/.*
 # Perl warnings
 \bexperimental::[a-z_]+\b
 
+# tar arguments
+\b(?:\\n|)g?tar(?:\.exe|)(?:(?:\s+--[-a-zA-Z]+|\s+-[a-zA-Z]+|\s[ABGJMOPRSUWZacdfh-pr-xz]+\b)(?:=[^ ]*|))+
+
 # README markdown links
 \]\(#[-a-z]+\)
+
+# gh-release-downloader usage
+gh-release-downloader.*<.*>
