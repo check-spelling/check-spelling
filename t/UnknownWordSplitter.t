@@ -11,7 +11,7 @@ use File::Temp qw/ tempfile tempdir /;
 use Capture::Tiny ':all';
 
 use Test::More;
-plan tests => 49;
+plan tests => 63;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -218,6 +218,65 @@ check_output_file_sorted_lines("$output_directory/warnings", ":4:6 ... 9: `ham`
 check_output_file("$output_directory/unknown", 'ham
 ');
 
+open $fh, '>', "$dirname/block-delimiters.list";
+print $fh '# test
+fruit
+donut
+';
+close $fh;
+
+CheckSpelling::UnknownWordSplitter::init($dirname);
+open($outputFH, '>', \$output_directory) or die; # This shouldn't fail
+$oldFH = select $outputFH;
+CheckSpelling::UnknownWordSplitter::main($directory, ($filename));
+select $oldFH;
+ok($output_directory =~ /.*\n/);
+chomp($output_directory);
+ok(-d $output_directory);
+check_output_file("$output_directory/name", $filename);
+check_output_file("$output_directory/stats", '{words: 4, unrecognized: 1, unknown: 1, unique: 4, candidates: [0,1], candidate_lines: [0,4:6:9], forbidden: [0,0], forbidden_lines: [0,0]}');
+check_output_file_sorted_lines("$output_directory/warnings", ":4:6 ... 9: `ham`");
+check_output_file("$output_directory/unknown", 'ham
+');
+
+open $fh, '>', "$dirname/block-delimiters.list";
+print $fh '# test
+fruit
+missing
+';
+close $fh;
+
+CheckSpelling::UnknownWordSplitter::init($dirname);
+open($outputFH, '>', \$output_directory) or die; # This shouldn't fail
+$oldFH = select $outputFH;
+CheckSpelling::UnknownWordSplitter::main($directory, ($filename));
+select $oldFH;
+ok($output_directory =~ /.*\n/);
+chomp($output_directory);
+ok(-d $output_directory);
+check_output_file("$output_directory/name", $filename);
+check_output_file("$output_directory/stats", '{words: 2, unrecognized: 0, unknown: 0, unique: 2, candidates: [0,0], candidate_lines: [0,0], forbidden: [0,0], forbidden_lines: [0,0]}');
+check_output_file_sorted_lines("$output_directory/warnings", ":2:1 ... 1, Warning - failed to find matching end marker for `fruit` (unclosed-block-ignore-begin)
+:5:1 ... 1, Warning - expected to find end block marker `missing` (unclosed-block-ignore-end)");
+check_output_file("$output_directory/unknown", '');
+
+open $fh, '>', "$dirname/block-delimiters.list";
+print $fh '# test
+fruit
+';
+close $fh;
+
+($fh, $filename) = tempfile();
+close $fh;
+my $early_warnings = $filename;
+$ENV{early_warnings} = $early_warnings;
+my ($stdout, $stderr, @result) = capture { CheckSpelling::UnknownWordSplitter::init($dirname); };
+my $warnings = $stderr;
+check_output_file($early_warnings, "$dirname/block-delimiters.list:1:Block delimiters must come in pairs (uneven-block-delimiters)
+");
+is($warnings, "block-delimiter unmatched S: `fruit`
+");
+
 $dirname = tempdir();
 ($fh, $filename) = tempfile();
 close $fh;
@@ -302,7 +361,7 @@ sub test_invalid_quantifiers {
   is($output, '(?:\$^ - skipped because bad-regular-expression)');
 }
 
-my ($stdout, $stderr, @result) = capture { test_invalid_quantifiers };
+($stdout, $stderr, @result) = capture { test_invalid_quantifiers };
 is($stderr, "Nested quantifiers in regex; marked by <-- HERE in m/.{1,}* <-- HERE / at $filename line 1 (bad-regular-expression)
 ");
 open $fh, '>:utf8', $filename;
