@@ -1,0 +1,89 @@
+#!/bin/sh
+releases=$(mktemp)
+repo="$1"
+file="$2"
+os_re="$3"
+arch_re="$4"
+file_re="$5"
+
+check_usage() {
+  if [ -z "$repo" ]; then
+    (
+      echo "$0 REPO [FILE [OS_RE [ARCH_RE [FILE_RE]]]]"
+      echo
+      echo 'Download file from repo releases'
+    ) >&2
+    exit 1
+  fi
+}
+
+list_releases() {
+  releases_url="https://api.github.com/repos/$repo/releases"
+  curl -q -s -L "$releases_url" -o "$releases"
+}
+
+select_artifact() {
+  artifact=$(jq -r '[.[0].assets[] | select (.name | test("'"$os_re"'") and test("'"$arch_re"'")) | .browser_download_url // empty] | .[-1]' "$releases")
+  if [ -z "$artifact" ]; then
+    echo "$0 could not find asset from '$releases_url' (saved as '$releases') matching OS ('$os_re') and ARCH ('$arch_re')" >&2
+    exit 1
+  fi
+}
+
+download_artifact() {
+  temp_file=$(mktemp)
+  curl -o "$temp_file" -q -s -L "$artifact"
+}
+
+select_file() {
+  (
+    if [ -n "$file_re" ]; then
+      grep -E "$file_re"
+    else
+      cat -
+    fi
+  ) | tail -1
+}
+
+strip_zip_file_size_date_and_time_from_directory_listing() {
+  perl -pe 's/^\s*\d+\s+\d+-\d+-\d+\s+\d+:\d+\s+//'
+}
+
+move_and_cleanup_selected_file() {
+  if [ -n "$selected_file" ] && [ -e "$selected_file" ]; then
+    mv "$selected_file" "$file" &&
+    rm "$temp_file"
+  fi
+}
+
+maybe_extract_artifact() {
+  case "$artifact" in
+  *.tar.gz|*.tgz)
+    selected_file=$(
+      tar tzf "$temp_file" |
+      select_file
+    )
+    tar zxf "$temp_file" "$selected_file"
+    move_and_cleanup_selected_file
+    ;;
+  *.zip)
+    selected_file=$(
+      unzip -l "$temp_file" |
+      select_file |
+      strip_zip_file_size_date_and_time_from_directory_listing
+    )
+    unzip "$temp_file" "$selected_file"
+    move_and_cleanup_selected_file
+    ;;
+  *)
+    : binary
+    mv "$temp_file" "$file"
+  esac
+  chmod +x "$file"
+}
+
+check_usage
+list_releases
+select_artifact
+download_artifact
+maybe_extract_artifact

@@ -2,7 +2,6 @@ apps
 codeql
 cpanm
 cpanminus
-DEBIAN
 elif
 esac
 excludelist
