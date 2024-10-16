@@ -1,0 +1,37 @@
+name: 'Checkout Merge'
+description: 'Generate a merge commit'
+inputs:
+  base_ref:
+    description:
+    default: ${{ github.event.pull_request.base.ref }}
+    required: false
+  head_ref:
+    description:
+    default: ${{ github.event.pull_request.head.sha }}
+    required: false
+  path:
+    description:
+    default: "."
+    required: false
+  do_not_report:
+    description:
+    default: ''
+    required: false
+outputs:
+  message:
+    description:
+    value: ${{ steps.action.outputs.message }}
+  status:
+    description:
+    value: ${{ steps.action.status }}
+runs:
+  using: composite
+  steps:
+  - name: Merge
+    id: action
+    uses: check-spelling/checkout-merge@v0.0.6
+    with:
+      base_ref: ${{ inputs.base_ref }}
+      do_not_report: ${{ inputs.do_not_report }}
+      head_ref: ${{ inputs.head_ref }}
+      path: ${{ inputs.path }}

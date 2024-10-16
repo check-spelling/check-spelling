@@ -3,6 +3,7 @@ ignore$
 \.dic$
 \.png$
 \.t$
+^actions/
 ^LICENSE\.txt$
 ^t/.*/
 ^\.github/
