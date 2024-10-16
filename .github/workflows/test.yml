@@ -84,6 +84,29 @@ jobs:
           [ -z "$APT_PACKAGES" ] ||
           (
             if ! sudo apt-get install -y $APT_PACKAGES; then
+              disable_apt_repository() {
+                parent=/etc/apt/sources.list.d
+                if [ -f "$parent/$1" ]; then
+                  ${SUDO:+"$SUDO"} mv "$parent/$1" "$parent/$1.disabled"
+                fi
+              }
+              for repository in azure-cli.sources github_git-l"f"s.list micro"soft"-prod.list; do
+                disable_apt_repository "$repository"
+              done
+              if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+                ${SUDO:+"$SUDO"} perl -pi.disabled -e '
+                  if (/Components:/) { s/\b(?:restricted|multiverse)\b//g; };
+                  if (/Suites:/) { s/\b\w+-(?:updates|backports)\b//g; };
+                ' /etc/apt/sources.list.d/ubuntu.sources
+              else
+                ${SUDO:+"$SUDO"} perl -pi.disabled -e '
+                  s%^(deb https?://\S+\s+\w+-.*)%#$1%;
+                  next if /^#/;
+                  s%^(deb https?://\S+\s+\w+ multiverse)%#$1%;
+                  s%\bmain restricted\b%main # restricted%;
+                ' /etc/apt/sources.list
+              fi
+
               sudo apt-get update &&
               sudo apt-get install -y $APT_PACKAGES
             fi

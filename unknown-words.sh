@@ -1496,6 +1496,34 @@ set_up_ua() {
   curl_ua="check-spelling/$CHECK_SPELLING_VERSION; $(curl --version|perl -ne '$/=undef; <>; s/\n.*//;s{ }{/};s/ .*//;print')"
 }
 
+limit_apt_repositories() {
+  disable_apt_repository() {
+    parent=/etc/apt/sources.list.d
+    if [ -f "$parent/$1" ]; then
+      ${SUDO:+"$SUDO"} mv "$parent/$1" "$parent/$1.disabled"
+    fi
+  }
+  for repository in azure-cli.sources github_git-l"f"s.list micro"soft"-prod.list; do
+    disable_apt_repository "$repository"
+  done
+  if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+    ${SUDO:+"$SUDO"} perl -pi.disabled -e '
+      if (/Components:/) { s/\b(?:restricted|multiverse)\b//g; };
+      if (/Suites:/) { s/\b\w+-(?:updates|backports)\b//g; };
+    ' /etc/apt/sources.list.d/ubuntu.sources
+  else
+    ${SUDO:+"$SUDO"} perl -pi.disabled -e '
+      s%^(deb https?://\S+\s+\w+-.*)%#$1%;
+      next if /^#/;
+      s%^(deb https?://\S+\s+\w+ multiverse)%#$1%;
+      s%\bmain restricted\b%main # restricted%;
+    ' /etc/apt/sources.list
+  fi
+  limit_apt_repositories() {
+    :
+  }
+}
+
 install_tools() {
   if [ -n "$perl_libs" ] && ! command_v cpanm; then
     command -v cpanm >/dev/null 2>/dev/null ||
@@ -1503,6 +1531,8 @@ install_tools() {
   fi
   if [ -n "$apps" ]; then
     if command_v apt-get; then
+      limit_apt_repositories
+
       export DEBIAN_FRONTEND=noninteractive
       echo "$apps" | xargs ${SUDO:+"$SUDO"} apt-get -qq install --no-install-recommends -y >/dev/null 2>/dev/null ||
       ${SUDO:+"$SUDO"} apt-get -qq update &&
