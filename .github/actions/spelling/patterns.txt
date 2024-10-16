@@ -24,6 +24,9 @@ catching 'templatesz'
 # regex
 \\b
 
+# search and replace
+\bs/.*?/.*?/[g;]
+
 # commits
 https://perldoc\.perl\.org/.*
 
