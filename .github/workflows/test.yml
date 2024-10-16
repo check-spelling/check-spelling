@@ -109,6 +109,25 @@ jobs:
 
               sudo apt-get update &&
               sudo apt-get install -y $APT_PACKAGES
+
+              if apt-cache policy gh | grep -q 'Candidate: 2.4.0'; then
+              (
+                gh_os=$(uname | tr A-Z a-z)
+                gh_arch=$(uname -m | tr A-Z a-z)
+                case "$gh_arch" in
+                  x86_64)
+                    go_arch=amd64;;
+                  aarch64)
+                    go_arch=arm64;;
+                esac
+                case "gh_os" in
+                  darwin)
+                    gh_os=macOS;;
+                esac
+                ./gh-release-downloader cli/cli "$extra_bin/gh" "$gh_os" "$gh_arch" bin/
+              ) &
+              fi
+
             fi
           )
           [ -z "$cpan_modules" ] || command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
