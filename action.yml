@@ -388,10 +388,9 @@ runs:
         : Shim path and local actions
         THIS_ACTION_PATH=$(realpath "$GITHUB_ACTION_PATH")
         echo "THIS_ACTION_PATH=$THIS_ACTION_PATH" >> "$GITHUB_ENV"
-        mkdir -p .git/
-        if ! ln -s "$THIS_ACTION_PATH"/actions .git/check-spelling-actions; then
-          mkdir -p .git/check-spelling-actions
-          rsync --delete -a "$THIS_ACTION_PATH"/actions/ .git/check-spelling-actions/
+        if ! ln -s "$THIS_ACTION_PATH"/actions ../check-spelling-actions; then
+          mkdir -p ../check-spelling-actions
+          rsync --delete -a "$THIS_ACTION_PATH"/actions/ ../check-spelling-actions/
           echo "USE_RSYNC_FOR_LOCAL_CHECK_SPELLING_ACTIONS=1" >> "$GITHUB_ENV"
         fi
         echo "$THIS_ACTION_PATH/wrappers" >> "$GITHUB_PATH"
@@ -409,7 +408,7 @@ runs:
         secpoll
     - name: alternate-engine
       if: inputs.alternate_engine
-      uses: ./.git/check-spelling-actions/checkout
+      uses: ./../check-spelling-actions/checkout
       with:
         show-progress: false
         path: alternate-engine
@@ -423,7 +422,7 @@ runs:
       run: |
         : Install alternate engine
         rsync --delete --exclude=.git -a alternate-engine/ "$GITHUB_ACTION_PATH"/
-        rsync --delete -a alternate-engine/actions/ ./.git/check-spelling-actions/
+        rsync --delete -a alternate-engine/actions/ ../check-spelling-actions/
         rm -rf alternate-engine/
     - name: check-actions (for alternate engine)
       if: inputs.alternate_engine
@@ -438,7 +437,7 @@ runs:
     - name: checkout
       id: checkout
       if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task
-      uses: ./.git/check-spelling-actions/checkout
+      uses: ./../check-spelling-actions/checkout
       with:
         show-progress: false
         path: ${{ inputs.experimental_path }}
@@ -466,7 +465,7 @@ runs:
     - name: checkout-merge
       id: checkout-merge
       if: github.event.pull_request.number && (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task)
-      uses: ./.git/check-spelling-actions/checkout-merge
+      uses: ./../check-spelling-actions/checkout-merge
       with:
         path: ${{ inputs.experimental_path }}
     - name: save sha
@@ -542,7 +541,7 @@ runs:
         inputs.custom_task != 'comment' &&
         ((failure() && env.MERGE_FAILED != '1') || steps.spelling.outputs.followup) &&
         steps.spelling.outputs.internal_state_directory
-      uses: ./.git/check-spelling-actions/upload-artifact
+      uses: ./../check-spelling-actions/upload-artifact
       with:
         name:
           ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling-comment', inputs.report_title_suffix) || 'check-spelling-comment' }}
@@ -551,7 +550,7 @@ runs:
     - name: artifact-sarif
       id: artifact-sarif
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != ''
-      uses: ./.git/check-spelling-actions/upload-artifact
+      uses: ./../check-spelling-actions/upload-artifact
       with:
         name: ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling-sarif', inputs.report_title_suffix) || 'check-spelling-sarif' }}
         retention-days: 1
@@ -559,7 +558,7 @@ runs:
     - name: upload-sarif
       id: upload-sarif
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF_LIMITED != '' && !steps.save-sha.outputs.skip-upload
-      uses: ./.git/check-spelling-actions/upload-sarif
+      uses: ./../check-spelling-actions/upload-sarif
       with:
         wait-for-processing: ${{ inputs.wait-for-sarif-processing != '' && inputs.wait-for-sarif-processing || 'false' }}
         sarif_file: ${{ env.UPLOAD_SARIF_LIMITED }}

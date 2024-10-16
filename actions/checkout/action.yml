@@ -67,15 +67,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-  - name: Stash actions
-    shell: bash
-    if: ${{ inputs.path == '' || inputs.path == '.' || inputs.path == './' }}
-    run: |
-      : Stash actions
-      mv .git/check-spelling-actions ../.git-check-spelling-actions
-      if ! find .git -mindepth 1 | grep -q .; then
-        rmdir .git 2> /dev/null
-      fi
   - name: Checkout
     id: action
     continue-on-error: true
@@ -101,10 +92,3 @@ runs:
       ssh-user: ${{ inputs.ssh-user }}
       submodules: ${{ inputs.submodules }}
       token: ${{ inputs.token }}
-  - name: Restore actions
-    shell: bash
-    if: ${{ inputs.path == '' || inputs.path == '.' || inputs.path == './' }}
-    run: |
-      : Restore actions
-      mkdir -p .git
-      mv ../.git-check-spelling-actions .git/check-spelling-actions
