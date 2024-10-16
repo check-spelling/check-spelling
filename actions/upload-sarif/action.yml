@@ -1,0 +1,51 @@
+name: 'Code Scanning : Upload SARIF'
+description: 'Upload the analysis results'
+inputs:
+  sarif_file:
+    description:
+    required: false
+    default: '../results'
+  checkout_path:
+    description:
+    required: false
+    default: ${{ github.workspace }}
+  ref:
+    description:
+    required: false
+  sha:
+    description:
+    required: false
+  token:
+    description:
+    required: false
+    default: ${{ github.token }}
+  matrix:
+    description:
+    default: ${{ toJson(matrix) }}
+  category:
+    description:
+    required: false
+  wait-for-processing:
+    description:
+    required: true
+    default: "true"
+outputs:
+  sarif-id:
+    description:
+    value: ${{ steps.action.outputs.ref.sarif-id }}
+runs:
+  using: "composite"
+  steps:
+  - name: Upload SARIF
+    id: action
+    continue-on-error: true
+    uses: github/codeql-action/upload-sarif@v3
+    with:
+      category: ${{ inputs.category }}
+      checkout_path: ${{ inputs.checkout_path }}
+      matrix: ${{ inputs.matrix }}
+      ref: ${{ inputs.ref }}
+      sarif_file: ${{ inputs.sarif_file }}
+      sha: ${{ inputs.sha }}
+      token: ${{ inputs.token }}
+      wait-for-processing: ${{ inputs.wait-for-processing }}

@@ -1,0 +1,110 @@
+name: 'Checkout Stub'
+description: 'Checkout a Git repository at a particular version'
+inputs:
+  repository:
+    description:
+    default: ${{ github.repository }}
+  ref:
+    description:
+  token:
+    description:
+    default: ${{ github.token }}
+  ssh-key:
+    description:
+  ssh-known-hosts:
+    description:
+  ssh-strict:
+    description:
+    default: true
+  ssh-user:
+    description:
+    default: git
+  persist-credentials:
+    description:
+    default: true
+  path:
+    description:
+  clean:
+    description:
+    default: true
+  filter:
+    description:
+    default: null
+  sparse-checkout:
+    description:
+    default: null
+  sparse-checkout-cone-mode:
+    description:
+    default: true
+  fetch-depth:
+    description:
+    default: 1
+  fetch-tags:
+    description:
+    default: false
+  show-progress:
+    description:
+    default: true
+  lfs:
+    description:
+    default: false
+  submodules:
+    description:
+    default: false
+  set-safe-directory:
+    description:
+    default: true
+  github-server-url:
+    description:
+    required: false
+outputs:
+  ref:
+    description:
+    value: ${{ steps.action.outputs.ref }}
+  commit:
+    description:
+    value: ${{ steps.action.outputs.commit }}
+runs:
+  using: "composite"
+  steps:
+  - name: Stash actions
+    shell: bash
+    if: ${{ inputs.path == '' || inputs.path == '.' || inputs.path == './' }}
+    run: |
+      : Stash actions
+      mv .git/check-spelling-actions ../.git-check-spelling-actions
+      if ! find .git -mindepth 1 | grep -q .; then
+        rmdir .git 2> /dev/null
+      fi
+  - name: Checkout
+    id: action
+    continue-on-error: true
+    uses: actions/checkout@v4
+    with:
+      clean: ${{ inputs.clean }}
+      fetch-depth: ${{ inputs.fetch-depth }}
+      fetch-tags: ${{ inputs.fetch-tags }}
+      filter: ${{ inputs.filter }}
+      github-server-url: ${{ inputs.github-server-url }}
+      lfs: ${{ inputs.lfs }}
+      path: ${{ inputs.path }}
+      persist-credentials: ${{ inputs.persist-credentials }}
+      ref: ${{ inputs.ref }}
+      repository: ${{ inputs.repository }}
+      set-safe-directory: ${{ inputs.set-safe-directory }}
+      show-progress: ${{ inputs.show-progress }}
+      sparse-checkout: ${{ inputs.sparse-checkout }}
+      sparse-checkout-cone-mode: ${{ inputs.sparse-checkout-cone-mode }}
+      ssh-key: ${{ inputs.ssh-key }}
+      ssh-known-hosts: ${{ inputs.ssh-known-hosts }}
+      ssh-strict: ${{ inputs.ssh-strict }}
+      ssh-user: ${{ inputs.ssh-user }}
+      submodules: ${{ inputs.submodules }}
+      token: ${{ inputs.token }}
+  - name: Restore actions
+    shell: bash
+    if: ${{ inputs.path == '' || inputs.path == '.' || inputs.path == './' }}
+    run: |
+      : Restore actions
+      mkdir -p .git
+      mv ../.git-check-spelling-actions .git/check-spelling-actions

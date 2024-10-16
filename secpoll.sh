@@ -88,29 +88,32 @@ case "$poll_status" in
   ;;
 esac
 
-for fallback_action in $(
-  perl -ne 'next unless m{uses: check-spelling/((?:github|actions)-[^/]*)(?:/[^@]*|)\@(\S+)}; print "$2.$1\n"' "$THIS_ACTION_PATH/action.yml" |sort -u
-); do
-  response=$(lookup "$fallback_action.flaky-action.$base_domain")
-  case "$response" in
-  *"command not found")
-    echo 'assume?' > /dev/null
-  ;;
-  "")
-    echo 'assume good?' > /dev/null
-  ;;
-  "1 "*)
-    echo 'known good!' > /dev/null
-  ;;
-  "2 "*)
-    echo 'known stale :(' > /dev/null
-  ;;
-  "3 "*)
-    echo 'known very bad!' > /dev/null
-  ;;
-  "4 "*)
-    echo 'known broken -- we can handle this' > /dev/null
-    action="$fallback_action" perl -e 'my $action=$ENV{action}; $action =~ s/[-.]/_/g; print "replace_$action=1\n"' >> "$GITHUB_ENV"
-  ;;
-  esac
+for action_file in $(find "$spellchecker/actions/" -type f -name action.yml); do
+  for fallback_action in $(
+    perl -ne 'next unless m{uses: (github|actions)/([^/]*)(?:/[^@]*|)\@(\S+)}; print "$3.$1-$2\n"' $action_file |sort -u
+  ); do
+    response=$(lookup "$fallback_action.flaky-action.$base_domain")
+    case "$response" in
+    *"command not found")
+      echo 'assume?' > /dev/null
+    ;;
+    "")
+      echo 'assume good?' > /dev/null
+    ;;
+    "1 "*)
+      echo 'known good!' > /dev/null
+    ;;
+    "2 "*)
+      echo 'known stale :(' > /dev/null
+    ;;
+    "3 "*)
+      echo 'known very bad!' > /dev/null
+    ;;
+    "4 "*)
+      echo 'known broken -- we can handle this' > /dev/null
+      action="$fallback_action" perl -e 'my $action=$ENV{action}; $action =~ s/[-.]/_/g; print "replace_$action=1\n"' >> "$GITHUB_ENV"
+      perl -pi -e 's%uses:\s+([^/]+)/%uses: check-spelling/$1-%' "$action_file"
+    ;;
+    esac
+  done
 done
