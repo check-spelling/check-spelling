@@ -50,7 +50,6 @@ if ($budget) {
     $budget -= length $prefix + length $suffix;
     print STDERR "Summary Tables budget reduced to: $budget\n";
 }
-print $prefix;
 for $table_file (sort @tables) {
     my $header = "<details><summary>:open_file_folder: $table_file</summary>\n\n".
         "note|path\n".
@@ -76,6 +75,10 @@ for $table_file (sort @tables) {
             print STDERR "::warning title=summary-tables::budget exceeded for $table_file (summary-table-skipped)\n";
             next;
         }
+    }
+    if ($prefix ne '') {
+        print $prefix;
+        $prefix = '';
     }
     print $header;
     print join ("", sort CheckSpelling::Util::case_biased @entries);
