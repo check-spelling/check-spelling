@@ -472,16 +472,8 @@ runs:
       uses: check-spelling/checkout-merge@v0.0.6
       with:
         path: ${{ inputs.experimental_path }}
-    - name: raise-merge-failure
-      if: steps.checkout-merge.outputs.message
-      env:
-        MESSAGE: ${{ steps.checkout-merge.outputs.message }}
-      shell: bash
-      run: |
-        : Report checkout merge failure
-        echo ::error "::$MESSAGE"
     - name: save sha
-      if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task) && inputs.use_sarif
+      if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task) && inputs.use_sarif && steps.checkout-merge.outputs.message == ''
       shell: bash
       run: |
         : Save SHA
@@ -489,8 +481,11 @@ runs:
         git show HEAD
         PRIVATE_SARIF_REF="refs/pull/${{ github.event.pull_request.number }}/merge"
         echo "PRIVATE_SARIF_REF=$PRIVATE_SARIF_REF" >> "$GITHUB_ENV"
-        git fetch origin "$PRIVATE_SARIF_REF"
-        echo "PRIVATE_SARIF_SHA=$(git rev-parse FETCH_HEAD)" >> "$GITHUB_ENV"
+        if git fetch origin "$PRIVATE_SARIF_REF"; then
+          echo "PRIVATE_SARIF_SHA=$(git rev-parse FETCH_HEAD)" >> "$GITHUB_ENV"
+        else
+          echo "::warning ::$PRIVATE_SARIF_REF is unavailable (missing-merge-head)"
+        fi
     - name: prepare
       if: inputs.task && inputs.task != 'spelling' && (!env.ACT || github.token)
       run: |
@@ -612,7 +607,7 @@ runs:
     - name: upload-sarif
       continue-on-error: true
       id: upload-sarif
-      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF_LIMITED != '' && !env.replace_v3_github_codeql_action
+      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF_LIMITED != '' && env.PRIVATE_SARIF_REF && env.PRIVATE_SARIF_SHA
       uses: github/codeql-action/upload-sarif@v3
       with:
         wait-for-processing: ${{ inputs.wait-for-sarif-processing != '' && inputs.wait-for-sarif-processing || 'false' }}
