@@ -155,7 +155,7 @@ sub check_current_script {
         return;
     }
     my $filename = tempfile_name();
-    my $source = 'https://raw.githubusercontent.com/check-spelling/check-spelling/main/apply.pl';
+    my $source = 'https://raw.githubusercontent.com/check-spelling/check-spelling/prerelease/apply.pl';
     download_with_curl($source, $filename);
     if ($? == 0) {
         if (compare_files($filename, $0)) {
