@@ -115,6 +115,7 @@ jobs:
       with:
         suppress_push_for_open_pull_request: 1
         check_file_names: 1
+        config: introspected/.github/actions/spelling
         experimental_path: introspected
         spell_check_this: check-spelling/spell-check-this@prerelease
         checkout: false
