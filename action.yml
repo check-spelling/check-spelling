@@ -470,11 +470,12 @@ runs:
       with:
         path: ${{ inputs.experimental_path }}
     - name: save sha
+      id: save-sha
       if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task) && inputs.use_sarif && steps.checkout-merge.outputs.message == ''
       shell: bash
+      working-directory: ${{ inputs.experimental_path }}
       run: |
         : Save SHA
-        cd "${{ inputs.experimental_path }}"
         git show HEAD
         PRIVATE_SARIF_REF="refs/pull/${{ github.event.pull_request.number }}/merge"
         echo "PRIVATE_SARIF_REF=$PRIVATE_SARIF_REF" >> "$GITHUB_ENV"
@@ -482,6 +483,7 @@ runs:
           echo "PRIVATE_SARIF_SHA=$(git rev-parse FETCH_HEAD)" >> "$GITHUB_ENV"
         else
           echo "::warning ::$PRIVATE_SARIF_REF is unavailable (missing-merge-head)"
+          echo "skip-upload=1" >> "$GITHUB_OUTPUT"
         fi
     - name: prepare
       if: inputs.task && inputs.task != 'spelling' && (!env.ACT || github.token)
@@ -546,14 +548,6 @@ runs:
           ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling-comment', inputs.report_title_suffix) || 'check-spelling-comment' }}
         path:
           ${{ steps.spelling.outputs.internal_state_directory }}
-    - name: Shim SARIF
-      id: shim-sarif
-      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && env.PRIVATE_SARIF_SHA != ''
-      shell: bash
-      run: |
-        : Shim SARIF
-        cd "${{ inputs.experimental_path }}"
-        git reset "$PRIVATE_SARIF_SHA"
     - name: artifact-sarif
       id: artifact-sarif
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != ''
@@ -564,7 +558,7 @@ runs:
         path: ${{ env.UPLOAD_SARIF }}
     - name: upload-sarif
       id: upload-sarif
-      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF_LIMITED != '' && env.PRIVATE_SARIF_REF && env.PRIVATE_SARIF_SHA
+      if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF_LIMITED != '' && !steps.save-sha.outputs.skip-upload
       uses: ./.git/check-spelling-actions/upload-sarif
       with:
         wait-for-processing: ${{ inputs.wait-for-sarif-processing != '' && inputs.wait-for-sarif-processing || 'false' }}
@@ -574,6 +568,7 @@ runs:
         ref: ${{ env.PRIVATE_SARIF_REF }}
         sha: ${{ env.PRIVATE_SARIF_SHA }}
         token: ${{ inputs.sarif-token || inputs.GITHUB_TOKEN }}
+        check-spelling-working-directory: ${{ inputs.experimental_path }}
     - name: dump-sarif
       continue-on-error: true
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && (github.run_attempt > 1 || env.ACT) && env.UPLOAD_SARIF_LIMITED != ''

@@ -29,6 +29,10 @@ inputs:
     description:
     required: true
     default: "true"
+  check-spelling-working-directory:
+    description:
+    required: false
+    default: ''
 outputs:
   sarif-id:
     description:
@@ -36,6 +40,14 @@ outputs:
 runs:
   using: "composite"
   steps:
+  - name: Shim SARIF
+    id: shim-sarif
+    if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && env.PRIVATE_SARIF_SHA != ''
+    shell: bash
+    working-directory: ${{ inputs.check-spelling-working-directory }}
+    run: |
+      : Shim SARIF
+      git reset "$PRIVATE_SARIF_SHA"
   - name: Upload SARIF
     id: action
     continue-on-error: true
