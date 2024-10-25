@@ -750,13 +750,18 @@ are_issue_head_and_base_in_same_repo() {
   are_head_and_base_in_same_repo "$pull_request_info" ''
 }
 
-report_if_bot_comment_is_minimized() {
+get_comment_minimized_status() {
   minimized_info=$(mktemp_json)
+  comment_id_to_check="$1"
   call_curl \
   "$GITHUB_GRAPHQL_URL" \
   -H "Content-Type: application/json" \
-  --data-binary "$(echo '{}' | jq --arg query "query { node(id: $Q$bot_comment_node_id$Q) { ... on IssueComment { isMinimized minimizedReason } } }" '.query = $query')" \
+  --data-binary "$(echo '{}' | jq --arg query "query { node(id: $Q$comment_id_to_check$Q) { ... on IssueComment { isMinimized minimizedReason } } }" '.query = $query')" \
   > "$minimized_info"
+}
+
+report_if_bot_comment_is_minimized() {
+  get_comment_minimized_status "$bot_comment_node_id"
 
   if [ "$(jq '.data.node.isMinimized' "$minimized_info")" == 'true' ]; then
     minimized_reason=$(jq -r '.data.node.minimizedReason | ascii_downcase // empty' "$minimized_info")
@@ -3480,12 +3485,19 @@ should_collapse_previous_and_not_comment() {
     set_comments_url "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" "$GITHUB_SHA"
   fi
   previous_comment_node_id="$(get_previous_comment)"
-  if [ -n "$previous_comment_node_id" ]; then
-    echo "previous_comment=$previous_comment_node_id" >> "$GITHUB_OUTPUT"
-    echo "$previous_comment_node_id" > "$data_dir/previous_comment.txt"
-    quit_without_error=1
-    quit 3
+  if [ -z "$previous_comment_node_id" ]; then
+    return
   fi
+
+  get_comment_minimized_status "$previous_comment_node_id"
+  if [ "$(jq '.data.node.isMinimized // empty' "$minimized_info")" == 'true' ]; then
+    return
+  fi
+
+  echo "previous_comment=$previous_comment_node_id" >> "$GITHUB_OUTPUT"
+  echo "$previous_comment_node_id" > "$data_dir/previous_comment.txt"
+  quit_without_error=1
+  quit 3
 }
 
 exit_if_no_unknown_words() {
