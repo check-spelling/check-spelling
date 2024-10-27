@@ -371,7 +371,9 @@ sub split_file {
   my $unix_new_lines = () = $head =~ /\n/gi;
   my $mac_new_lines = () = $head =~ /\r/gi;
   local $/;
-  if ($dos_new_lines >= $unix_new_lines && $dos_new_lines >= $mac_new_lines) {
+  if ($unix_new_lines == 0 && $mac_new_lines == 0) {
+    $/ = "\n";
+  } elsif ($dos_new_lines >= $unix_new_lines && $dos_new_lines >= $mac_new_lines) {
     $/ = "\r\n";
   } elsif ($mac_new_lines > $unix_new_lines) {
     $/ = "\r";
