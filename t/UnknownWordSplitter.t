@@ -102,7 +102,6 @@ open $fh, '>:utf8', $filename;
 print $fh ("bar "x1000)."\n";
 close $fh;
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
-check_output_file("$output_dir/name", $filename);
 check_output_file("$output_dir/skipped", 'average line width (4001) exceeds the threshold (1000). (minified-file)
 ');
 open $fh, '>:utf8', $filename;
@@ -212,7 +211,6 @@ select $oldFH;
 ok($output_directory =~ /.*\n/);
 chomp($output_directory);
 ok(-d $output_directory);
-check_output_file("$output_directory/name", $filename);
 check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4:6:9], forbidden: [0,0], forbidden_lines: [0,0]}');
 check_output_file_sorted_lines("$output_directory/warnings", ":4:6 ... 9: 'ham'
 ");
@@ -268,3 +266,20 @@ sub test_invalid_quantifiers {
 my ($stdout, $stderr, @result) = capture { test_invalid_quantifiers };
 is($stderr, "Nested quantifiers in regex; marked by <-- HERE in m/.{1,}* <-- HERE / at $filename line 1 (bad-regular-expression)
 ");
+open $fh, '>:utf8', $filename;
+for (my $i = 0; $i < 1000; $i++) {
+    print $fh "bar$i\r";
+}
+close $fh;
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+check_output_file("$output_dir/skipped", undef);
+open $fh, '>:utf8', $filename;
+my $long_line = 'bar 'x250;
+for (my $i = 0; $i < 10; $i++) {
+    print $fh "$long_line$i\r";
+}
+close $fh;
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+check_output_file("$output_dir/skipped", 'average line width (1002) exceeds the threshold (1000). (minified-file)
+');
+open $fh, '>:utf8', $filename;

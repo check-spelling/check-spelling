@@ -365,6 +365,20 @@ sub split_file {
   }
   open FILE, '<', $file;
   binmode FILE;
+  my $head;
+  read(FILE, $head, 4096);
+  my $dos_new_lines = () = $head =~ /\r\n/gi;
+  my $unix_new_lines = () = $head =~ /\n/gi;
+  my $mac_new_lines = () = $head =~ /\r/gi;
+  local $/;
+  if ($dos_new_lines >= $unix_new_lines && $dos_new_lines >= $mac_new_lines) {
+    $/ = "\r\n";
+  } elsif ($mac_new_lines > $unix_new_lines) {
+    $/ = "\r";
+  } else {
+    $/ = "\n";
+  }
+  seek(FILE, 0, 0);
   ($words, $unrecognized) = (0, 0);
   %unique = ();
   %unique_unrecognized = ();
