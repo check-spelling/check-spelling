@@ -157,7 +157,7 @@ push @cleanup_arguments, $internal_state_directory;
 
 $stderr = cleanup($stderr, @cleanup_arguments);
 $stderr =~ s<8123/basic\.txt \(to \S+\)><8123/basic\.txt (to ...)>;
-$stderr =~ s/^\[(?:[A-Z][a-z]{2} ){2}\d+ (\d+:){2}\d+\d+ \d+\]/DATESTAMP/gm;
+$stderr =~ s/^\[(?:[A-Z][a-z]{2} ){2}[ \d]\d (\d+:){2}\d+\d+ \d+\]/DATESTAMP/gm;
 $stderr =~ s/PHP \d+.*?( Development Server)/PHP PHP_VERSION$1/;
 $stderr =~ s/^DATESTAMP \[.*?\]:\d+/DATESTAMP [LOCAL_ADDRESS]:PORT/gm;
 $stderr =~ s/^Installed:.*\n//gm;
