@@ -256,7 +256,7 @@ sub split_line {
 
   my ($words, $unrecognized) = (0, 0);
   my ($line, $unique_ref, $unique_unrecognized_ref, $unrecognized_line_items_ref) = @_;
-    $line =~ s/(?:$rsqm|&apos;|&#39;|\%27|')+/'/g;
+    $line =~ s/(?:$rsqm|&apos;|&#39;|\%27|&#8217;|&#x2019;|&rsquo;|\\u2019|\x{2019}|')+/'/g;
     $line =~ s/(?:$ignore_pattern)+/ /g;
     while ($line =~ s/($upper_pattern{2,})($upper_pattern$lower_pattern{2,})/ $1 $2 /g) {}
     while ($line =~ s/((?:$lower_pattern|$punctuation_pattern)+)($upper_pattern)/$1 $2/g) {}
