@@ -21,8 +21,10 @@ if [ "$INITIALIZED" != defined ]; then
   }
   start=$(now)
   if to_boolean ${DEBUG:+"$DEBUG"} ||
-    [ "$GH_ACTION_REF" = prerelease ] &&
-    [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
+    {
+      [ "$GH_ACTION_REF" = prerelease ] &&
+      [ "$GITHUB_RUN_ATTEMPT" != 1 ]
+    }; then
     set -x
   fi
   begin_group() {
