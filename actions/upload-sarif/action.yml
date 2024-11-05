@@ -21,7 +21,7 @@ inputs:
     default: ${{ github.token }}
   matrix:
     description:
-    default: ${{ toJson(matrix) }}
+    default: ${{ matrix && toJson(matrix) || '' }}
   category:
     description:
     required: false
@@ -29,35 +29,239 @@ inputs:
     description:
     required: true
     default: "true"
-  check-spelling-working-directory:
+  started-at:
     description:
     required: false
     default: ''
+  tool-names:
+    description:
+    required: false
+    default: check-spelling
+  analysis-key:
+    description:
+    required: false
+    default: ''
+  analysis-name:
+    description:
+    required: false
+    default: check-spelling
 outputs:
   sarif-id:
     description:
-    value: ${{ steps.action.outputs.ref.sarif-id }}
+    value: ${{ steps.action.outputs.id }}
 runs:
   using: "composite"
   steps:
-  - name: Shim SARIF
-    id: shim-sarif
-    if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != '' && env.PRIVATE_SARIF_SHA != ''
+  - name: Confirm commit is in GitHub Repository
+    id: check-commit
     shell: bash
-    working-directory: ${{ inputs.check-spelling-working-directory }}
     run: |
-      : Shim SARIF
-      git reset "$PRIVATE_SARIF_SHA"
-  - name: Upload SARIF
-    id: action
-    continue-on-error: true
-    uses: github/codeql-action/upload-sarif@v3
-    with:
+      : Confirm commit is in GitHub Repository
+      if [ -n "$trace" ]; then
+        set -x
+      fi
+      github_api_url="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA"
+      http_code=$(
+        curl -s -L \
+          -X HEAD \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GH_TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -w "%{http_code}" \
+          "$github_api_url" ||
+        true
+      )
+      if [ "$http_code" = 422 ]; then
+        echo "::notice title=Skipping SARIF Upload::GitHub does not think $GITHUB_REPOSITORY has commit $GITHUB_SHA"
+        echo "missing=1" >> "$GITHUB_OUTPUT"
+      fi
+    working-directory: ${{ inputs.checkout_path }}
+    env:
+      GH_TOKEN: ${{ inputs.token }}
       category: ${{ inputs.category }}
-      checkout_path: ${{ inputs.checkout_path }}
       matrix: ${{ inputs.matrix }}
       ref: ${{ inputs.ref }}
       sarif_file: ${{ inputs.sarif_file }}
       sha: ${{ inputs.sha }}
-      token: ${{ inputs.token }}
-      wait-for-processing: ${{ inputs.wait-for-processing }}
+      started_at: ${{ inputs.started-at }}
+  - name: Upload SARIF
+    if: ${{ ! steps.check-commit.outputs.missing }}
+    id: action
+    continue-on-error: true
+    shell: bash
+    run: |
+      : Upload SARIF
+      if [ -n "$trace" ]; then
+        set -x
+      fi
+      export sarif_gz_file=$(mktemp)
+      cat "$sarif_file" | gzip -c | base64 -w0 > "$sarif_gz_file"
+
+      sarif_payload=$(mktemp)
+      sha="${sha:-$GITHUB_SHA}" \
+      ref="${ref:-$GITHUB_REF}" \
+      perl -e '
+        use Cwd;
+        my $dir = getcwd;
+        use JSON::PP;
+        my $json = JSON::PP->new->utf8->pretty->sort_by(sub { $JSON::PP::a cmp $JSON::PP::b });
+        my %data;
+        my $sarif;
+        {
+          local $/;
+          open my $input, "<", $ENV{"sarif_gz_file"};
+          $sarif = <$input>;
+        }
+        my $sha=$ENV{"sha"};
+        my $commit_oid="";
+        my $base_oid="";
+        my $head_oid="";
+        my $trace=$ENV{"trace"};
+        print STDERR qq<git show -s --format=raw '$sha'\n> if $trace;
+        my @lines=split /\n/, `git show -s --format=raw '$sha'`;
+        for (@lines) {
+          chomp;
+          if (/^commit (.*)/ && $commit_oid == "") {
+            $commit_oid=$1;
+          } elsif (/^parent (.*)/) {
+            if ($base_oid == "") {
+              $base_oid=$1;
+            } elsif ($head_oid == "") {
+              $head_oid=$1;
+            }
+          }
+          last if /^\s*$/;
+        }
+        if ($commit_oid == $sha && length($base_oid) == 40 && length($head_oid) == 40) {
+          $data{"base_sha"}=$base_oid;
+          $data{"base_ref"}="refs/heads/$ENV{GITHUB_BASE_REF}";
+        }
+        $data{"commit_oid"}=$sha;
+        $data{"ref"}=$ENV{"ref"};
+        $data{"analysis_key"}=$ENV{"analysis_key"};
+        $data{"analysis_name"}=$ENV{"analysis_name"};
+        $data{"checkout_uri"}="file://$dir";
+        my @tool_names=split /\s+/, $ENV{"tool_names"};
+        $data{"tool_names"}=\@tool_names;
+        $data{"sarif"}=$sarif;
+        my $run_id=$ENV{"GITHUB_RUN_ID"}+0;
+        $data{"workflow_run_id"}=$run_id;
+        my $run_attempt=$ENV{"GITHUB_RUN_ATTEMPT"}+0;
+        $data{"workflow_run_attempt"}=$run_attempt;
+        my $started_at=$ENV{"started_at"};
+        $data{"started_at"}=$started_at if defined $started_at;
+        print encode_json \%data;
+      ' > "$sarif_payload" || result=$?
+      if [ -n "$result" ]; then
+        echo "::error title=upload-sarif::Failed to prepare data. Please check https://github.com/check-spelling/check-spelling/issues/?q=is%3Aissue%20upload-sarif-failed-prepare for bugs, and if not file a bug: https://github.com/check-spelling/check-spelling/issues/new?title=[upload-sarif-failed-prepare]%20scenario&body=Please%20provide%20details+preferably%20including%20a%20link%20to%20a%20workflow%20run,%20the%20configuration%20of%20the%20repository,%20and%20anything%20else%20you%20may%20know%20about%20the%20problem. (upload-sarif-failed-prepare)"
+        exit $result
+      fi
+      rm -f "$sarif_gz_file"
+
+      result=$(mktemp)
+      headers_file=$(mktemp)
+      github_api_url="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/code-scanning/analysis"
+      curl -s -L \
+        -X PUT \
+        -D "$headers_file" \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer $GH_TOKEN" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "$github_api_url" \
+        -d @"$sarif_payload" \
+        -o "$result"
+
+      get_response_code() {
+        perl -e '$/="\r\n\r\n"; my $code = -1; while (<>) { $_ =~ s/\n.*/\n/s; next unless m!HTTP/\S+\s+(\d+)!; $code=$1;} print $code;' "$headers_file"
+      }
+      response_code=$(get_response_code)
+      case "$response_code" in
+      2*)
+        ;;
+      *)
+        b='`' echo "$github_api_url returned $b$response_code$b"
+        echo "Request payload:"
+        cat "$sarif_payload"
+        echo
+        echo "Response:"
+        cat "$result"
+        exit
+      esac
+      rm -f "$sarif_payload"
+
+      sarif_id=$(jq -r '.id // empty' "$result" || true)
+      sarif_url="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/sarifs/$sarif_id"
+      (
+        echo "id=$sarif_id"
+        echo "url=$sarif_url"
+      ) > "$GITHUB_OUTPUT"
+      if [ -z "$sarif_id" ]; then
+        echo "jq was unhappy about $github_api_url's result:"
+        cat "$result"
+      fi
+    working-directory: ${{ inputs.checkout_path }}
+    env:
+      GH_TOKEN: ${{ inputs.token }}
+      category: ${{ inputs.category }}
+      matrix: ${{ inputs.matrix }}
+      ref: ${{ inputs.ref }}
+      sarif_file: ${{ inputs.sarif_file }}
+      sha: ${{ inputs.sha }}
+      started_at: ${{ inputs.started-at }}
+      tool_names: ${{ inputs.tool-names }}
+      analysis_key: ${{ inputs.analysis-key }}
+      analysis_name: ${{ inputs.analysis-name }}
+  - name: Wait for SARIF processing
+    id: wait-for-processing
+    continue-on-error: true
+    shell: bash
+    if: ${{ fromJSON(inputs.wait-for-processing) && steps.action.outputs.url }}
+    run: |
+      : Wait for SARIF processing
+      if [ -n "$trace" ]; then
+        set -x
+      fi
+      deadline=$(( $(date +%s) + $(( ${STATUS_CHECK_TIMEOUT_MILLISECONDS:-$(( 2 * 60 * 1000 ))} / 1000 )) ))
+      check_interval=$(( ${STATUS_CHECK_FREQUENCY_MILLISECONDS:-$(( 5 * 1000 ))} / 1000 ))
+      result=$(mktemp)
+      while : ; do
+        if ! curl -s -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GH_TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "$sarif_url" \
+          -o "$result"; then
+          echo 'An error occurred checking the status of the sarif delivery. It should still be processed in the background, but errors that occur during processing may not be reported.' >&2
+          break
+        fi
+        processing_status=$(jq -r '.processing_status // empty' "$result" || true)
+        case "$processing_status" in
+          complete)
+            break
+            ;;
+          failed)
+            errors="$(
+              jq -r '.errors // empty' "$result" ||
+              cat "$result"
+            )"
+            echo "Code Scanning could not process the submitted SARIF file:\n$errors" >&2
+            break
+            ;;
+          pending)
+            if [ -n "$DEBUG" ]; then
+              echo 'Analysis processing is still pending...' >&2
+            fi
+            ;;
+          *)
+            echo "Unexpected response ($processing_status) from sarifs endpoint ($sarif_url)" >&2
+            cat "$result" >&2
+            break
+            ;;
+        esac
+        [ $(date +%s) -lt $deadline ] || break
+        sleep $check_interval
+      done
+    env:
+      GH_TOKEN: ${{ inputs.token }}
+      sarif_id: ${{ steps.action.outputs.id }}
+      sarif_url: ${{ steps.action.outputs.url }}

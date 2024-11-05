@@ -1862,7 +1862,14 @@ set_up_reporter() {
   if to_boolean "$INPUT_USE_SARIF"; then
     sarif_error=$(mktemp)
     sarif_output=$(mktemp_json)
-    GH_TOKEN="$GITHUB_TOKEN" gh api --method POST -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/code-scanning/sarifs" > "$sarif_output" 2> "$sarif_error" || true
+    GH_TOKEN="$GITHUB_TOKEN" gh \
+    api \
+    --method POST \
+    -H "Accept: application/vnd.github+json" \
+    -f commit_sha=0000000000000000000000000000000000000000 \
+    -f ref=refs/tags/check-spelling-sarif-pre-flight-test \
+    -f sarif="" \
+    "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/code-scanning/sarifs" > "$sarif_output" 2> "$sarif_error" || true
     if grep -q 'Advanced Security must be enabled' "$sarif_error" ||
        grep -q 'GH_TOKEN environment' "$sarif_error"; then
       if true || to_boolean "$DEBUG"; then
@@ -2345,6 +2352,10 @@ build_file_list() {
 }
 
 run_spell_check() {
+  echo "started-at=$(perl -e 'use POSIX qw(strftime);
+my $now = time();
+print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
+')" >> "$GITHUB_OUTPUT"
   set_output_variable internal_state_directory "$data_dir"
 
   synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
@@ -2761,7 +2772,7 @@ spelling_body() {
     else
       sarif_report_query="branch:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
     fi
-    sarif_report="[:angel: SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+$sarif_report_query),"
+    sarif_report="[:angel: SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+tool:check-spelling+$sarif_report_query),"
     # check-spelling here corresponds to the uses github/codeql-action/upload-sarif / with / category
     code_scanning_results_run=$(GH_TOKEN="$GITHUB_TOKEN" gh api "/repos/$GITHUB_REPOSITORY/commits/${GITHUB_HEAD_SHA:-$GITHUB_SHA}/check-runs" -q '.check_runs|map(select(.app.id==57789 and .name=="check-spelling"))[0].url // empty' || true)
     if [ -n "$code_scanning_results_run" ]; then
@@ -3072,6 +3083,7 @@ quit() {
   if [ -e /proc/self/cgroup ]; then
     echo "docker_container=$(perl -ne 'next unless m{:/docker/(.*)}; print $1;last' /proc/self/cgroup)" >> "$GITHUB_OUTPUT"
   fi
+  set_output_variable workflow-path "$workflow_path"
   cat "$output_variables" >> "$GITHUB_OUTPUT"
   if [ -n "$GH_OUTPUT_STUB" ]; then
     perl -pe 's/^(\S+)=(.*)/::set-output name=$1::$2/' "$GITHUB_OUTPUT"

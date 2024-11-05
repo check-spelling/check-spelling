@@ -50,3 +50,6 @@ https://perldoc\.perl\.org/.*
 
 # gh-release-downloader usage
 gh-release-downloader.*<.*>
+
+# partial fingerprint
+"cs0": ".*?"

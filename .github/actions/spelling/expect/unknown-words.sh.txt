@@ -5,6 +5,7 @@ cpanminus
 excludelist
 fchurn
 githubcli
+gmtime
 gpg
 GRAPHQL
 gsutil
