@@ -1525,20 +1525,44 @@ limit_apt_repositories() {
   }
 }
 
+apt_install() {
+  apt_out=$(mktemp)
+  apt_err=$(mktemp)
+  ${SUDO:+"$SUDO"} apt-get -qq -y --no-install-recommends satisfy "$1" > $apt_out 2> $apt_err
+}
+
 install_tools() {
-  if [ -n "$perl_libs" ] && ! command_v cpanm; then
-    command -v cpanm >/dev/null 2>/dev/null ||
-      curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
-  fi
-  if [ -n "$apps" ]; then
+  if [ -n "$apps$perl_libs" ]; then
     if command_v apt-get; then
       limit_apt_repositories
 
       export DEBIAN_FRONTEND=noninteractive
-      echo "$apps" | xargs ${SUDO:+"$SUDO"} apt-get -qq install --no-install-recommends -y >/dev/null 2>/dev/null ||
-      ${SUDO:+"$SUDO"} apt-get -qq update &&
-      echo "$apps" | xargs ${SUDO:+"$SUDO"} apt-get -qq install --no-install-recommends -y >/dev/null 2>/dev/null
+      perl_debian_packages=$(
+        for perl_lib in $perl_libs; do
+          echo $(get_apt_perl_lib $perl_lib)
+        done
+      )
+      apps="$apps $perl_debian_packages"
+      if ! apt_install "$apps"; then
+        ${SUDO:+"$SUDO"} apt-get -qq update
+        if apt_install "$apps"; then
+          :
+        else
+          exit_code=$?
+          echo apt output:
+          cat "$apt_out"
+          echo apt error:
+          cat "$apt_err"
+          exit $exit_code
+        fi
+      fi
       echo "Installed:$apps" >&2
+      full_perl_libs="$perl_libs"
+      perl_libs=
+      for perl_lib in $perl_libs; do add_perl_lib $perl_lib; done
+      if [ -n "$perl_libs" ] && ! command_v cpanm; then
+        apt_install cpanm
+      fi
       apps=
     elif command_v apk; then
       echo "$apps" | xargs apk add
@@ -1551,6 +1575,9 @@ install_tools() {
     fi
   fi
   if [ -n "$perl_libs" ]; then
+    if ! command_v cpanm; then
+      curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
+    fi
     echo "$perl_libs" | xargs perl "$(command -v cpanm)" --notest
     perl_libs=''
   fi
@@ -1578,18 +1605,20 @@ add_app() {
 else
 add_app() {
   if ! command_v "$1"; then
-    apps="$apps $@"
+    apps="$apps $(echo "$@"|perl -pe 's/\s+(?=\S)/,/g;s/,*$/,/')"
   fi
 }
 fi
 
+get_apt_perl_lib() {
+  apt_package_infix=$(echo "$1"|perl -pe 's/::/-/;$_=(lc $_)')
+  any=lib"any"
+  echo "lib$apt_package_infix-perl | $any$apt_package_infix-perl | lib$apt_package_infix-xs-perl,"
+}
+
 add_perl_lib() {
   if ! perl -M"$1" -e '' 2>/dev/null; then
-    if [ -n "$HAS_APT" ]; then
-      apps="$apps lib$(echo "$1"|perl -pe 's/::/-/;$_=(lc $_)')-perl"
-    else
-      perl_libs="$perl_libs $1"
-    fi
+    perl_libs="$perl_libs $1"
   fi
 }
 
