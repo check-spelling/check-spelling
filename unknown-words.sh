@@ -1625,9 +1625,6 @@ set_up_tools() {
   add_app file
   add_app git
   add_app zip
-  if need_hunspell; then
-    add_app hunspell
-  fi
   if ! command_v gh; then
     if command_v apt-get && ! apt-cache policy gh | grep -q Candidate:; then
       curl -A "$curl_ua" -f -s -S -L https://cli.github.com/packages/githubcli-archive-keyring.gpg |
@@ -1799,6 +1796,7 @@ get_extra_dictionaries() {
 }
 
 set_up_reporter() {
+  set_up_tools
   if to_boolean "$DEBUG"; then
     echo 'env:'
     env -0|sort -z|tr '\0' '\n'
@@ -1811,7 +1809,6 @@ set_up_reporter() {
     cat "$GITHUB_EVENT_PATH"
   fi
   if to_boolean "$INPUT_USE_SARIF"; then
-    set_up_tools
     sarif_error=$(mktemp)
     sarif_output=$(mktemp_json)
     GH_TOKEN="$GITHUB_TOKEN" gh api --method POST -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/code-scanning/sarifs" > "$sarif_output" 2> "$sarif_error" || true
