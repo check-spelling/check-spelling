@@ -1701,6 +1701,7 @@ call_curl() {
        [ "$response_code" -eq 307 ] ||
        [ "$response_code" -eq 308 ]; then
       curl_url="$(perl -ne 'next unless /^location:\s*(\S+)/i; print $1' "$response_headers")"
+      delay=0
     elif [ "$response_code" -ne 429 ] &&
        [ "$response_code" -ne 502 ] &&
        [ "$response_code" -ne 503 ]; then
@@ -1710,8 +1711,9 @@ call_curl() {
         rm -f "$response_headers"
       fi
       return
+    else
+      delay="$("$calculate_delay" "$response_headers")"
     fi
-    delay="$("$calculate_delay" "$response_headers")"
     (echo "call_curl received a $response_code and will wait for ${delay}s:"; grep -E -i 'x-github-request-id|x-rate-limit-|retry-after' "$response_headers") >&2
     sleep "$delay"
     curl_attempt="$(( curl_attempt + 1 ))"
