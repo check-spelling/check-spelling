@@ -1,9 +1,12 @@
 #!/usr/bin/env perl
+use 5.022;
+use feature 'unicode_strings';
+use Encode qw/decode_utf8 encode_utf8 FB_DEFAULT/;
 use JSON::PP;
 my $input = $ENV{INPUTS};
 my %inputs;
 if ($input) {
-    %inputs = %{decode_json $input};
+    %inputs = %{decode_json(Encode::encode_utf8($input))};
 }
 
 for my $key (keys %inputs) {
@@ -33,7 +36,7 @@ for my $key (keys %inputs) {
 my $action_json_path = $ENV{action_yml_json};
 exit unless defined $action_json_path && -f $action_json_path;
 my $action_json;
-open $action_json_file, '<', $action_json_path;
+open my $action_json_file, '<', $action_json_path;
 {
     local $/ = undef;
     $action_json = <$action_json_file>;
