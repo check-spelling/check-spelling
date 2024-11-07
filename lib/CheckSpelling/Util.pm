@@ -1,9 +1,11 @@
 #! -*-perl-*-
 
 use v5.20;
+use feature 'unicode_strings';
 
 package CheckSpelling::Util;
 
+use Encode qw/decode_utf8 encode_utf8 FB_DEFAULT/;
 use HTTP::Date;
 use feature 'signatures';
 no warnings qw(experimental::signatures);
@@ -15,6 +17,10 @@ sub get_file_from_env {
   return $fallback unless defined $ENV{$var};
   $ENV{$var} =~ /(.*)/s;
   return $1;
+}
+
+sub get_file_from_env_utf8 {
+  return decode_utf8(get_file_from_env(@_));
 }
 
 sub get_val_from_env {

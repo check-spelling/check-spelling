@@ -136,12 +136,12 @@ sub load_dictionary {
   $longest_word = CheckSpelling::Util::get_val_from_env('INPUT_LONGEST_WORD', undef);
   $shortest_word = CheckSpelling::Util::get_val_from_env('INPUT_SHORTEST_WORD', undef);
   our ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
-  $ignore_pattern = CheckSpelling::Util::get_file_from_env('INPUT_IGNORE_PATTERN', q<[^a-zA-Z']>);
-  $upper_pattern = CheckSpelling::Util::get_file_from_env('INPUT_UPPER_PATTERN', '[A-Z]');
-  $lower_pattern = CheckSpelling::Util::get_file_from_env('INPUT_LOWER_PATTERN', '[a-z]');
-  $not_lower_pattern = CheckSpelling::Util::get_file_from_env('INPUT_NOT_LOWER_PATTERN', '[^a-z]');
-  $not_upper_or_lower_pattern = CheckSpelling::Util::get_file_from_env('INPUT_NOT_UPPER_OR_LOWER_PATTERN', '[^A-Za-z]');
-  $punctuation_pattern = CheckSpelling::Util::get_file_from_env('INPUT_PUNCTUATION_PATTERN', q<'>);
+  $ignore_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_IGNORE_PATTERN', q<[^a-zA-Z']>);
+  $upper_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_UPPER_PATTERN', '[A-Z]');
+  $lower_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_LOWER_PATTERN', '[a-z]');
+  $not_lower_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_NOT_LOWER_PATTERN', '[^a-z]');
+  $not_upper_or_lower_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_NOT_UPPER_OR_LOWER_PATTERN', '[^A-Za-z]');
+  $punctuation_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_PUNCTUATION_PATTERN', q<'>);
   %dictionary = ();
 
   open(DICT, '<:utf8', $dict);
