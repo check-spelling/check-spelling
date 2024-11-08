@@ -510,7 +510,7 @@ runs:
                 act-summary
                 (
                   echo '# Workflow is missing permissions'
-                  echo 'Please add `actions: read` to enable check-spelling to retrieve the artifact it needs to post a comment. [more info](https://docs.check-spelling.dev/Workflow-Permissions#contents-read)'
+                  echo 'Please add `actions: read` to enable check-spelling to retrieve the artifact it needs to post a comment. [more info](https://docs.check-spelling.dev/Workflow-Permissions#actions-read)'
                   echo
                   echo '#### Technical details'
                   echo '```'
