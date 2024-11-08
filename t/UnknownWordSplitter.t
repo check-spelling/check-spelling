@@ -11,7 +11,7 @@ use File::Temp qw/ tempfile tempdir /;
 use Capture::Tiny ':all';
 
 use Test::More;
-plan tests => 44;
+plan tests => 47;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -52,19 +52,19 @@ bar";
 close $fh;
 is(CheckSpelling::UnknownWordSplitter::file_to_re($filename), "(?:foo)|(?:Mooprh)|(?:BROADDEPlay)|(?:bar)");
 $CheckSpelling::UnknownWordSplitter::word_match = CheckSpelling::UnknownWordSplitter::valid_word();
-is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b(?:\w){3,}\b)');
+is($CheckSpelling::UnknownWordSplitter::word_match, q<(?^u:\b(?:\w|'){3,}\b)>);
 $CheckSpelling::UnknownWordSplitter::shortest=100;
 $CheckSpelling::UnknownWordSplitter::longest="";
 CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
 is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 4);
 is($CheckSpelling::UnknownWordSplitter::shortest, 3);
 is($CheckSpelling::UnknownWordSplitter::longest, 13);
-is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b(?:\w){3,13}\b)');
+is($CheckSpelling::UnknownWordSplitter::word_match, q<(?^u:\b(?:[A-Z]|[a-z]|'){3,13}\b)>);
 $ENV{'INPUT_LONGEST_WORD'} = 5;
 $ENV{'INPUT_SHORTEST_WORD'} = '';
 CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
 is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 4);
-is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b(?:\w){3,5}\b)');
+is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b(?:[A-Z]|[a-z]|\'){3,5}\b)');
 my $directory = tempdir();
 open $fh, '>:utf8', "$directory/words";
 print $fh 'bar
@@ -246,6 +246,35 @@ close $fh;
 open $fh, '>', "$hunspell_dictionary_path/test.aff";
 close $fh;
 
+$dirname = tempdir();
+open $fh, '>:encoding(UTF-8)', "$directory/words";
+print $fh "bar
+fo'od
+gunz
+";
+close $fh;
+$ENV{'dict'} = "$directory/words";
+CheckSpelling::UnknownWordSplitter::init($dirname);
+delete $ENV{'dict'};
+($fh, $filename) = tempfile();
+print $fh "bar
+gunz
+foad
+fooo'd
+fo'od
+fa'ad
+";
+close $fh;
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+is(-e "$output_dir/skipped", undef);
+check_output_file("$output_dir/unknown", "fa'ad
+foad
+fooo'd
+");
+check_output_file("$output_dir/warnings", ":3:1 ... 5: 'foad'
+:4:1 ... 7: 'fooo'd'
+:6:1 ... 6: 'fa'ad'
+");
 $dirname = tempdir();
 ($fh, $filename) = tempfile();
 print $fh "\x05"x5;
