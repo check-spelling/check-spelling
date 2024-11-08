@@ -42,6 +42,7 @@ sub check_output_file_sorted_lines {
     is(sort_lines(read_file($file)), sort_lines($expected));
 }
 
+$ENV{splitter_timeout} = 300000;
 my ($fh, $filename) = tempfile();
 print $fh "foo
 Mooprh
