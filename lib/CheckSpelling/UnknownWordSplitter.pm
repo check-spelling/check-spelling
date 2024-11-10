@@ -288,6 +288,11 @@ sub split_line {
         next if $found;
       }
       my $key = lc $token;
+      if (defined $dictionary{$key}) {
+        ++$words;
+        $unique_ref->{$key}=1;
+        next;
+      }
       unless ($disable_word_collating) {
         $key =~ s/''+/'/g;
         $key =~ s/'[sd]$//;
