@@ -4,7 +4,7 @@
             "owner": "check-spelling-https",
             "pattern": [
                 {
-                    "regexp": "^(https://.+)#:(\\d+):(\\d+) \\.{3} (\\d+),\\s(Error|Warning|Notice)\\s-\\s(.+\\s\\((.+)\\))$",
+                    "regexp": "^\\s*(https://.+)#:(\\d+):(\\d+) \\.{3} (\\d+),\\s(Error|Warning|Notice)\\s-\\s(.+\\s\\((.+)\\))$",
                     "file": 1,
                     "line": 2,
                     "column": 3,
@@ -19,7 +19,7 @@
             "owner": "check-spelling-jq",
             "pattern": [
                 {
-                    "regexp": "^(jq): (error) \\(at ([^:]*):(\\d+)\\): (.*)$",
+                    "regexp": "^\\s*(jq): (error) \\(at ([^:]*):(\\d+)\\): (.*)$",
                     "file": 3,
                     "line": 4,
                     "severity": 2,
@@ -32,7 +32,7 @@
             "owner": "check-spelling-curl",
             "pattern": [
                 {
-                    "regexp": "^(curl): (\\d+) (.*)$",
+                    "regexp": "^\\s*(curl): (\\d+) (.*)$",
                     "severity": 2,
                     "message": 3,
                     "code": 1
@@ -43,7 +43,7 @@
             "owner": "check-spelling-git",
             "pattern": [
                 {
-                    "regexp": "^(fatal): ([^.'\"]+)(.*)$",
+                    "regexp": "^\\s*(fatal): ([^.'\"]+)(.*)$",
                     "severity": 1,
                     "message": 3,
                     "code": 2
@@ -54,7 +54,7 @@
             "owner": "check-spelling-perl-not-enough-arguments",
             "pattern": [
                 {
-                    "regexp": "^(Not enough arguments for.* at (.*?) line (\\d+))",
+                    "regexp": "^\\s*(Not enough arguments for.* at (.*?) line (\\d+))",
                     "message": 1,
                     "file": 2,
                     "line": 3
@@ -65,7 +65,7 @@
             "owner": "check-spelling-perl-compilation-failed",
             "pattern": [
                 {
-                    "regexp": "^(Compilation failed in.* at (.*?) line (\\d+))",
+                    "regexp": "^\\s*(Compilation failed in.* at (.*?) line (\\d+))",
                     "message": 1,
                     "file": 2,
                     "line": 3
@@ -76,7 +76,7 @@
             "owner": "check-spelling-perl-taint-failed",
             "pattern": [
                 {
-                    "regexp": "^(.* while running with -T switch at (.*?) line (\\d+))",
+                    "regexp": "^\\s*(.* while running with -T switch at (.*?) line (\\d+))",
                     "message": 1,
                     "file": 2,
                     "line": 3
