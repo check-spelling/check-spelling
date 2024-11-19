@@ -37,7 +37,7 @@ generate_instructions() {
       my $previous="";
       sub maybe_unlink { unlink($_[0]) if $_[0]; }
       while (<>) {
-        if ($ARGV ne $old_argv) { maybe_unlink($previous); $previous="$ARGV$suffix"; rename($ARGV, $previous); open(ARGV_OUT, ">$ARGV"); select(ARGV_OUT); $old_argv = $ARGV; }
+        if ($ARGV ne $old_argv) { maybe_unlink($previous); $previous="$ARGV$suffix"; rename($ARGV, $previous); open(ARGV_OUT, ">", $ARGV); select(ARGV_OUT); $old_argv = $ARGV; }
         next if /^(?:$re)(?:(?:\r|\n)*$| .*)/; print;
       }; maybe_unlink($previous);'"$q" |
     strip_lead >> "$instructions"
