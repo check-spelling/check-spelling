@@ -1916,7 +1916,6 @@ set_up_files() {
   fi
   get_project_files word_expectations.words "$expect_path"
   get_project_files expect.txt "$expect_path"
-  get_project_files_deprecated word_expectations.words whitelist.txt "$expect_path"
   expect_files="$from_expanded"
   expect_file="$from"
   if [ -n "$expect_files" ]; then
@@ -2169,9 +2168,6 @@ set_up_files() {
     cp "$patterns_path" "$patterns"
   fi
   get_project_files advice.md "$advice_path"
-  if [ ! -s "$advice_path" ]; then
-    get_project_files_deprecated advice.md advice.txt "$advice_path_txt"
-  fi
   get_project_files sarif.json "$sarif_overlay_path"
 
   if [ -n "$debug" ]; then
