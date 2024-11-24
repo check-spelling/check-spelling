@@ -26,6 +26,7 @@ jobs:
     - name: perl configuration
       id: perl-config
       run: |
+        : Perl configuration
         perl_modules="$(
           echo "
           Module::Build::Tiny
@@ -45,6 +46,7 @@ jobs:
         required_perl_modules: ${{ steps.perl-config.outputs.perl-modules }}
         GH_TOKEN: ${{ github.token }}
       run: |
+        : Test
         extra_bin=~/.extra-bin
         mkdir -p "$extra_bin"
         PATH="$extra_bin:$PATH"
@@ -161,6 +163,7 @@ jobs:
       id: coverage
       if: success() || failure()
       run: |
+        : Calculate coverage
         cover_command=`command -v cover`
         if [ -n "$cover_command" ]; then
         perl `command -v cover` -ignore /usr/bin/shasum -report html
@@ -199,6 +202,7 @@ jobs:
       id: test
       shell: bash
       run: |
+        : Test
         cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
         # Standalone self-test of unknown-words
 
@@ -232,6 +236,7 @@ jobs:
     - name: artifact note
       if: steps.upload-artifact.outcome == 'success'
       run: |
+        : Artifact note
         cat <<EOF >> "$GITHUB_STEP_SUMMARY"
         # apply.pl and artifact
         You should be able to use [\`apply.pl\`](https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/apply.pl) with standalone-artifact.
