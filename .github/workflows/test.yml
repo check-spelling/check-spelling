@@ -147,18 +147,39 @@ jobs:
             perl -I. -M$m -e ''
           done
         )
+        cover_output=$(mktemp)
+        perl `command -v cover` -test 2>&1 | tee -a "$cover_output" || failed=$?
         echo '::group::cover'
         (
-          echo '<details><summary>cover</summary>'
+          echo '# Tests'
+          echo 'test|result';
+          echo '-|-';
+          perl -ne '
+            $new_state = 0;
+            if (m<t/.*\.t \.+ ok|^---|^\s*Failed test:|^\s*Non-zero exit status:|\(Wstat>) {
+              $new_state = 1;
+            }
+            next unless ($new_state || $state);
+            last if /^--+(?: --+){3}/;
+            $state = $new_state;
+            next unless /\w/;
+            next if $last_line eq $_;
+            $last_line = $_;
+            s/ \.+ ok/|:white_check_mark:/ || s/ \.+ /|/;
+            s/^\s+(.*):\s*/... $1|/;
+            s/\s+(\(Wstat)/|:x: $1/ unless /\|/;
+            s/All tests successful\./All tests|:white_check_mark:/;
+            print' "$cover_output"
+          echo
+          echo '<details><summary>Details</summary>'
           echo
           echo '```'
-        ) >> "$GITHUB_STEP_SUMMARY"
-        perl `command -v cover` -test 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-        (
+          cat "$cover_output"
           echo '```'
           echo '</details>'
         ) >> "$GITHUB_STEP_SUMMARY"
         echo ::endgroup::
+        exit $failed
     - name: calculate coverage
       id: coverage
       if: success() || failure()
