@@ -6,6 +6,7 @@ excludelist
 fchurn
 githubcli
 gpg
+GRAPHQL
 gsutil
 keyring
 maxdepth

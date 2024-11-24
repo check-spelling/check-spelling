@@ -180,10 +180,6 @@ dispatcher() {
         fi
       fi
       ;;
-    schedule)
-      export GH_TOKEN="$GITHUB_TOKEN"
-      exec "$spellchecker/check-pull-requests.sh"
-      ;;
     issue_comment)
       if to_boolean "$DEBUG"; then
         set -x

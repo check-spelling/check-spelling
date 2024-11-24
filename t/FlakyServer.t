@@ -98,7 +98,7 @@ sub cleanup {
     $text =~ s!^ \Q.github/actions/spelling/expect/README.md.txt\E\s+\|\s+1 -\n!!m;
     # The README.md.txt file can sort before or after the new expect file and we don't actually care about it, as it's a fixed value.
     # Then we remove the diff itself.
-    $text =~ s!^\Qdiff --git a/.github/actions/spelling/expect/README.md.txt b/.github/actions/spelling/expect/README.md.txt\E\nindex [0-9a-f]{6,}\.\.[0-9a-f]{6,} 100644\n\Q--- a/.github/actions/spelling/expect/README.md.txt\E\n\Q+++ b/.github/actions/spelling/expect/README.md.txt\E\n\Q@@ -1,4 +1,3 @@\E\n gsutil\n spammed\n timeframe\n-workflows\n!!gm;
+    $text =~ s!^\Qdiff --git a/.github/actions/spelling/expect/README.md.txt b/.github/actions/spelling/expect/README.md.txt\E\nindex [0-9a-f]{6,}\.\.[0-9a-f]{6,} 100644\n\Q--- a/.github/actions/spelling/expect/README.md.txt\E\n\Q+++ b/.github/actions/spelling/expect/README.md.txt\E\n\Q@@ -1,3 +1,2 @@\E\n gsutil\n spammed\n-workflows\n!!gm;
     $text =~ s/^index 0+\.\.[0-9a-f]{6,}$/index GIT_DIFF_NEW_FILE/gm;
     $text =~ s/^index [0-9a-f]{6,}\.\.[0-9a-f]{6,} 100644$/index GIT_DIFF_CHANGED_FILE/gm;
   }
