@@ -57,29 +57,6 @@ jobs:
             done | xargs
           )
           command -v cover >/dev/null 2>/dev/null || APT_PACKAGES="libdevel-cover-perl $APT_PACKAGES"
-          command -v jd && HAS_JD=1 || HAS_JD=
-          (
-            if [ -z "$HAS_JD" ]; then
-              JD_BIN="$extra_bin"/jd
-              key_go_arch=GO"ARCH"
-              key_go_os=GO"OS"
-              if command -v go >/dev/null 2>/dev/null; then
-                go_os=$(go env "$key_go_os")
-                go_arch=$(go env "$key_go_arch")
-              else
-                go_os=$(uname | tr A-Z a-z)
-                go_arch=$(uname -m | tr A-Z a-z)
-                case "$go_arch" in
-                  x86_64)
-                    go_arch=amd64;;
-                  aarch64)
-                    go_arch=arm64;;
-                esac
-              fi
-              ./gh-release-downloader josephburnett/jd "$JD_BIN" "$go_os" "$go_arch" ||
-              echo 'Could not install jd' >&2
-            fi
-          ) &
           if command -v apt-get >/dev/null 2>/dev/null && ! command -v cpanm >/dev/null 2>/dev/null; then
             APT_PACKAGES="cpanminus $APT_PACKAGES"
           fi

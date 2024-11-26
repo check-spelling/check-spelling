@@ -3,7 +3,9 @@
 package CheckSpelling::Sarif;
 
 our $VERSION='0.1.0';
+our $flatten=0;
 
+use Digest::SHA qw($errmsg);
 use JSON::PP;
 use Hash::Merge qw( merge );
 
@@ -24,10 +26,15 @@ sub double_slash_escape {
     s/(["()\]\\])/\\\\$1/g;
     return $_;
 }
+
 sub parse_warnings {
     my ($warnings) = @_;
+    our $flatten;
     my @results;
     open WARNINGS, '<', $warnings || print STDERR "Could not open $warnings\n";
+    my $rules = ();
+    my %encoded_files = ();
+    my %hashes_needed_for_files = ();
     while (<WARNINGS>) {
         next if m{^https://};
         next unless m{^(.+):(\d+):(\d+) \.\.\. (\d+),\s(Error|Warning|Notice)\s-\s(.+\s\((.+)\))$};
@@ -38,17 +45,120 @@ sub parse_warnings {
         # double-slash-escape `"`, `(`, `)`, `]`
         $message = double_slash_escape $message;
         # encode `message` and `file` to protect against low ascii`
-        $file = url_encode $file;
+        my $encoded_file = url_encode $file;
+        $encoded_files{$encoded_file} = $file;
         # hack to make the first `...` identifier a link (that goes nowhere, but is probably blue and underlined) in GitHub's sarif view
         $message =~ s/(^|[^\\])\`([^`]+[^`\\])\`/${1}[${2}](#security-tab)/;
         # replace '`' with `\`+`"` because GitHub's SARIF parser doesn't like them
         $message =~ s/\`/\\"/g;
-        my $result_json = qq<{"ruleId": "$code", "ruleIndex": 0,"message": { "text": "$message" }, "locations": [ { "physicalLocation": { "artifactLocation": { "uri": "$file", "uriBaseId": "%SRCROOT%" }, "region": { "startLine": $line, "startColumn": $column, "endColumn": $endColumn } } } ] }>;
-        my $result = decode_json $result_json;
-        push @results, $result;
+        unless (defined $rules->{$code}) {
+            $rules->{$code} = {};
+        }
+        my $rule = $rules->{$code};
+        unless (defined $rule->{$message}) {
+            $rule->{$message} = [];
+        }
+        my $hashed_message = Digest::SHA::sha1_base64($message);
+        $hashes_needed_for_files{$file} = () unless defined $hashes_needed_for_files{$file};
+        $hashes_needed_for_files{$file}{$line} = () unless defined $hashes_needed_for_files{$file}{$line};
+        $hashes_needed_for_files{$file}{$line}{$hashed_message} = () unless defined $hashes_needed_for_files{$file}{$line}{$hashed_message};
+        $hashes_needed_for_files{$file}{$line}{$hashed_message}{$column} = '1';
+        my $locations = $rule->{$message};
+        my $physicalLocation = {
+            'uri' => $encoded_file,
+            'startLine' => $line,
+            'startColumn' => $column,
+            'endColumn' => $endColumn,
+        };
+        push @$locations, $physicalLocation;
+        $rule->{$message} = $locations;
+    }
+    my %line_hashes = ();
+    my %used_hashes = ();
+    for my $file (sort keys %hashes_needed_for_files) {
+        $line_hashes{$file} = ();
+        unless (-e $file) {
+            delete $hashes_needed_for_files{$file};
+            next;
+        }
+        my @lines = sort (keys %{$hashes_needed_for_files{$file}});
+        open $file_fh, '<', $file;
+        my $line = shift @lines;
+        $line = 2 if $line == 1;
+        my $buffer = '';
+        while (<$file_fh>) {
+            if ($line == $.) {
+                my $sample = substr $buffer, -100, 100;
+                my $hash = Digest::SHA::sha1_base64($sample);
+                for (; $line == $.; $line = shift @lines) {
+                    my $hit = $used_hashes{$hash}++;
+                    $hash = "$hash:$hit" if $hit;
+                    $line_hashes{$file}{$line} = $hash;
+                    last unless @lines;
+                }
+            }
+            $buffer .= $_;
+            $buffer =~ s/\s+/ /g;
+            $buffer = substr $buffer, -100, 100;
+        }
+        close $file_fh;
+    }
+    for my $code (sort keys %{$rules}) {
+        my $rule = $rules->{$code};
+        for my $message (sort keys %{$rule}) {
+            my $hashed_message = Digest::SHA::sha1_base64($message);
+            my $locations = $rule->{$message};
+            my @locations_json = ();
+            my @fingerprints = ();
+            for my $location (@$locations) {
+                my $encoded_file = $location->{uri};
+                my $line = $location->{startLine};
+                my $column = $location->{startColumn};
+                my $endColumn = $location->{endColumn};
+                my $partialFingerprint = '';
+                my $file = $encoded_files{$encoded_file};
+                if (defined $line_hashes{$file}) {
+                    my $line_hash = $line_hashes{$file}{$line};
+                    if (defined $line_hash) {
+                        my @instances = sort keys %{$hashes_needed_for_files{$file}{$line}{$hashed_message}};
+                        my $hit = scalar @instances;
+                        while (--$hit > 0) {
+                            last if $instances[$hit] == $column;
+                        }
+                        $partialFingerprint = Digest::SHA::sha1_base64("$line_hash:$message:$hit");
+                    }
+                }
+                push @fingerprints, $partialFingerprint;
+                my $json_fragment = qq<{ "physicalLocation": { "artifactLocation": { "uri": "$encoded_file", "uriBaseId": "%SRCROOT%" }, "region": { "startLine": $line, "startColumn": $column, "endColumn": $endColumn } } }>;
+                push @locations_json, $json_fragment;
+            }
+            if ($flatten) {
+                my $locations_json_flat = join ',', @locations_json;
+                my $partialFingerprints;
+                my $partialFingerprint = (sort @fingerprints)[0];
+                if ($partialFingerprint ne '') {
+                    $partialFingerprints = qq<"partialFingerprints": { "cs0" : "$partialFingerprint" },>;
+                }
+                my $result_json = qq<{"ruleId": "$code", "ruleIndex": 0, $partialFingerprints "message": { "text": "$message" }, "locations": [ $locations_json_flat ] }>;
+                my $result = decode_json $result_json;
+                push @results, $result;
+            } else {
+                my $limit = scalar @locations_json;
+                for (my $i = 0; $i < $limit; ++$i) {
+                    my $locations_json_flat = $locations_json[$i];
+                    my $partialFingerprint = $fingerprints[$i];
+                    if ($partialFingerprint ne '') {
+                        $partialFingerprints = qq<"partialFingerprints": { "cs0" : "$partialFingerprint" },>;
+                    }
+                    my $result_json = qq<{"ruleId": "$code", "ruleIndex": 0, $partialFingerprints "message": { "text": "$message" }, "locations": [ $locations_json_flat ] }>;
+                    my $result = decode_json $result_json;
+                    push @results, $result;
+                }
+            }
+        }
     }
     close WARNINGS;
-    return @results;
+    return \@results;
 }
 
 sub read_sarif_file {
@@ -92,7 +202,7 @@ sub get_runs_from_sarif {
 }
 
 sub main {
-    my ($sarif_template_file, $sarif_template_overlay_file) = @_;
+    my ($sarif_template_file, $sarif_template_overlay_file, $category) = @_;
     unless (-f $sarif_template_file) {
         warn "Could not find sarif template";
         return '';
@@ -140,6 +250,10 @@ sub main {
                 my %sarif_json_run_hash=%{$sarif_json_run};
                 next unless defined $sarif_json_run_hash{'tool'};
 
+                my %sarif_json_run_automationDetails;
+                $sarif_json_run_automationDetails{id} = $category;
+                $sarif_json_run->{'automationDetails'} = \%sarif_json_run_automationDetails;
+
                 my %sarif_json_run_tool_hash = %{$sarif_json_run_hash{'tool'}};
                 next unless defined $sarif_json_run_tool_hash{'driver'};
 
@@ -169,9 +283,9 @@ sub main {
 
     $sarif{'runs'}[0]{'tool'}{'driver'}{'version'} = $ENV{CHECK_SPELLING_VERSION};
 
-    my @results = parse_warnings $ENV{warning_output};
-    if (@results) {
-        $sarif{'runs'}[0]{'results'} = \@results;
+    my $results = parse_warnings $ENV{warning_output};
+    if ($results) {
+        $sarif{'runs'}[0]{'results'} = $results;
     }
 
     return encode_json \%sarif;
