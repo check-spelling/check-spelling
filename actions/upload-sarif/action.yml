@@ -51,7 +51,7 @@ runs:
   - name: Upload SARIF
     id: action
     continue-on-error: true
-    uses: check-spelling-sandbox/github-codeql-action/upload-sarif@thin
+    uses: check-spelling-sandbox/github-codeql-action-upload-sarif@e953a616da437800417a5dff8ff55b651b33597e
     with:
       category: ${{ inputs.category }}
       checkout_path: ${{ inputs.checkout_path }}
