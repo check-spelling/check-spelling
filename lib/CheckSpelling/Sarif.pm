@@ -15,7 +15,7 @@ sub encode_low_ascii {
 
 sub url_encode {
     $_ = shift;
-    s<([^-!#\$&'()*+,/:;=?\@A-Za-z0-9_.~])><"%".sprintf("%02x",ord($1))>eg;
+    s<([^-!\$&'()*+,/:;=?\@A-Za-z0-9_.~])><"%".sprintf("%02x",ord($1))>eg;
     return $_;
 }
 
