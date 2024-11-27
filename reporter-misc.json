@@ -151,6 +151,17 @@
                     "severity": 4
                 }
             ]
+        },
+        {
+            "owner": "check-spelling-argument-list-too-long",
+            "pattern": [
+                {
+                    "regexp": "([^:]+): line (\\d+): ([^:]+: Argument list too long)$",
+                    "message": 3,
+                    "file": 1,
+                    "line": 2
+                }
+            ]
         }
     ]
 }
