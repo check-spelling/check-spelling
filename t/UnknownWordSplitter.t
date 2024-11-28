@@ -11,7 +11,7 @@ use File::Temp qw/ tempfile tempdir /;
 use Capture::Tiny ':all';
 
 use Test::More;
-plan tests => 47;
+plan tests => 48;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -313,3 +313,9 @@ $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/skipped", 'average line width (1002) exceeds the threshold (1000). (minified-file)
 ');
 open $fh, '>:utf8', $filename;
+print $fh "======= ==== === a ==== ======\r\n"x127;
+print $fh "======= wrnog === a ==== ======\r\n";
+close $fh;
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+check_output_file("$output_dir/warnings", ":128:9 ... 14: 'wrnog'
+");
