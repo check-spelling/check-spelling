@@ -372,6 +372,7 @@ sub split_file {
   binmode FILE;
   my $head;
   read(FILE, $head, 4096);
+  $head =~ s/(?:\r|\n)+$//;
   my $dos_new_lines = () = $head =~ /\r\n/gi;
   my $unix_new_lines = () = $head =~ /\n/gi;
   my $mac_new_lines = () = $head =~ /\r/gi;
