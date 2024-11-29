@@ -30,11 +30,11 @@
         },
         {
             "owner": "check-spelling-curl",
+            "severity": "warning",
             "pattern": [
                 {
-                    "regexp": "^\\s*(curl): (\\d+) (.*)$",
-                    "severity": 2,
-                    "message": 3,
+                    "regexp": "^\\s*(curl): \\(\\d+\\) (.*)$",
+                    "message": 2,
                     "code": 1
                 }
             ]
