@@ -67,6 +67,14 @@ dispatcher() {
           fi
           echo 'Cannot determine if there is an open pull request, proceeding as if there is not.'
         ) >&2
+      elif to_boolean "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST" && ! echo "$GITHUB_API_URL" | grep -q '://'; then
+        (
+          echo '$GITHUB_API_URL '"($GITHUB_API_URL) does not appear to be a url"
+          if [ -n "$ACT" ]; then
+            echo '[act] is probably misconfigured'
+          fi
+          echo 'Cannot determine if there is an open pull request, proceeding as if there is not.'
+        ) >&2
       elif to_boolean "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"; then
         pull_request_json="$(mktemp_json)"
         pull_request_headers="$(mktemp)"
