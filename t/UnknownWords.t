@@ -175,7 +175,9 @@ unless (defined $internal_state_directory) {
 make_path($run);
 
 write_file("$run/output.txt", $stdout);
-is($stdout, $expected_stdout, 'unknown-words.sh (stdout)');
+my @stdout = split /\n/, $stdout;
+my @expected_stdout = split /\n/, $expected_stdout;
+is_deeply(\@stdout, \@expected_stdout, 'unknown-words.sh (stdout)');
 
 like($stderr, qr{^\QFound conflicting inputs for conflicting-item (1): conflicting_item (2) (migrate-underscores-to-dashes)\E$}m, 'unknown-words.sh (stderr) conflicts');
 like($stderr, qr{^\QCensoring `ignoredValue` (unexpected-input-value)\E}m, , 'unknown-words.sh (stderr) censored');
