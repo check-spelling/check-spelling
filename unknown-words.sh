@@ -3499,6 +3499,9 @@ collapse_comment_mutation() {
 }
 
 collapse_comment() {
+  if [ -z "$GITHUB_GRAPHQL_URL" ]; then
+    return
+  fi
   call_curl \
   "$GITHUB_GRAPHQL_URL" \
   -H "Content-Type: application/json" \
