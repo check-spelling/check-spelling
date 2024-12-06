@@ -2009,6 +2009,10 @@ set_up_files() {
       echo '# Expect entries should not include non-word characters'
       echo "(?$bang$INPUT_UPPER_PATTERN|$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN|\\s|=)."
     ) > "$expect_splitter_configuration/forbidden.txt"
+    (
+      echo '# Allow commented lines in `expect.txt` files'
+      echo '^#.*'
+    ) > "$expect_splitter_configuration/patterns.txt"
     echo "$expect_files" |
     xargs env -i \
     SHELL="$SHELL" \
