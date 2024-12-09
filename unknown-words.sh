@@ -2434,7 +2434,11 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
   fi
   count="$(perl -e '$/="\0"; $count=0; while (<>) {s/\R//; $count++ if /./;}; print $count;' "$file_list")"
   if [ "$count" = "0" ]; then
-    echo ":0:0 ... 0, Warning - No files to check. (no-files-to-check)" >> "$early_warnings"
+    if ! to_boolean "$INPUT_CHECKOUT" && [ ! -d .git ]; then
+      echo "$workflow_path:0:0 ... 0, Error - No files to check. Did you forget to check out the repository? (missing-checkout)" >> "$early_warnings"
+    else
+      echo "$workflow_path:0:0 ... 0, Warning - No files to check. (no-files-to-check)" >> "$early_warnings"
+    fi
   fi
   begin_group "Spell checking ($count) files"
   get_file_list

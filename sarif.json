@@ -610,6 +610,32 @@
               }
             },
             {
+              "id": "missing-checkout",
+              "name": "MissingCheckout",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#missing-checkout",
+              "shortDescription": {
+                "text": "Missing checkout"
+              },
+              "fullDescription": {
+                "text": "There was no checkout present."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add `checkout: true` to the `step` `uses: check-spelling/check-spelling@...`'s `with:` block, or\n- Add a `uses: actions/checkout@...` step before the `uses: check-spelling/check-spelling@...` step\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
               "id": "missing-on-pull-request-event",
               "name": "MissingOnPullRequestEvent",
               "helpUri": "https://docs.check-spelling.dev/Event-descriptions#missing-on-pull-request-event",
