@@ -2030,6 +2030,7 @@ set_up_files() {
     INPUT_PUNCTUATION_PATTERN="$INPUT_PUNCTUATION_PATTERN" \
     INPUT_USE_MAGIC_FILE=0 \
     INPUT_USE_SARIF='' \
+    INPUT_DISABLE_CHECKS="single-line-file" \
     sandbox="$splitter_sandbox" \
     spellchecker="$spellchecker" \
     "$word_splitter" 2> /dev/null |

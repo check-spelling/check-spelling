@@ -675,6 +675,32 @@
                 "text": "?",
                 "markdown": "**Remediation (click \"Show more\" below)**:\n- You should never see this. Please file a bug (including your sarif.json).\n\n"
               }
+            },
+            {
+              "id": "single-line-file",
+              "name": "SingleLineFile",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#single-line-file",
+              "shortDescription": {
+                "text": "Single-line file"
+              },
+              "fullDescription": {
+                "text": "File has a single line. It's likely not a text file."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Split the file into multiple lines\n- If you have a file that can't be split and should be checked, please file a bug (including your file).\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }

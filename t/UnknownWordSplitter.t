@@ -11,7 +11,7 @@ use File::Temp qw/ tempfile tempdir /;
 use Capture::Tiny ':all';
 
 use Test::More;
-plan tests => 48;
+plan tests => 49;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 
@@ -100,7 +100,7 @@ check_output_file("$output_directory/unknown", 'Play
 check_output_file("$output_directory/warnings", ":3:8 ... 12: 'Play'
 ");
 open $fh, '>:utf8', $filename;
-print $fh ("bar "x1000)."\n";
+print $fh ("bar "x1000)."\n\n";
 close $fh;
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/skipped", 'average line width (4001) exceeds the threshold (1000). (minified-file)
@@ -282,6 +282,15 @@ close $fh;
 CheckSpelling::UnknownWordSplitter::init($dirname);
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 is(-e "$output_dir/skipped", undef);
+$dirname = tempdir();
+($fh, $filename) = tempfile();
+print $fh "\x05"x512;
+close $fh;
+CheckSpelling::UnknownWordSplitter::init($dirname);
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+
+check_output_file("$output_dir/skipped", 'file is a single line file. (single-line-file)
+');
 
 $ENV{INPUT_USE_MAGIC_FILE}='';
 
