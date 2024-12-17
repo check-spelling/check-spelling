@@ -245,7 +245,9 @@ check_output_file($more_warnings, '');
 my $file_names;
 ($fh, $file_names) = tempfile;
 print $fh 'apple
-pear';
+pear
+1/pear
+2/pear';
 close $fh;
 fill_file($forbidden_patterns, '# please avoid starting lines with "pe" followed by a letter.
 ^pe.
@@ -253,13 +255,17 @@ fill_file($forbidden_patterns, '# please avoid starting lines with "pe" followed
 $directory = stage_test($file_names, '{forbidden: [1], forbidden_lines: [2:1:3]}}', '', ":1:1 ... 5: 'apple'
 :2:1 ... 4: 'pear'
 :2:1 ... 3, Warning - `pea` matches a line_forbidden.patterns entry: `^pe.`. (forbidden-pattern)
+:3:3 ... 6: 'pear'
+:4:3 ... 6: 'pear'
 ", 'apple
 pear');
 $ENV{'check_file_names'} = $file_names;
+$ENV{'unknown_file_word_limit'} = 2;
 ($output, $error_lines) = run_test($directory);
 delete $ENV{'check_file_names'};
+delete $ENV{'unknown_file_word_limit'};
 check_output_file($counter_summary, '{
-"check-file-path": 2
+"check-file-path": 3
 ,"forbidden-pattern": 1
 }
 ');
@@ -272,6 +278,7 @@ check_output_file($forbidden_summary, '#### please avoid starting lines with "pe
 check_output_file($warning_output, 'apple:1:1 ... 5, Warning - `apple` is not a recognized word. (check-file-path)
 pear:1:1 ... 4, Warning - `pear` is not a recognized word. (check-file-path)
 pear:1:1 ... 3, Warning - `pea` matches a line_forbidden.patterns entry: `^pe.`. (forbidden-pattern)
+1/pear:1:3 ... 6, Warning - `pear` is not a recognized word. (check-file-path)
 ');
 truncate($forbidden_patterns, 0);
 

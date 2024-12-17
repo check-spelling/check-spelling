@@ -273,6 +273,7 @@ sub main {
   my $counter_summary = CheckSpelling::Util::get_file_from_env('counter_summary', '/dev/stderr');
   my $should_exclude_file = CheckSpelling::Util::get_file_from_env('should_exclude_file', '/dev/null');
   my $unknown_word_limit = CheckSpelling::Util::get_val_from_env('unknown_word_limit', undef);
+  my $unknown_file_word_limit = CheckSpelling::Util::get_val_from_env('unknown_file_word_limit', undef);
   my $candidate_example_limit = CheckSpelling::Util::get_file_from_env('INPUT_CANDIDATE_EXAMPLE_LIMIT', '3');
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
   my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
@@ -490,6 +491,7 @@ sub main {
   }
 
   my %last_seen;
+  my %unknown_file_word_count;
   for my $directory (@directories) {
     next unless (-s "$directory/warnings");
     next unless open(NAME, '<:utf8', "$directory/name");
@@ -518,6 +520,9 @@ sub main {
         $file = $check_file_paths[$1];
         if ($warning =~ s/:(\d+ \.\.\. \d+): '(.*)'/:$1, Warning - `$2` is not a recognized word\. \(check-file-path\)/) {
           next if skip_item($2);
+          if (defined $unknown_file_word_limit) {
+            next if ++$unknown_file_word_count{$2} > $unknown_file_word_limit;
+          }
         }
         print WARNING_OUTPUT "$file$warning\n";
         count_warning $warning;

@@ -205,6 +205,10 @@ inputs:
     description: "Only report an unknown word this many times"
     required: false
     default: "5"
+  unknown_file_word_limit:
+    description: "Only report an unknown word in file paths this many times"
+    required: false
+    default: "10"
   errors:
     description: "List of events to treat as errors"
     required: false
