@@ -139,7 +139,7 @@ sub parse_warnings {
                 if ($partialFingerprint ne '') {
                     $partialFingerprints = qq<"partialFingerprints": { "cs0" : "$partialFingerprint" },>;
                 }
-                my $result_json = qq<{"ruleId": "$code", "ruleIndex": 0, $partialFingerprints "message": { "text": "$message" }, "locations": [ $locations_json_flat ] }>;
+                my $result_json = qq<{"ruleId": "$code", $partialFingerprints "message": { "text": "$message" }, "locations": [ $locations_json_flat ] }>;
                 my $result = decode_json $result_json;
                 push @results, $result;
             } else {
@@ -150,7 +150,7 @@ sub parse_warnings {
                     if ($partialFingerprint ne '') {
                         $partialFingerprints = qq<"partialFingerprints": { "cs0" : "$partialFingerprint" },>;
                     }
-                    my $result_json = qq<{"ruleId": "$code", "ruleIndex": 0, $partialFingerprints "message": { "text": "$message" }, "locations": [ $locations_json_flat ] }>;
+                    my $result_json = qq<{"ruleId": "$code", $partialFingerprints "message": { "text": "$message" }, "locations": [ $locations_json_flat ] }>;
                     my $result = decode_json $result_json;
                     push @results, $result;
                 }
@@ -290,6 +290,35 @@ sub main {
     my $results = parse_warnings $ENV{warning_output};
     if ($results) {
         $sarif{'runs'}[0]{'results'} = $results;
+        my %codes;
+        for my $result_ref (@$results) {
+            my %result = %{$result_ref};
+            $codes{$result{'ruleId'}} = 1;
+        }
+        my $rules_ref = $sarif{'runs'}[0]{'tool'}{'driver'}{'rules'};
+        my @rules = @{$rules_ref};
+        my $missing_rule_definition_id = 'missing-rule-definition';
+        my ($missing_rule_definition_ref) = grep { $_->{'id'} eq $missing_rule_definition_id } @rules;
+        @rules = grep { defined $codes{$_->{'id'}} } @rules;
+        my $code_index = 0;
+        my %defined_codes = map { $_->{'id'} => $code_index++ } @rules;
+        my @missing_codes = grep { !defined $defined_codes{$_}} keys %codes;
+        my $missing_rule_definition_index;
+        if (@missing_codes) {
+            push @rules, $missing_rule_definition_ref;
+            $missing_rule_definition_index = $defined_codes{$missing_rule_definition_id} = $code_index++;
+            for my $missing_code (@missing_codes) {
+                my $result_json = qq<{"ruleId": "$missing_rule_definition_id", $partialFingerprints "message": { "text": "$message" }, "locations": [ $locations_json_flat ] }>;
+                my $result = decode_json $result_json;
+                push @{$results}, $result;
+            }
+        }
+        $sarif{'runs'}[0]{'tool'}{'driver'}{'rules'} = \@rules;
+        for my $result_index (0 .. scalar @{$results}) {
+            my $result = $results->[$result_index];
+            next if defined $defined_codes{$result->{'ruleId'}};
+            $result->{'ruleIndex'} = $missing_rule_definition_index;
+        }
     }
 
     return encode_json \%sarif;

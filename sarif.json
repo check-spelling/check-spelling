@@ -634,6 +634,21 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "missing-rule-definition",
+              "name": "MissingRuleDefinition",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#missing-rule-definition",
+              "shortDescription": {
+                "text": "Missing Rule Definition"
+              },
+              "fullDescription": {
+                "text": "Unfortunately the rule definition for an event hasn't been written. This is a bug in check-spelling."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n- You should never see this. Please file a bug (including your sarif.json).\n\n"
+              }
             }
           ]
         }
