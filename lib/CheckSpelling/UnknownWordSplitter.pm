@@ -494,7 +494,8 @@ sub split_file {
             my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
             print WARNINGS ":$.:$begin ... $end: '$match'\n";
           } else {
-            print WARNINGS ":$.:1 ... $line_length, Warning - Could not identify whole word `$raw_token` in line. (token-is-substring)\n";
+            my $offset = $line_length + 1;
+            print WARNINGS ":$.:1 ... $offset, Warning - Could not identify whole word `$raw_token` in line. (token-is-substring)\n";
           }
         }
       }
