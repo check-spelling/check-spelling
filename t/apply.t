@@ -36,7 +36,9 @@ sub run_apply {
   my $result = $results[0] >> 8;
   return ($stdout, $stderr, $result);
 }
-($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
+my $expired_artifact = `gh api '/repos/check-spelling/check-spelling/actions/artifacts?name=check-spelling-comment' | jq -r '.artifacts | map(select (.expired == true))[0].workflow_run.id'`;
+chomp $expired_artifact;
+($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', $expired_artifact);
 
 my $sandbox_name = basename $sandbox;
 my $temp_name = basename $temp;
@@ -50,7 +52,7 @@ delete $ENV{GH_TOKEN};
 my $real_home = $ENV{HOME};
 my $real_http_socket = `gh config get http_unix_socket`;
 $ENV{HOME} = $sandbox;
-($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
+($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', $expired_artifact);
 
 like($stdout, qr{gh auth login|set the GH_TOKEN environment variable}, 'apply.pl (stdout) not authenticated');
 like($stderr, qr{SPELLCHECKER/apply.pl requires a happy gh, please try 'gh auth login'}, 'apply.pl (stderr) not authenticated');
@@ -63,7 +65,7 @@ if (-d "$real_home/.config/gh/") {
 }
 
 `gh config set http_unix_socket /dev/null`;
-($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
+($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', $expired_artifact);
 
 like($stdout, qr{SPELLCHECKER/apply.pl: Unix http socket is not working\.}, 'apply.pl (stdout) bad_socket');
 like($stdout, qr{http_unix_socket: /dev/null}, 'apply.pl (stdout) bad_socket');
@@ -74,7 +76,7 @@ $ENV{HOME} = $real_home;
 `gh config set http_unix_socket '$real_http_socket'`;
 
 $ENV{https_proxy}='http://localhost:9123';
-($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', 6117093644);
+($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', $expired_artifact);
 
 like($stdout, qr{SPELLCHECKER/apply.pl: Proxy is not accepting connections\.}, 'apply.pl (stdout) bad_proxy');
 like($stdout, qr{https_proxy: 'http://localhost:9123'}, 'apply.pl (stdout) bad_proxy');
