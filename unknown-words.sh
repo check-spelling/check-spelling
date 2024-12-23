@@ -3336,7 +3336,9 @@ generate_sample_commit_help() {
   )
   if should_patch_head; then
     remote_ref="$GITHUB_HEAD_REF"
-    remote_sha="$(get_pr_sha_from_url "$pull_request_url")"
+    if [ -n "$pull_request_url" ]; then
+      remote_sha="$(get_pr_sha_from_url "$pull_request_url")"
+    fi
     remote_sha="${remote_sha:-$GITHUB_SHA}"
   else
     remote_ref="${GITHUB_BASE_REF:-$GITHUB_REF_NAME}"
