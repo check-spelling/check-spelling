@@ -61,7 +61,7 @@ jobs:
           fi
           [ -z "$APT_PACKAGES" ] ||
           (
-            if ! sudo apt-get install -y -q $APT_PACKAGES; then
+            if ! sudo apt-get install -y -q $APT_PACKAGES 2>/dev/null; then
               disable_apt_repository() {
                 parent=/etc/apt/sources.list.d
                 if [ -f "$parent/$1" ]; then
