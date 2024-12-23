@@ -59,8 +59,7 @@ jobs:
           if command -v apt-get >/dev/null 2>/dev/null && ! command -v cpanm >/dev/null 2>/dev/null; then
             APT_PACKAGES="cpanminus $APT_PACKAGES"
           fi
-          [ -z "$APT_PACKAGES" ] ||
-          (
+          if [ -n "$APT_PACKAGES" ]; then
             if ! sudo apt-get install -y -q $APT_PACKAGES 2>/dev/null; then
               disable_apt_repository() {
                 parent=/etc/apt/sources.list.d
@@ -107,9 +106,13 @@ jobs:
               ) &
               fi
             fi
-          )
-          [ -z "$cpan_modules" ] || command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
-          [ -z "$cpan_modules" ] || perl `command -v cpanm` -S --notest $cpan_modules
+          fi
+          if [ -n "$cpan_modules" ]; then
+            if ! command -v cpanm >/dev/null 2>/dev/null; then
+              curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
+            fi
+            perl `command -v cpanm` -S --notest $cpan_modules
+          fi
           wait
         ) > /tmp/prework || (cat /tmp/prework && false)
     - name: test
