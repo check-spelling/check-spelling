@@ -7,11 +7,15 @@ use CheckSpelling::Util;
 
 sub report {
   my ($file, $start_line, $start_pos, $end, $message, $match, $report_match) = @_;
+  open(my $output, '>>', CheckSpelling::Util::get_file_from_env('output', '/dev/null'));
   if (1 == $report_match) {
     print "$match";
+    print $output "$match";
   } else {
     print "$file:$start_line:$start_pos ... $end, $message\n";
+    print $output "$file:$start_line:$start_pos ... $end, $message\n";
   }
+  close $output;
   exit;
 }
 

@@ -336,7 +336,7 @@ sub main {
       close SKIPPED;
       chomp $reason;
       push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because $reason\n";
-      print SHOULD_EXCLUDE "$file\n" unless $file eq $file_list;
+      print SHOULD_EXCLUDE "$file\n";
       push @cleanup_directories, $directory;
       report_timing($file, $start_time, $directory, 'skipped') if ($timing_report);
       next;
