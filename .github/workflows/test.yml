@@ -39,17 +39,16 @@ jobs:
         (
           echo "perl-modules=$perl_modules"
         ) >> "$GITHUB_OUTPUT"
-    - name: test
-      id: test
+    - name: dependencies
+      id: depedencies
       shell: bash
       env:
         required_perl_modules: ${{ steps.perl-config.outputs.perl-modules }}
         GH_TOKEN: ${{ github.token }}
       run: |
-        : Test
+        : Dependencies
         extra_bin=~/.extra-bin
         mkdir -p "$extra_bin"
-        PATH="$extra_bin:$PATH"
         (
           cpan_modules=$(
             for module in $required_perl_modules; do
@@ -104,15 +103,23 @@ jobs:
                     gh_os=macOS;;
                 esac
                 ./gh-release-downloader cli/cli "$extra_bin/gh" "$gh_os" "$gh_arch" bin/
+                echo "$extra_bin" >> "$GITHUB_PATH"
               ) &
               fi
-
             fi
           )
           [ -z "$cpan_modules" ] || command -v cpanm >/dev/null 2>/dev/null || curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
           [ -z "$cpan_modules" ] || perl `command -v cpanm` -S --notest $cpan_modules
           wait
         ) > /tmp/prework || (cat /tmp/prework && false)
+    - name: test
+      id: test
+      shell: bash
+      env:
+        required_perl_modules: ${{ steps.perl-config.outputs.perl-modules }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        : Test
         ./Build.PL
         ./Build build
         (
