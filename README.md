@@ -13,7 +13,7 @@ with a really high false-positive rate, people don't tend to enable spell checki
 at all.
 
 This repository's tools are capable of tolerating all of those variations.
-Specifically, [w](https://github.com/jsoref/spelling/blob/master/w) understands
+Specifically, [w](https://github.com/jsoref/spelling/blob/main/w) understands
 enough about how programmers name things that it can split the above conventions
 into word-like things for checking against a dictionary.
 
