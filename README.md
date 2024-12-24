@@ -130,7 +130,7 @@ Explanation: `microsoft` isn't in the dictionary, and there's a reasonable expec
 ## Quick Setup
 
 Just copy the [spell-check-this](https://github.com/check-spelling/spell-check-this)
-[`.github/workflows/spelling.yml`](https://github.com/check-spelling/spell-check-this/tree/main/.github/workflows/spelling.yml) into your `.github/workflows` in your project.
+[`.github/workflows/spelling.yml`](https://github.com/check-spelling/spell-check-this/blob/main/.github/workflows/spelling.yml) into your `.github/workflows` in your project.
 
 ## Configuration
 
