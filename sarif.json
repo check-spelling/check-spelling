@@ -517,7 +517,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [expect](https://docs.check-spelling.dev/Configuration-Files#expect)\n- Correct any overeager [patterns](https://docs.check-spelling.dev/Configuration-Files#patterns)\n- See [Feature: Warning about substring matches](https://docs.check-spelling.dev/Feature%3A-Warning-about-substring-matches)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [expect](https://docs.check-spelling.dev/Configuration-Files#expect)\n- Correct any overeager [patterns](https://docs.check-spelling.dev/Configuration-Files#patterns)\n- See [Feature: Warning about substring matches](https://docs.check-spelling.dev/Feature:-Warning-about-substring-matches)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -543,7 +543,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Adjust [patterns](https://docs.check-spelling.dev/Configuration-Files#patterns)\n- Adjust the [timeout](https://docs.check-spelling.dev/Feature%3A-Parsing-Timeouts#configuration)\n- See [Feature: Parsing Timeouts](https://docs.check-spelling.dev/Feature%3A-Parsing-Timeouts)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Adjust [patterns](https://docs.check-spelling.dev/Configuration-Files#patterns)\n- Adjust the [timeout](https://docs.check-spelling.dev/Feature:-Parsing-Timeouts#configuration)\n- See [Feature: Parsing Timeouts](https://docs.check-spelling.dev/Feature:-Parsing-Timeouts)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
