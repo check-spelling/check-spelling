@@ -56,3 +56,6 @@ gh-release-downloader.*<.*>
 
 # signed off by
 Signed-off-by: .*
+
+# Markdown anchors
+[#]\w+\)
