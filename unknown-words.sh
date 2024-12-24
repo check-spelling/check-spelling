@@ -2662,7 +2662,9 @@ get_has_errors() {
 get_job_info_and_step_info() {
   if [ -z "$step_number" ] && [ -z "$job_log" ]; then
     run_info=$(mktemp)
-    if call_curl "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_info" 2>/dev/null; then
+    if [ -n "$GITHUB_API_URL" ] &&
+      [ -n "$GITHUB_REPOSITORY" ] &&
+      call_curl "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$run_info" 2>/dev/null; then
       jobs_url=$(jq -r '.jobs_url // empty' "$run_info")
       if [ -n "$jobs_url" ]; then
         jobs_info=$(mktemp)
