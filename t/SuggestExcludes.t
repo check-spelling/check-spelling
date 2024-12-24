@@ -25,8 +25,8 @@ my @files = qw(
   a/q.go
   a/ignore
   b/test/file
-  delta/go.md
-  delta/README.md
+  gamma-delta/go.md
+  gamma-delta/README.md
   case
   Ignore.md
   flour/wine
@@ -57,9 +57,9 @@ my @excludes = qw (
   a/ignore
   test/.keep
   case/.keep
-  delta/go.md
+  gamma-delta/go.md
   case/ignore
-  Ignore.md
+  Ignore.me.md
   flour/wine
   flour/grapes
   flour/meal
@@ -68,35 +68,39 @@ my @excludes = qw (
   flour/cream
   flour/rice
   flour/meat
+  ignored
 );
 print $fh CheckSpelling::Util::list_with_terminator "\n", @excludes;
 close $fh;
 
 my $old_excludes_file;
 ($fh, $old_excludes_file) = tempfile();
-my @old_excludes = qw (
+my @old_excludes = qw <
   ^test\.keep$
-);
+  ^\Qtest(0)a\E$
+>;
 print $fh CheckSpelling::Util::list_with_terminator "\n", @old_excludes;
 close $fh;
 
 my @expected_results = qw(
 (?:^|/)\.keep$
-^\Qdelta/go.md\E$
-^\QIgnore.md\E$
+^gamma-delta/go\.md$
+^\QIgnore.me.md\E$
 (?:^|/)ignore$
+^ignored$
 );
 push @expected_results, '(?:|$^ 88.89% - excluded 8/9)^flour/';
 @expected_results = sort CheckSpelling::Util::case_biased @expected_results;
 
 my @expect_drop_patterns = qw(
 ^test\.keep$
+^\Qtest(0)a\E$
 );
 @expect_drop_patterns = sort CheckSpelling::Util::case_biased @expect_drop_patterns;
 
 my ($results_ref, $drop_ref) = CheckSpelling::SuggestExcludes::main($list, $excludes_file, $old_excludes_file);
 my @results = @{$results_ref};
-my @drop_patterns = @{$drop_ref};
+my @drop_patterns = sort CheckSpelling::Util::case_biased @{$drop_ref};
 @results = sort CheckSpelling::Util::case_biased @results;
 is(CheckSpelling::Util::list_with_terminator("\n", @results),
 CheckSpelling::Util::list_with_terminator("\n", @expected_results));
