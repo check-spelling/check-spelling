@@ -40,7 +40,7 @@ name: Check Spelling
 # Requires enabling `security-events: write`
 # and configuring the action with `use_sarif: 1`
 #
-#   For information on the feature, see: https://docs.check-spelling.dev/Feature:-Sarif-output
+#   For information on the feature, see: https://docs.check-spelling.dev/Feature:-SARIF-output
 
 # Minimal workflow structure:
 #
