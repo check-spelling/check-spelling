@@ -172,7 +172,7 @@ There is a [wiki](https://github.com/check-spelling/check-spelling/wiki) contain
 
 ## Running locally
 
-Read about [running check-spelling locally](https://docs.check-spelling.dev/Feature:-Run-locally.html).
+Read about [running check-spelling locally](https://docs.check-spelling.dev/Feature:-Run-locally).
 
 ## Prerelease
 
