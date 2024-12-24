@@ -15,7 +15,7 @@
 {
 "name": "UnrecognizedSpelling",
 "help": {
-"markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct spelling\n- Add to [expect](https://docs.check-spelling.dev/Configuration#expect)\n- Mask using [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n\n",
+"markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct spelling\n- Add to [expect](https://docs.check-spelling.dev/Configuration-Files#expect)\n- Mask using [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n\n",
 "text": "?"
 },
 "helpUri": "https://docs.check-spelling.dev/Event-descriptions#unrecognized-spelling",

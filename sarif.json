@@ -23,7 +23,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct spelling\n- Add to [expect](https://docs.check-spelling.dev/Configuration#expect)\n- Mask using [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct spelling\n- Add to [expect](https://docs.check-spelling.dev/Configuration-Files#expect)\n- Mask using [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n\n"
               },
               "defaultConfiguration": {
                 "level": "error"
@@ -387,7 +387,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\nNote that this check is against the file path not the displayed line.\n- Rename file/directory to correct spelling\n- Add to [expect](https://docs.check-spelling.dev/Configuration#expect)\n- Mask using [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\nNote that this check is against the file path not the displayed line.\n- Rename file/directory to correct spelling\n- Add to [expect](https://docs.check-spelling.dev/Configuration-Files#expect)\n- Mask using [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n\n"
               },
               "defaultConfiguration": {
                 "level": "error"
@@ -517,7 +517,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [expect](https://docs.check-spelling.dev/Configuration#expect)\n- Correct any overeager [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n- See [Feature: Warning about substring matches](https://docs.check-spelling.dev/Feature%3A-Warning-about-substring-matches)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [expect](https://docs.check-spelling.dev/Configuration-Files#expect)\n- Correct any overeager [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n- See [Feature: Warning about substring matches](https://docs.check-spelling.dev/Feature%3A-Warning-about-substring-matches)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -569,7 +569,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove the entry from [expect](https://docs.check-spelling.dev/Configuration#expect)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove the entry from [expect](https://docs.check-spelling.dev/Configuration-Files#expect)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
