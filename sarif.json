@@ -231,7 +231,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionarysourceprefixes)\n- Remove the entry.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -257,7 +257,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionarysourceprefixes)\n- Remove the entry.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -283,7 +283,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionarysourceprefixes)\n- Remove the entry.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -309,7 +309,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionary_source_prefixes)\n- Remove the entry.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Correct the dictionary address.\n- Check the [dictionary_source_prefixes](https://docs.check-spelling.dev/Configuration#dictionarysourceprefixes)\n- Remove the entry.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
