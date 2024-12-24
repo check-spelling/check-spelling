@@ -75,7 +75,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Add more words to the dictionary\n- Use patterns to mask tokens.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Add more words to the dictionary\n- Use patterns to mask tokens.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -101,7 +101,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Disable [`check_file_names`](https://docs.check-spelling.dev/Configuration#excludes)\n- Add more words from file paths/names to the dictionary\n- Use patterns to mask tokens.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Disable [`check_file_names`](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Add more words from file paths/names to the dictionary\n- Use patterns to mask tokens.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -127,7 +127,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Adjust 'largest_file' in action configuration if you want to check the file."
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Adjust 'largest_file' in action configuration if you want to check the file."
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -413,7 +413,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Add 'minified-file' to 'disable_checks' in the configuration.\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Add 'minified-file' to 'disable_checks' in the configuration.\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -465,7 +465,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -491,7 +491,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Disable `use_file_magic`\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Disable `use_file_magic`\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -543,7 +543,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Adjust [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n- Adjust the [timeout](https://docs.check-spelling.dev/Feature%3A-Parsing-Timeouts#configuration)\n- See [Feature: Parsing Timeouts](https://docs.check-spelling.dev/Feature%3A-Parsing-Timeouts)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add the entry to [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Adjust [patterns](https://docs.check-spelling.dev/Configuration#patterns)\n- Adjust the [timeout](https://docs.check-spelling.dev/Feature%3A-Parsing-Timeouts#configuration)\n- See [Feature: Parsing Timeouts](https://docs.check-spelling.dev/Feature%3A-Parsing-Timeouts)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -595,7 +595,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove or fix patterns in [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Remove or broaden patterns in [only](https://docs.check-spelling.dev/Configuration#only)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove or fix patterns in [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Remove or broaden patterns in [only](https://docs.check-spelling.dev/Configuration#only)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -688,7 +688,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration#excludes)\n- Split the file into multiple lines\n- If you have a file that can't be split and should be checked, please file a bug (including your file).\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n- Add the file to [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Split the file into multiple lines\n- If you have a file that can't be split and should be checked, please file a bug (including your file).\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
