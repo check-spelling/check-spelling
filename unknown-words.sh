@@ -2032,6 +2032,7 @@ set_up_files() {
     INPUT_USE_SARIF='' \
     INPUT_DISABLE_CHECKS="single-line-file" \
     sandbox="$splitter_sandbox" \
+    dict="$dict" \
     spellchecker="$spellchecker" \
     "$word_splitter" 2> /dev/null |
     INPUT_USE_SARIF='' INPUT_DISABLE_CHECKS=noisy-file "$word_collator" 2> "$expect_notes" > "$expect_collated"
