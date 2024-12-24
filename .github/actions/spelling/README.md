@@ -2,7 +2,7 @@
 
 File | Purpose | Format | Info
 -|-|-|-
-[allow.txt](allow.txt) | Add words to the dictionary | one word per line (only letters and `'`s allowed) | [allow](https://docs.check-spelling.dev/Configuration#allow)
+[allow.txt](allow.txt) | Add words to the dictionary | one word per line (only letters and `'`s allowed) | [allow](https://docs.check-spelling.dev/Configuration-Files#allow)
 [reject.txt](reject.txt) | Remove words from the dictionary (after allow) | grep pattern matching whole dictionary words | [reject](https://docs.check-spelling.dev/Configuration-Examples%3A-reject)
 [excludes.txt](excludes.txt) | Files to ignore entirely | perl regular expression | [excludes](https://docs.check-spelling.dev/Configuration-Examples%3A-excludes)
 [only.txt](only.txt) | Only check matching files (applied after excludes) | perl regular expression | [only](https://docs.check-spelling.dev/Configuration-Examples%3A-only)

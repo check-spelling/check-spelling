@@ -153,7 +153,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add word to the [dictionary](https://docs.check-spelling.dev/Configuration#allow)\n- Correct the spelling\n- To see more instances, increase action configuration \"unknown_word_limit\".\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Add word to the [dictionary](https://docs.check-spelling.dev/Configuration-Files#allow)\n- Correct the spelling\n- To see more instances, increase action configuration \"unknown_word_limit\".\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
