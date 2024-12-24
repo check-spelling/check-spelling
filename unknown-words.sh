@@ -708,7 +708,7 @@ show_github_actions_push_disclaimer() {
   fi
   OUTPUT="## :hourglass: check-spelling changes applied
 
-  As [configured](https://docs.check-spelling.dev/Feature:-Update-expect-list#github_token), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
+  As [configured](https://docs.check-spelling.dev/Feature:-Update-expect-list#githubtoken), the commit pushed by @check-spelling-bot to GitHub doesn't trigger GitHub workflows due to a limitation of the @github-actions system.
 
   <details><summary>$OWNER_TEXT can address this for future interactions :magic_wand:</summary>
 
