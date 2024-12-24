@@ -595,7 +595,7 @@
               },
               "help": {
                 "text": "?",
-                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove or fix patterns in [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Remove or broaden patterns in [only](https://docs.check-spelling.dev/Configuration#only)\n\n"
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove or fix patterns in [excludes](https://docs.check-spelling.dev/Configuration-Files#excludes)\n- Remove or broaden patterns in [only](https://docs.check-spelling.dev/Configuration-Files#only)\n\n"
               },
               "defaultConfiguration": {
                 "level": "warning"
