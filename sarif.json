@@ -6,6 +6,7 @@
   },
   "runs": [
     {
+      "columnKind": "unicodeCodePoints",
       "tool": {
         "driver": {
           "name": "check-spelling",
