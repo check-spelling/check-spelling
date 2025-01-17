@@ -212,7 +212,7 @@ inputs:
   warnings:
     description: "List of events to treat as warnings"
     required: false
-    default: bad-regex,binary-file,deprecated-feature,large-file,limited-references,no-newline-at-eof,noisy-file,non-alpha-in-dictionary,single-line-file,token-is-substring,unexpected-line-ending,whitespace-in-dictionary,minified-file,unsupported-configuration
+    default: bad-regex,binary-file,deprecated-feature,ignored-expect-variant,large-file,limited-references,no-newline-at-eof,noisy-file,non-alpha-in-dictionary,single-line-file,token-is-substring,unexpected-line-ending,whitespace-in-dictionary,minified-file,unsupported-configuration
   notices:
     description: "List of events to treat as notices"
     required: false
