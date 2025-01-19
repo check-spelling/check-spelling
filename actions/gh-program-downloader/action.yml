@@ -1,0 +1,25 @@
+name: 'gh program downloader'
+description: 'Download a release'
+inputs:
+  repository:
+    description:
+    required: false
+  destination:
+    description:
+    required: false
+  file-re:
+    description:
+    required: false
+  trace:
+    description:
+    required: false
+runs:
+  using: "composite"
+  steps:
+  - name: Run downloader
+    uses: check-spelling/gh-program-downloader@9ce62b6d7b6c30e6f646458c6b918c61e8165dc7 # v0.0.3
+    with:
+      repository: ${{ inputs.repository }}
+      destination: ${{ inputs.destination }}
+      file-re: ${{ inputs.file-re }}
+      trace: ${{ inputs.trace }}

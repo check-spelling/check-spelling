@@ -47,8 +47,6 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       run: |
         : Dependencies
-        extra_bin=~/.extra-bin
-        mkdir -p "$extra_bin"
         (
           cpan_modules=$(
             for module in $required_perl_modules; do
@@ -86,24 +84,17 @@ jobs:
 
               sudo apt-get update &&
               sudo apt-get install -y -q $APT_PACKAGES
-
-              if apt-cache policy gh | grep -q 'Candidate: 2.4.0'; then
-              (
-                gh_os=$(uname | tr A-Z a-z)
-                gh_arch=$(uname -m | tr A-Z a-z)
-                case "$gh_arch" in
-                  x86_64)
-                    go_arch=amd64;;
-                  aarch64)
-                    go_arch=arm64;;
-                esac
-                case "gh_os" in
-                  darwin)
-                    gh_os=macOS;;
-                esac
-                ./gh-release-downloader cli/cli "$extra_bin/gh" "$gh_os" "$gh_arch" bin/
+            fi
+            if ! command -v gh >/dev/null; then
+              apt_policy=$(mktemp)
+              apt-cache policy gh > "$apt_policy"
+              if grep -q 'Candidate: 2.4.0' "$apt_policy"; then
+                extra_bin=~/bin
+                mkdir -p "$extra_bin"
+                echo "gh-location=$extra_bin/gh" >> "$GITHUB_OUTPUT"
                 echo "$extra_bin" >> "$GITHUB_PATH"
-              ) &
+              else
+                sudo apt-get install gh
               fi
             fi
           fi
@@ -113,8 +104,17 @@ jobs:
             fi
             perl `command -v cpanm` -S --notest $cpan_modules
           fi
-          wait
         ) > /tmp/prework || (cat /tmp/prework && false)
+
+    - name: gh-program-downloader
+      if: steps.depedencies.outputs.gh-location
+      uses: ./actions/gh-program-downloader
+      with:
+        repository: cli/cli
+        destination: ${{ steps.depedencies.outputs.gh-location }}
+        file-re: bin/
+        trace: 1
+
     - name: test
       id: test
       shell: bash

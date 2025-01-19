@@ -20,6 +20,9 @@ my @safe_path = qw(
     /sbin
 );
 
+my $bin = glob("~/bin");
+push @safe_path, $bin if -d $bin;
+
 my $ua = 'check-spelling-agent/0.0.3';
 
 $ENV{'PATH'} = join ':', @safe_path unless defined $ENV{SYSTEMROOT};
