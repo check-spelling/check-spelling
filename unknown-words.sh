@@ -2892,7 +2892,7 @@ spelling_body() {
         $B
         To stop checking additional dictionaries, add$workflow_path_hint$action_ref_hint$inline_with_hint:
         $B yml
-        check_extra_dictionaries: ''
+        check_extra_dictionaries: $Q$Q
         $B
 
         </details>
