@@ -2000,7 +2000,7 @@ set_up_files() {
       )
       echo '# Expect entries should be one entry per line'
       echo '# Please do not mix a capitalized word with an initially capitalized word'
-      echo "(?:$INPUT_UPPER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}$INPUT_UPPER_PATTERN(?:$INPUT_LOWER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word_minus_one,$longest_word}"
+      echo "$INPUT_UPPER_PATTERN(?:$INPUT_UPPER_PATTERN|$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN)*?$INPUT_LOWER_PATTERN(?:$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN)*$INPUT_UPPER_PATTERN"
       echo
       echo '# Expect entries should be one entry per line'
       echo '# Please do not merge an uppercase / capitalized word after a lowercase word'
