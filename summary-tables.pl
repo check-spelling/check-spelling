@@ -13,13 +13,25 @@ my $summary_tables = tempdir();
 my $table;
 my @tables;
 
-my $prefix = '';
-my $line_delimiter = ':';
-if ($ENV{GITHUB_SERVER_URL} ne '' && $ENV{GITHUB_REPOSITORY} ne '') {
-    my $url_base = "$ENV{GITHUB_SERVER_URL}/$ENV{GITHUB_REPOSITORY}/blame";
-    my $rev = $ENV{GITHUB_HEAD_REF} || $ENV{GITHUB_SHA};
-    $prefix = "$url_base/$rev/";
-    $line_delimiter = '#L';
+sub github_blame {
+    my ($file, $line) = @_;
+
+    my $prefix = '';
+    my $line_delimiter = ':';
+    if ($ENV{GITHUB_SERVER_URL} ne '' && $ENV{GITHUB_REPOSITORY} ne '') {
+        my $url_base = "$ENV{GITHUB_SERVER_URL}/$ENV{GITHUB_REPOSITORY}/blame";
+        my $rev = $ENV{GITHUB_HEAD_REF} || $ENV{GITHUB_SHA};
+        $prefix = "$url_base/$rev/";
+        $line_delimiter = '#L';
+    }
+
+    if ($file =~ m{^https://}) {
+        $file =~ s/ /%20/g;
+        return "$file#$line";
+    }
+
+    $file = uri_escape($file, "^A-Za-z0-9\-\._~/");
+    return "$prefix$file$line_delimiter$line";
 }
 
 while (<>) {
@@ -29,13 +41,8 @@ while (<>) {
     push @tables, $code unless -e $table_file;
     open $table, ">>", $table_file;
     $message =~ s/\|/\\|/g;
-    if ($file =~ m{^https://}) {
-        $file =~ s/ /%20/g;
-        print $table "$message | $file#$line\n"
-    } else {
-        $file = uri_escape($file, "^A-Za-z0-9\-\._~/");
-        print $table "$message | $prefix$file$line_delimiter$line\n"
-    }
+    my $blame = github_blame($file, $line);
+    print $table "$message | $blame\n";
     close $table;
 }
 exit unless @tables;
