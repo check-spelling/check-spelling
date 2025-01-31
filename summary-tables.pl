@@ -40,14 +40,14 @@ while (<>) {
 }
 exit unless @tables;
 
-my ($prefix, $footer, $suffix) = (
+my ($details_prefix, $footer, $suffix) = (
     "<details><summary>Details :mag_right:</summary>\n\n",
     "</details>\n\n",
     "\n</details>\n\n"
 );
 my $footer_length = length $footer;
 if ($budget) {
-    $budget -= length $prefix + length $suffix;
+    $budget -= length $details_prefix + length $suffix;
     print STDERR "Summary Tables budget reduced to: $budget\n";
 }
 for $table_file (sort @tables) {
@@ -76,9 +76,9 @@ for $table_file (sort @tables) {
             next;
         }
     }
-    if ($prefix ne '') {
-        print $prefix;
-        $prefix = '';
+    if ($details_prefix ne '') {
+        print $details_prefix;
+        $details_prefix = '';
     }
     print $header;
     print join ("", sort CheckSpelling::Util::case_biased @entries);
