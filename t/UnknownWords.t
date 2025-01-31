@@ -74,6 +74,9 @@ sub cleanup {
   $text =~ s!(locally downloaded to )\`.*?\`!$1...!;
   $text =~ s/\Q$sandbox\E/WORKSPACE/g;
   $text =~ s!/tmp/check-spelling!TEMP_DIRECTORY!g;
+  my $github_sha = $ENV{GITHUB_SHA} || `git rev-parse HEAD`;
+  $github_sha =~ s/\n|\r//g;
+  $text =~ s/$github_sha/GITHUB_SHA/g;
   $text =~ s/\Q$working_directory\E/ENGINE/g;
   $text =~ s!\Q$github_repository\E!GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME!g if $github_repository !~ /^\.?$/;
   $text =~ s!\QTEMP_DIRECTORY/./\E!TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/!g if $github_repository eq '.';

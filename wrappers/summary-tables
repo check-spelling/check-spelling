@@ -1,2 +1,5 @@
 #!/bin/sh
-/usr/bin/env -S perl -T -I"$spellchecker/lib" "$spellchecker/summary-tables.pl" "$@"
+if ! timeout 120s /usr/bin/env -S perl -T -I"$spellchecker/lib" "$spellchecker/summary-tables.pl" "$@"; then
+  echo ":frowning: Failed to build summary tables, if you cannot find a bug about this, please file one (summary-tables-error)"
+  echo "::warning title=Summary Table failed::Details too big to include in Step Summary. (summary-table-error)" >&2
+fi

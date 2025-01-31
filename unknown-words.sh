@@ -1141,6 +1141,11 @@ define_variables() {
   if [ -e "$action_workflow_path_file" ]; then
     mv "$action_workflow_path_file" "$data_dir/workflow-path.txt"
   fi
+  if [ "$INPUT_SUBMODULES" == "true" ] || [ "$INPUT_SUBMODULES" == "recursive" ]; then
+    RECURSE_SUBMODULES="--recurse-submodules"
+  else
+    RECURSE_SUBMODULES=""
+  fi
   action_workflow_path_file="$data_dir/workflow-path.txt"
   workflow_path=$(get_workflow_path)
 
@@ -2350,7 +2355,7 @@ build_file_list() {
         }'
     else
       INPUT_ONLY_CHECK_CHANGED_FILES=''
-      git 'ls-files' -z 2> /dev/null
+      git 'ls-files' -z $RECURSE_SUBMODULES 2> /dev/null
     fi
   ) |\
     exclude_file="$excludes" \

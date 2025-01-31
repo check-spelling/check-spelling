@@ -330,6 +330,10 @@ inputs:
     description: "Per file spell checking time limit"
     required: false
     default: 30
+  submodules:
+    description: "Check sub-repositories (with `checkout` this will automatically check out subrepositories, without it assumes they're already checked out)"
+    required: false
+    default: ""
 
 outputs:
   unknown_words:
@@ -449,6 +453,7 @@ runs:
         fetch-depth: ${{ !contains(inputs.check_commit_messages, 'commits') && '1' || '0' }}
         filter: ${{ contains(inputs.check_commit_messages, 'commits') && 'tree:0' || '' }}
         token: ${{ inputs.checkout-token || inputs.GITHUB_TOKEN }}
+        submodules: ${{ inputs.submodules }}
         ref:
           ${{
             github.event_name == 'issue_comment' &&

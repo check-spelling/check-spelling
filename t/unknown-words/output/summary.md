@@ -99,17 +99,17 @@ See [:x: Event descriptions](https://docs.check-spelling.dev/Event-descriptions)
 
 note|path
 -|-
-`sample.file` matches a line_forbidden.patterns entry: `\bsample\.file\b`. | t/unknown-words/input/sample.file:1
+`sample.file` matches a line_forbidden.patterns entry: `\bsample\.file\b`. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L1
 </details>
 
 <details><summary>:open_file_folder: unrecognized-spelling</summary>
 
 note|path
 -|-
-`diid` is not a recognized word. | t/unknown-words/input/sample.file:2
-`fixx` is not a recognized word. | t/unknown-words/input/sample.file:2
-`thiss` is not a recognized word. | t/unknown-words/input/sample.file:2
-`youu` is not a recognized word. | t/unknown-words/input/sample.file:2
+`diid` is not a recognized word. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
+`fixx` is not a recognized word. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
+`thiss` is not a recognized word. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
+`youu` is not a recognized word. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
 </details>
 
 
