@@ -1167,6 +1167,7 @@ define_variables() {
   word_collator="$spellchecker/wrappers/spelling-collator"
   expect_collator="$spellchecker/expect-collator.pl"
   strip_word_collator_suffix="$spellchecker/strip-word-collator-suffix.pl"
+  adjust_severities="$spellchecker/wrappers/adjust-severities"
   find_token="$spellchecker/find-token.pl"
   output_covers="$spellchecker/output-covers.pl"
   cleanup_file="$spellchecker/cleanup-file.pl"
@@ -2456,6 +2457,8 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
   begin_group 'Spell check'
   warning_output="$(mktemp -d)"/warnings.txt
   more_warnings="$(mktemp)"
+  severity_level="$(mktemp)"
+  severity_list="$(mktemp)"
   cat "$file_list" |\
   env -i \
     SHELL="$SHELL" \
@@ -2523,36 +2526,11 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
   commit_messages="$commit_messages" \
   pr_details_path="$pr_details_path" \
   synthetic_base="$synthetic_base" \
-  IGNORED_LIST="$(echo "$INPUT_IGNORED" | events_to_regular_expression)" \
-  ERRORS_LIST="$(echo "$INPUT_ERRORS" | events_to_regular_expression)" \
-  NOTICES_LIST="$(echo "$INPUT_NOTICES" | events_to_regular_expression)" \
-  WARNINGS_LIST="$(echo "$INPUT_WARNINGS" | events_to_regular_expression)" \
-  perl -pi -e '
-    my $GITHUB_SERVER_URL=$ENV{GITHUB_SERVER_URL};
-    my $GITHUB_REPOSITORY=$ENV{GITHUB_REPOSITORY};
-    my $commit_messages=$ENV{commit_messages};
-    my $pr_details_path=$ENV{pr_details_path};
-    my $synthetic_base=$ENV{synthetic_base};
-    if (defined $commit_messages) {
-      s<^$commit_messages/([0-9a-f]+)\.message><$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$1#>;
-    }
-    if (defined $pr_details_path) {
-      s<^$synthetic_base/pull-request/(\d+)/(?:description|summary).txt><$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$1#>;
-    }
-    if (/\((?:$ENV{IGNORED_LIST})\)$/) {
-      $_ = "" if m{(^(?:.*?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\s(?:Error|Notice|Warning)(\s-\s.+\s\(.*\))}
-    }
-    if (/\((?:$ENV{ERRORS_LIST})\)$/) {
-      s{(^(?:.*?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\s(?:Notice|Warning)(\s-\s.+\s\(.*\))}{$1 Error$2}
-    }
-    if (/\((?:$ENV{NOTICES_LIST})\)$/) {
-      s{(^(?:.*?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\s(?:Error|Warning)(\s-\s.+\s\(.*\))}{$1 Notice$2}
-    }
-    if (/\((?:$ENV{WARNINGS_LIST})\)$/) {
-      s{(^(?:.*?):(?:\d+):(?:\d+) \.\.\. (?:\d+),)\s(?:Error|Notice)(\s-\s.+\s\(.*\))}{$1 Warning$2}
-    }
-    ' "$warning_output"
+  severity_level="$severity_level" \
+  severity_list="$severity_list" \
+  $adjust_severities "$warning_output"
   cat "$warning_output"
+  . "$severity_list"
   set_output_variable warnings "$warning_output"
   if to_boolean "$INPUT_USE_SARIF"; then
     SARIF_FILE="$(mktemp).sarif.json"
