@@ -8,6 +8,7 @@ our $flatten=0;
 use Digest::SHA qw($errmsg);
 use JSON::PP;
 use Hash::Merge qw( merge );
+use CheckSpelling::Util;
 
 sub encode_low_ascii {
     $_ = shift;
@@ -161,18 +162,6 @@ sub parse_warnings {
     return \@results;
 }
 
-sub read_sarif_file {
-    my ($file) = @_;
-    my $template;
-    open TEMPLATE, '<', $file || print STDERR "Could not open sarif template ($file)\n";
-    {
-        local $/ = undef;
-        $template = <TEMPLATE>;
-    }
-    close TEMPLATE;
-    return $template;
-}
-
 sub get_runs_from_sarif {
     my ($sarif_json) = @_;
     my %runs_view;
@@ -208,7 +197,7 @@ sub main {
         return '';
     }
 
-    my $sarif_template = read_sarif_file $sarif_template_file;
+    my $sarif_template = CheckSpelling::Util::read_file $sarif_template_file;
     die "sarif template is empty" unless $sarif_template;
 
     my $json = JSON::PP->new->utf8->pretty->sort_by(sub { $JSON::PP::a cmp $JSON::PP::b });
@@ -225,7 +214,7 @@ sub main {
         };
 
         if (-s $sarif_template_overlay_file) {
-            my $sarif_template_overlay = read_sarif_file $sarif_template_overlay_file;
+            my $sarif_template_overlay = CheckSpelling::Util::read_file $sarif_template_overlay_file;
             my %runs_base = get_runs_from_sarif($sarif_json);
 
             my $sarif_template_hash = $json->decode($sarif_template_overlay);

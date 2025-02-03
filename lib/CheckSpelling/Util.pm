@@ -78,6 +78,8 @@ sub read_file {
   if (open $file, '<:utf8', $name) {
     $text = <$file>;
     close $file;
+  } else {
+    print STDERR "Could not open file ($file)\n";
   }
   return $text;
 }
