@@ -20,7 +20,7 @@ chdir($sandbox);
 $ENV{PERL5OPT} = '-MDevel::Cover' unless $?;
 $ENV{GITHUB_WORKSPACE} = $sandbox;
 my ($fh, $temp) = tempfile();
-close $temp;
+close $fh;
 $ENV{maybe_bad} = $temp;
 my ($stdout, $stderr, $result);
 
