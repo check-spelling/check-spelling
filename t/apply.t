@@ -37,16 +37,31 @@ sub run_apply {
   my $result = $results[0] >> 8;
   return ($stdout, $stderr, $result);
 }
-my $expired_artifact = `gh api '/repos/check-spelling/check-spelling/actions/artifacts?name=check-spelling-comment' | jq -r '.artifacts | map(select (.expired == true))[0].workflow_run.id'`;
-chomp $expired_artifact;
-($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', $expired_artifact);
 
-my $sandbox_name = basename $sandbox;
-my $temp_name = basename $temp;
-is($stdout, "SPELLCHECKER/apply.pl: GitHub Run Artifact expired. You will need to trigger a new run.
-", 'apply.pl (stdout) expired');
-is($stderr, '', 'apply.pl (stderr) expired');
-is($result, 1, 'apply.pl (exit code) expired');
+my $expired_artifacts = "$temp.artifacts";
+my $expired_artifacts_log = "$temp.artifacts.log";
+my $gh_api_call = '/repos/check-spelling/check-spelling/actions/artifacts?name=check-spelling-comment';
+my $expired_artifact = '';
+`gh api '$gh_api_call' > '$expired_artifacts' 2> '$expired_artifacts_log'`;
+if ($?) {
+  print STDERR "gh api $gh_api_call failed: ".`cat '$expired_artifacts_log'`;
+} else {
+  my $jq_expired_artifacts_log = "$temp.jq.artifacts.log";
+  my $jq_expression = '.artifacts | map(select (.expired == true))[0].workflow_run.id // empty';
+  $expired_artifact = `jq -r '$jq_expression' '$expired_artifacts' 2> '$jq_expired_artifacts_log'`;
+  if ($?) {
+    print STDERR "jq $jq_expression failed: ".`cat '$jq_expired_artifacts_log'`;
+  } else {
+    chomp $expired_artifact;
+    ($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", 'check-spelling/check-spelling', $expired_artifact);
+
+    my $sandbox_name = basename $sandbox;
+    my $temp_name = basename $temp;
+    is($stdout, "SPELLCHECKER/apply.pl: GitHub Run Artifact expired. You will need to trigger a new run.\n", 'apply.pl (stdout) expired');
+    is($stderr, '', 'apply.pl (stderr) expired');
+    is($result, 1, 'apply.pl (exit code) expired');
+  }
+}
 
 my $gh_token = $ENV{GH_TOKEN};
 delete $ENV{GH_TOKEN};
