@@ -3022,7 +3022,7 @@ spelling_body() {
       can_offer_to_apply=1
       accept_words_text='accept these unrecognized words as correct'
     fi
-    if [ "$can_offer_to_apply" = 1 ]; then
+    if [ -n "$can_offer_to_apply" ] && [ -n "$err" ]; then
       if [ -n "$accept_words_text" ]; then
         if [ "$INPUT_INCLUDE_ADVICE" = 'unrecognized-spelling' ]; then
           include_advice=true
