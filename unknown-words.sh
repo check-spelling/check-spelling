@@ -2767,10 +2767,17 @@ spelling_body() {
     fi
     sarif_report="[:angel: SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+tool:check-spelling+$sarif_report_query),"
     # check-spelling here corresponds to the uses github/codeql-action/upload-sarif / with / category
-    code_scanning_results_run=$(GH_TOKEN="$GITHUB_TOKEN" gh api "/repos/$GITHUB_REPOSITORY/commits/${GITHUB_HEAD_SHA:-$GITHUB_SHA}/check-runs" -q '.check_runs|map(select(.app.id==57789 and .name=="check-spelling"))[0].url // empty' || true)
+    code_scanning_results_run=$(
+      github_codeql_app_id=57789
+      GH_TOKEN="$GITHUB_TOKEN" gh api "/repos/$GITHUB_REPOSITORY/commits/${GITHUB_HEAD_SHA:-$GITHUB_SHA}/check-runs" \
+        -q ".check_runs|map(select(.app.id==$github_codeql_app_id and .name==${Q}check-spelling${Q}))[0].url // empty" ||
+      true
+    )
     if [ -n "$code_scanning_results_run" ]; then
-      code_scanning_results_url=$(GH_TOKEN="$GITHUB_TOKEN" gh api "$code_scanning_results_run" -q '.html_url // empty')
-      sarif_report="$sarif_report [:rotating_light: alerts]($code_scanning_results_url),"
+      code_scanning_results_url=$(GH_TOKEN="$GITHUB_TOKEN" gh api "$code_scanning_results_run" -q '.html_url // empty' || true)
+      if [ -n "$code_scanning_results_url" ]; then
+        sarif_report="$sarif_report [:rotating_light: alerts]($code_scanning_results_url),"
+      fi
     fi
     or_markdown=','
   else
