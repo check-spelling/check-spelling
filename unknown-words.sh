@@ -994,7 +994,7 @@ handle_comment() {
       $B
       " | strip_lead)"
     fi
-    head_branch=$(GH_TOKEN="$GITHUB_TOKEN" gh api "$summary_url_api" -q '.head_branch')
+    head_branch=$(GH_TOKEN="$GITHUB_TOKEN" gh api "$summary_url_api" -q '.head_branch' || true)
     [ -n "$head_branch" ] ||
     confused_comment "$trigger_comment_url" "Failed to retrieve $b.head_branch$b for $summary_url. Please file a bug."
     [ "$head_branch" = "$pull_request_ref" ] ||
