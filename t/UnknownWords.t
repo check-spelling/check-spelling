@@ -43,7 +43,8 @@ $ENV{GITHUB_OUTPUT} = $github_output;
 system(qw(git config user.email check-spelling-bot@users.noreply.github.com));
 system(qw(git config user.name check-spelling-bot));
 
-$ENV{PERL5OPT} = "-MDevel::Cover";
+`perl -MDevel::Cover -e 1 2>&1`;
+$ENV{PERL5OPT} = '-MDevel::Cover' unless $?;
 $ENV{INPUTS} = qq<{
   "check_file_names" : 1,
   "config": "$config",

@@ -16,7 +16,8 @@ our $spellchecker = dirname(dirname(abs_path(__FILE__)));
 
 my $sandbox = tempdir();
 chdir($sandbox);
-$ENV{PERL5OPT} = '-MDevel::Cover';
+`perl -MDevel::Cover -e 1 2>&1`;
+$ENV{PERL5OPT} = '-MDevel::Cover' unless $?;
 $ENV{GITHUB_WORKSPACE} = $sandbox;
 my ($fh, $temp) = tempfile();
 close $temp;
