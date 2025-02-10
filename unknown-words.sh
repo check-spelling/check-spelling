@@ -3346,8 +3346,11 @@ generate_sample_commit_help() {
   if [ "$current_branch" = "HEAD" ]; then
     current_branch="$(git rev-parse HEAD)"
   fi
-  git branch -f update-check-spelling-metadata "${remote_sha:-HEAD}"
-  git checkout update-check-spelling-metadata >/dev/null 2>/dev/null
+  if git branch -f update-check-spelling-metadata "${remote_sha:-HEAD}"; then
+    git checkout update-check-spelling-metadata >/dev/null 2>/dev/null
+  else
+    git checkout -b update-check-spelling-metadata >/dev/null 2>/dev/null
+  fi
   "$spellchecker/apply.pl" "$apply_archive"
   sender_login="$(jq -r '.sender.login // "check-spelling-bot"' "$GITHUB_EVENT_PATH")"
   get_github_user_and_email "$sender_login"
