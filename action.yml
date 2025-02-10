@@ -584,7 +584,7 @@ runs:
         : Report SARIF information in github step summary - when rerun or run using act
         act-summary
         (
-          echo '<details><summary>sarif file</summary>'
+          echo '<details><summary>:angel: SARIF file</summary>'
           echo
           echo '```'
           sarif_file_size=$(
