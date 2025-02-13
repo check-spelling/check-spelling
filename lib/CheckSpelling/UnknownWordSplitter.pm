@@ -522,7 +522,7 @@ sub split_file {
       unless ($disable_minified_file) {
         s/={3,}//g;
         $offset += length;
-        my $ratio = $offset / $.;
+        my $ratio = int($offset / $.);
         my $ratio_threshold = 1000;
         if ($ratio > $ratio_threshold) {
           skip_file($temp_dir, "average line width ($ratio) exceeds the threshold ($ratio_threshold). (minified-file)\n");
