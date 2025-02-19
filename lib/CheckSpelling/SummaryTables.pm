@@ -4,6 +4,7 @@ package CheckSpelling::SummaryTables;
 use Cwd 'abs_path';
 use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
+use JSON::PP;
 use CheckSpelling::Util;
 
 unless (eval 'use URI::Escape; 1') {
@@ -12,6 +13,8 @@ unless (eval 'use URI::Escape; 1') {
 
 my %git_roots = ();
 my %github_urls = ();
+my $pull_base;
+my $pull_head;
 
 sub github_repo {
     my ($source) = @_;
@@ -43,7 +46,7 @@ sub find_git {
 
 sub github_blame {
     my ($file, $line) = @_;
-    our (%git_roots, %github_urls);
+    our (%git_roots, %github_urls, $pull_base, $pull_head);
 
     return file_ref($file, $line) if ($file =~ m{^https?://});
 
@@ -126,6 +129,9 @@ sub github_blame {
             $rev = $ENV{GITHUB_HEAD_REF} || $ENV{GITHUB_SHA} unless $rev;
         }
         if ($url_base) {
+            if ($pull_base) {
+                $url_base =~ s<^$pull_base/><$pull_head/>i;
+            }
             $prefix = "$url_base/$rev/";
         }
         if ($last_git_dir) {
@@ -144,6 +150,23 @@ sub main {
     my $summary_tables = tempdir();
     my $table;
     my @tables;
+
+    my $head_ref = CheckSpelling::Util::get_file_from_env('GITHUB_HEAD_REF', "");
+    my $github_url = CheckSpelling::Util::get_file_from_env('GITHUB_SERVER_URL', "");
+    my $github_repository = CheckSpelling::Util::get_file_from_env('GITHUB_REPOSITORY', "");
+    my $event_file_path = CheckSpelling::Util::get_file_from_env('GITHUB_EVENT_PATH', "");
+    if ($head_ref && $github_url && $github_repository && $event_file_path) {
+        open $event_file_handle, '<', $event_file_path;
+        local $/;
+        my $json = <$event_file_handle>;
+        close $event_file_handle;
+        my $data = decode_json($json);
+        our $pull_base = "$github_url/$github_repository";
+        our $pull_head = "$github_url/".$data->{'pull_request'}->{'head'}->{'repo'}->{'full_name'};
+        unless ($pull_head && $pull_base && ($pull_base ne $pull_head)) {
+            $pull_base = $pull_head = '';
+        }
+    }
 
     while (<>) {
         next unless m{^(.+):(\d+):(\d+) \.\.\. (\d+),\s(Error|Warning|Notice)\s-\s(.+)\s\(([-a-z]+)\)$};

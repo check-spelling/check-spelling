@@ -7,7 +7,7 @@ use Cwd qw();
 use Test::More;
 use File::Temp qw/ tempfile tempdir /;
 
-plan tests => 7;
+plan tests => 8;
 use_ok('CheckSpelling::SummaryTables');
 
 is(CheckSpelling::SummaryTables::github_repo(
@@ -44,6 +44,8 @@ git remote add origin '$owner_repo';
 touch README.md;
 git add README.md;
 git commit -m README;
+git clone -q . child;
+GIT_DIR=child/.git git remote set-url origin '$other_repo';
 echo >> README.md;
 git commit -m blank;
 `;
@@ -52,3 +54,7 @@ $ref = `git rev-parse HEAD`;
 chomp $ref;
 is(CheckSpelling::SummaryTables::github_blame(
     'README.md', 1), "https://github.com/owner/example/blame/$ref/README.md#L1");
+$ref = `GIT_DIR=child/.git git rev-parse HEAD`;
+chomp $ref;
+is(CheckSpelling::SummaryTables::github_blame(
+    'child/README.md', 1), "https://github.com/another/place/blame/$ref/README.md#L1");
