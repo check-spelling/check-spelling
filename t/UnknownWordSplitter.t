@@ -299,7 +299,7 @@ sub test_invalid_quantifiers {
   print $fh ".{1,}*";
   close $fh;
   my $output = join "\n", CheckSpelling::UnknownWordSplitter::file_to_list($filename);
-  is($output, '');
+  is($output, '(?:\$^ - skipped because bad-regular-expression)');
 }
 
 my ($stdout, $stderr, @result) = capture { test_invalid_quantifiers };
