@@ -85,8 +85,8 @@ sub build_patterns {
       push @results, $value;
       $joined_patterns .= '|'.quote_regex($i);
     } elsif ($ratio < 1) {
-      my $decimal = sprintf("%.2f", $ratio * 100);
-      $entry = "(?:|\$^ $decimal\% - excluded $hits/$total)$entry";
+      my $percentage = int($ratio * 100);
+      $entry = "(?:|\$^ $percentage\% - excluded $hits/$total)$entry";
       if ($ratio >= $use_threshold) {
         push @results, $value;
         $joined_patterns .= '|'.quote_regex($i);

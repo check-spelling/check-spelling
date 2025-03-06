@@ -89,7 +89,7 @@ my @expected_results = qw(
 (?:^|/)ignore$
 ^ignored$
 );
-push @expected_results, '(?:|$^ 88.89% - excluded 8/9)^flour/';
+push @expected_results, '(?:|$^ 88% - excluded 8/9)^flour/';
 @expected_results = sort CheckSpelling::Util::case_biased @expected_results;
 
 my @expect_drop_patterns = qw(
