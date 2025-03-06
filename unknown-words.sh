@@ -1399,53 +1399,32 @@ get_project_files() {
   type="$file"
   if [ ! -e "$dest" ] && [ -n "$bucket" ] && [ -n "$project" ]; then
     from="$(project_file_path "$file"."$ext")"
-    case "$from" in
-      ssh://git@*|git@*)
-        (
-          echo "Retrieving $file from $from"
-          cd "$temp"
-          repo="$(echo "$bucket" | perl -pe 's#(?:ssh://|)git\@github.com[:/]([^/]*)/(.*.git)#https://github.com/$1/$2#')"
-          [ -d metadata ] || git clone --depth 1 "$repo" --single-branch --branch "$project" metadata
-          cleanup_file metadata/"$file".txt "$type" "$dest"
-        );;
-      gs://*)
-        echo "Retrieving $file from $from"
-        gsutil cp -Z "$from" "$dest" >/dev/null 2>/dev/null || touch "$dest"
-        cleanup_file "$dest" "$type"
-        ;;
-      *://*)
-        echo "Retrieving $file from $from"
-        download "$from" "$dest" || touch "$dest"
-        cleanup_file "$dest" "$type"
-        ;;
-      *)
-        append_to="$from"
-        if [ -f "$from" ]; then
-          echo "Retrieving $file from $from"
-          cleanup_file "$from" "$type" "$dest"
-          from_expanded="$from"
-        else
-          if [ ! -e "$from" ]; then
-            from="$(echo "$from" | sed -e "s/\.$ext$//")"
+    append_to="$from"
+    if [ -f "$from" ]; then
+      echo "Retrieving $file from $from"
+      cleanup_file "$from" "$type" "$dest"
+      from_expanded="$from"
+    else
+      if [ ! -e "$from" ]; then
+        from="$(echo "$from" | sed -e "s/\.$ext$//")"
+      fi
+      if [ -d "$from" ]; then
+        from_expanded="$(find "$from" -mindepth 1 -maxdepth 1 -name "*$ext" ! -name "*$n*" |sort)"
+        append_to="$from"/"$(git rev-parse --revs-only HEAD || date '+%Y%M%d%H%m%S')"."$ext"
+        touch "$dest"
+        echo "Retrieving $file from $from_expanded"
+        while IFS= read -r item; do
+          if [ -s "$item" ]; then
+            cleanup_file "$item" "$type"
+            cat "$item" >> "$dest"
           fi
-          if [ -d "$from" ]; then
-            from_expanded="$(find "$from" -mindepth 1 -maxdepth 1 -name "*$ext" ! -name "*$n*" |sort)"
-            append_to="$from"/"$(git rev-parse --revs-only HEAD || date '+%Y%M%d%H%m%S')"."$ext"
-            touch "$dest"
-            echo "Retrieving $file from $from_expanded"
-            while IFS= read -r item; do
-              if [ -s "$item" ]; then
-                cleanup_file "$item" "$type"
-                cat "$item" >> "$dest"
-              fi
-            done <<< "$from_expanded"
-            from="$from"/"$(basename "$from")"."$ext"
-          else
-            from_expanded="$from"."$ext"
-            from="$from_expanded"
-          fi
-        fi;;
-    esac
+        done <<< "$from_expanded"
+        from="$from"/"$(basename "$from")"."$ext"
+      else
+        from_expanded="$from"."$ext"
+        from="$from_expanded"
+      fi
+    fi
   fi
 }
 get_project_files_deprecated() {
