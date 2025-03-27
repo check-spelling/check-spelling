@@ -1171,7 +1171,17 @@ define_variables() {
   word_splitter="$spellchecker/wrappers/spelling-unknown-word-splitter"
   word_collator="$spellchecker/wrappers/spelling-collator"
   expect_collator="$spellchecker/expect-collator.pl"
-  strip_word_collator_suffix="$spellchecker/strip-word-collator-suffix.pl"
+  if to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
+    sort_words_unique() {
+      perl -ne 'next unless /./; print'|sort -u|sort -f
+    }
+    strip_word_collator_suffix=cat
+  else
+    strip_word_collator_suffix="$spellchecker/strip-word-collator-suffix.pl"
+    sort_words_unique() {
+      sort_unique
+    }
+  fi
   adjust_severities="$spellchecker/wrappers/adjust-severities"
   find_token="$spellchecker/find-token.pl"
   output_covers="$spellchecker/output-covers.pl"
@@ -2485,6 +2495,7 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
     should_exclude_file="$should_exclude_file" \
     counter_summary="$counter_summary_file" \
     unknown_word_limit="$INPUT_UNKNOWN_WORD_LIMIT" \
+    INPUT_ONLY_CHECK_CHANGED_FILES="$INPUT_ONLY_CHECK_CHANGED_FILES" \
     candidates_path="$candidates_path" \
     candidate_summary="$candidate_summary" \
     forbidden_path="$forbidden_path" \
@@ -2910,9 +2921,7 @@ spelling_body() {
           To check these files, more of their words need to be in the dictionary than not. You can use `patterns.txt` to exclude portions, add items to the dictionary (e.g. by adding them to `allow.txt`), or fix typos.
           </details>
         ' | strip_lead)"
-        if ! to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES"; then
-          can_offer_to_apply=1
-        fi
+        can_offer_to_apply=1
       fi
     fi
     if [ -s "$counter_summary_file" ]; then
@@ -3012,7 +3021,7 @@ spelling_body() {
         </details>
       " | strip_lead)"
     fi
-    if ! to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES" && [ -n "$patch_add" ]; then
+    if [ -n "$patch_add" ]; then
       can_offer_to_apply=1
       accept_words_text='accept these unrecognized words as correct'
     fi
@@ -3581,10 +3590,10 @@ grep_v_string() {
 compare_new_output() {
   begin_group 'Compare expect with new output'
     sorted_expect="$temp_sandbox/expect.sorted.txt"
-    (sed -e 's/#.*//' "$expect_path" | sort_unique) > "$sorted_expect"
+    (sed -e 's/#.*//' "$expect_path" | sort_words_unique) > "$sorted_expect"
     expect_path="$sorted_expect"
     sorted_run_output=$(mktemp)
-    cat "$run_output" | sort_unique > "$sorted_run_output"
+    cat "$run_output" | sort_words_unique > "$sorted_run_output"
 
     diff -w -U0 "$expect_path" "$sorted_run_output" |
       grep_v_spellchecker > "$diff_output"

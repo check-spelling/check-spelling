@@ -276,8 +276,9 @@ sub main {
   my $unknown_file_word_limit = CheckSpelling::Util::get_val_from_env('unknown_file_word_limit', undef);
   my $candidate_example_limit = CheckSpelling::Util::get_file_from_env('INPUT_CANDIDATE_EXAMPLE_LIMIT', '3');
   my $disable_flags = CheckSpelling::Util::get_file_from_env('INPUT_DISABLE_CHECKS', '');
+  my $only_check_changed_files = CheckSpelling::Util::get_file_from_env('INPUT_ONLY_CHECK_CHANGED_FILES', '');
   my $disable_noisy_file = $disable_flags =~ /(?:^|,|\s)noisy-file(?:,|\s|$)/;
-  our $disable_word_collating = $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
+  our $disable_word_collating = $only_check_changed_files || $disable_flags =~ /(?:^|,|\s)word-collating(?:,|\s|$)/;
   my $file_list = CheckSpelling::Util::get_file_from_env('check_file_names', '');
   my $timing_report = CheckSpelling::Util::get_file_from_env('timing_report', '');
   my ($start_time, $end_time);
