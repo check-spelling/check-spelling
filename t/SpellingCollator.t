@@ -7,7 +7,7 @@ use File::Temp qw/ tempfile tempdir /;
 use Capture::Tiny ':all';
 
 use Test::More;
-plan tests => 34;
+plan tests => 35;
 
 sub fill_file {
   my ($file, $content) = @_;
@@ -241,6 +241,17 @@ check_output_file($warning_output, q<punctuation.txt:1:1 ... 1, Warning - `a'cal
 >);
 check_output_file($counter_summary, '');
 check_output_file($more_warnings, '');
+
+$ENV{'INPUT_DISABLE_CHECKS'} = ",word-collating";
+($output, $error_lines) = run_test($directory);
+($output, $error_lines) = run_test($directory);
+is($output, "a'calloc
+calloc
+calloc'd
+malloc
+malloc'd
+");
+$ENV{'INPUT_DISABLE_CHECKS'} = ",ignored";
 
 my $file_names;
 ($fh, $file_names) = tempfile;
