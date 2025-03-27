@@ -163,20 +163,20 @@ sub harmonize_expect {
 sub group_related_words {
   our %letter_map;
   our $disable_word_collating;
-  unless ($disable_word_collating) {
-    # group related words
-    for my $char (sort CheckSpelling::Util::number_biased keys %letter_map) {
-      for my $plural_key (sort keys(%{$letter_map{$char}})) {
-        my $key = stem_word $plural_key;
-        next if $key eq $plural_key;
-        next unless defined $letter_map{$char}{$key};
-        my %word_map = %{$letter_map{$char}{$key}};
-        for $word (keys(%{$letter_map{$char}{$plural_key}})) {
-          $word_map{$word} = 1;
-        }
-        $letter_map{$char}{$key} = \%word_map;
-        delete $letter_map{$char}{$plural_key};
+  return if $disable_word_collating;
+
+  # group related words
+  for my $char (sort CheckSpelling::Util::number_biased keys %letter_map) {
+    for my $plural_key (sort keys(%{$letter_map{$char}})) {
+      my $key = stem_word $plural_key;
+      next if $key eq $plural_key;
+      next unless defined $letter_map{$char}{$key};
+      my %word_map = %{$letter_map{$char}{$key}};
+      for $word (keys(%{$letter_map{$char}{$plural_key}})) {
+        $word_map{$word} = 1;
       }
+      $letter_map{$char}{$key} = \%word_map;
+      delete $letter_map{$char}{$plural_key};
     }
   }
 }
