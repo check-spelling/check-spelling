@@ -71,8 +71,15 @@ check_ssh_key() {
     if grep -q "^$ssh_account" "$err"; then
       (
         echo '## Checkout Failed: Bad SSH Key?'
+        echo 'Look for `with:`/`ssh_key: ...`'
+        echo 'It should be something like `${{ secrets.CHECK_SPELLING }}`'
+        echo '* If it is, you might be able to delete the secret and then follow the talk-to-the-bot instructions.'
+        echo '* Otherwise, you probably need to regenerate your deploy key (or non deploy key) and recreate the secret containing the private key.'
+        echo '```'
         cat "$out" "$err"
+        echo '```'
       ) >> "$GITHUB_STEP_SUMMARY"
+      exit 1
     fi
   fi
 }
