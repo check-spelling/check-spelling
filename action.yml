@@ -468,7 +468,7 @@ runs:
         spellchecker: ${{ env.THIS_ACTION_PATH }}
         ssh_key: ${{ inputs.ssh_key }}
         ssh_account: git@github.com
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ inputs.checkout-token || github.token }}
       run: |
         diagnose-failed-checkout
     - name: checkout-merge
