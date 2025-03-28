@@ -2373,7 +2373,18 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
         partial_clone_filter_value=$(git config "$partial_clone_filter_key" || true)
         if echo "$partial_clone_filter_value" | grep -q tree:0; then
           git config --unset "$partial_clone_filter_key"
-          git fetch -q --refetch origin HEAD
+          git_fetch_log=$(mktemp)
+          if ! (git fetch -q --refetch origin HEAD 2>&1) > "$git_fetch_log"; then
+            error=$?
+            cat "$git_fetch_log"
+            if head -4 "$git_fetch_log" | grep -q 'The requested URL returned error: 504'; then
+              echo '::warning ::git error... trying again'
+              git fetch -q --refetch origin HEAD
+            else
+              echo '::error title=Unexpected git error::Failed to convert partial clone to regular clone (git-partial-clone-to-regular-failed)'
+              exit $error
+            fi
+          fi
           git config "$partial_clone_filter_key" "$partial_clone_filter_value"
         fi
         git blame HEAD -- "$workflow_path" > "$workflow_blame"
