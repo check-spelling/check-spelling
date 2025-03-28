@@ -109,14 +109,28 @@ check_wiki() {
   fi
 }
 check_repository_existence() {
-  if ! call_gh_api 'properties/values'; then
+  if call_gh_api 'properties/values'; then
+    repo_is_public_and_token_is_probably_bad=1
+  fi
+  if ! GH_TOKEN="${CHECKOUT_TOKEN:-$GH_TOKEN}" call_gh_api 'properties/values'; then
     (
-      if [ -n "$ACT" ]; then
+      if [ -n "$repo_is_public_and_token_is_probably_bad" ]; then
+        echo '## Checkout Failed: checkout token was rejected by server'
+        echo 'Try replacing the token.'
+        echo 'Look for `with:`/`checkout-token: ...`'
+        echo 'It should be something like `${{ secrets.CHECK_SPELLING }}`'
+        echo '* If it is a raw secret, you are doing things very wrong and should replace it (including rotating the secret wherever it is used).'
+        echo '* Otherwise, you probably need to generate a new token and then replace the secret value.'
+      elif [ -n "$ACT" ]; then
         echo '## Checkout Failed: Repository is probably private or nonexistent'
         echo 'You probably need to adjust your `GITHUB_TOKEN` secret to include `contents: read` for this repository.'
       else
-        echo '## Checkout Failed: Repository inaccessible?'
-        echo 'Please file a bug: missing-metadata'
+        echo '## Checkout Failed: Repository is probably private or nonexistent'
+        echo 'Try replacing the token.'
+        echo 'Look for `with:`/`checkout-token: ...`'
+        echo 'It should be something like `${{ secrets.CHECK_SPELLING }}`'
+        echo '* If it is a raw secret, you are doing things very wrong and should replace it (including rotating the secret wherever it is used).'
+        echo '* Otherwise, you probably need to generate a new token and then replace the secret value.'
       fi
       summarize_gh_api_output 'properties/values'
     ) >> "$GITHUB_STEP_SUMMARY"
