@@ -453,7 +453,7 @@ runs:
             ''
           }}
     - name: report if checkout failed
-      if: steps.checkout.outcome == 'failure'
+      if: steps.checkout.outputs.outcome == 'failure'
       shell: bash
       env:
         spellchecker: ${{ env.THIS_ACTION_PATH }}

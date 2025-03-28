@@ -64,6 +64,9 @@ outputs:
   commit:
     description:
     value: ${{ steps.action.outputs.commit }}
+  outcome:
+    description:
+    value: ${{ steps.action.outcome }}
 runs:
   using: "composite"
   steps:
