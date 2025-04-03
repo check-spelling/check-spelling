@@ -473,7 +473,7 @@ sub split_file {
       for my $token (sort CheckSpelling::Util::case_biased keys %unrecognized_line_items) {
         my $found_token = 0;
         my $raw_token = $token;
-        $token =~ s/'/(?:'|$rsqm|\&apos;|\&#39;)+/g;
+        $token =~ s/'/(?:'|\x{2019}|\&apos;|\&#39;)+/g;
         my $before;
         if ($token =~ /^$upper_pattern$lower_pattern/) {
           $before = '(?<=.)';
