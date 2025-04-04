@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 
-plan tests => 44;
+plan tests => 45;
 use_ok('CheckSpelling::Util');
 
 $ENV{'EMPTY_VAR'}='';
@@ -201,3 +201,4 @@ is_deeply(\@sorted, \@expected_sort, 'sorting with number_biased');
 
 is(CheckSpelling::Util::wrap_in_backticks('this'), '`this`');
 is(CheckSpelling::Util::wrap_in_backticks('this `thing` is good'), '``this `thing` is good``');
+is(CheckSpelling::Util::wrap_in_backticks('this `thing` is ``very`` good'), '```this `thing` is ``very`` good```');

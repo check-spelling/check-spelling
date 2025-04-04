@@ -454,11 +454,13 @@ sub split_file {
               last;
             }
           }
+          my $wrapped = CheckSpelling::Util::wrap_in_backticks($match);
           if ($found_trigger_re) {
             $found_trigger_re =~ s/^\(\?:(.*)\)$/$1/;
-            print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry: `$found_trigger_re`. (forbidden-pattern)\n";
+            my $quoted_trigger_re = CheckSpelling::Util::wrap_in_backticks($found_trigger_re);
+            print WARNINGS ":$.:$begin ... $end, Warning - $wrapped matches a line_forbidden.patterns entry: $quoted_trigger_re. (forbidden-pattern)\n";
           } else {
-            print WARNINGS ":$.:$begin ... $end, Warning - `$match` matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
+            print WARNINGS ":$.:$begin ... $end, Warning - $wrapped matches a line_forbidden.patterns entry. (forbidden-pattern)\n";
           }
           $previous_line_state = $_;
         }
@@ -488,15 +490,18 @@ sub split_file {
           $found_token = 1;
           my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
           next unless $match =~ /./;
-          print WARNINGS ":$.:$begin ... $end: '$match'\n";
+          my $wrapped = CheckSpelling::Util::wrap_in_backticks($match);
+          print WARNINGS ":$.:$begin ... $end: $wrapped\n";
         }
         unless ($found_token) {
           if ($raw_line !~ /$token.*$token/ && $raw_line =~ /($token)/) {
             my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
-            print WARNINGS ":$.:$begin ... $end: '$match'\n";
+            my $wrapped = CheckSpelling::Util::wrap_in_backticks($raw_token);
+            print WARNINGS ":$.:$begin ... $end: $wrapped\n";
           } else {
             my $offset = $line_length + 1;
-            print WARNINGS ":$.:1 ... $offset, Warning - Could not identify whole word `$raw_token` in line. (token-is-substring)\n";
+            my $wrapped = CheckSpelling::Util::wrap_in_backticks($raw_token);
+            print WARNINGS ":$.:1 ... $offset, Warning - Could not identify whole word $wrapped in line. (token-is-substring)\n";
           }
         }
       }

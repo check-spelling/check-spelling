@@ -97,7 +97,7 @@ check_output_file("$output_directory/name", $filename);
 check_output_file("$output_directory/stats", '{words: 2, unrecognized: 1, unknown: 1, unique: 2}');
 check_output_file("$output_directory/unknown", 'Play
 ');
-check_output_file("$output_directory/warnings", ":3:8 ... 12: 'Play'
+check_output_file("$output_directory/warnings", ":3:8 ... 12: `Play`
 ");
 open $fh, '>:utf8', $filename;
 print $fh ("bar "x1000)."\n\n";
@@ -115,9 +115,9 @@ $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 $CheckSpelling::UnknownWordSplitter::forbidden_re='$^';
 check_output_file("$output_dir/name", $filename);
 check_output_file("$output_dir/stats", '{words: 4, unrecognized: 3, unknown: 2, unique: 2}');
-check_output_file_sorted_lines("$output_dir/warnings", ":1:8 ... 11: 'baz'
-:1:20 ... 23: 'baz'
-:1:16 ... 19: 'elf'
+check_output_file_sorted_lines("$output_dir/warnings", ":1:8 ... 11: `baz`
+:1:20 ... 23: `baz`
+:1:16 ... 19: `elf`
 :2:1 ... 10, Warning - `FooBarBar` matches a line_forbidden.patterns entry. (forbidden-pattern)
 ");
 check_output_file("$output_dir/unknown", 'baz
@@ -139,19 +139,19 @@ is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 1);
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/name", $filename);
 check_output_file("$output_dir/stats", '{words: 0, unrecognized: 13, unknown: 8, unique: 0}');
-check_output_file_sorted_lines("$output_dir/warnings", ":1:1 ... 4: 'Foo'
-:1:12 ... 15: 'Bar'
-:1:16 ... 19: 'elf'
-:1:20 ... 23: 'baz'
-:1:24 ... 27: 'bar'
-:1:28 ... 36: 'supercal'
-:1:38 ... 43: 'ragel'
-:1:4 ... 7: 'Bar'
-:1:48 ... 51: 'exp'
-:1:8 ... 11: 'baz'
-:2:1 ... 4: 'Foo'
-:2:4 ... 7: 'Bar'
-:2:7 ... 10: 'Bar'
+check_output_file_sorted_lines("$output_dir/warnings", ":1:1 ... 4: `Foo`
+:1:12 ... 15: `Bar`
+:1:16 ... 19: `elf`
+:1:20 ... 23: `baz`
+:1:24 ... 27: `bar`
+:1:28 ... 36: `supercal`
+:1:38 ... 43: `ragel`
+:1:4 ... 7: `Bar`
+:1:48 ... 51: `exp`
+:1:8 ... 11: `baz`
+:2:1 ... 4: `Foo`
+:2:4 ... 7: `Bar`
+:2:7 ... 10: `Bar`
 ");
 check_output_file("$output_dir/unknown", 'Bar
 bar
@@ -190,7 +190,7 @@ check_output_file("$output_dir/stats", '{words: 9, unrecognized: 1, unknown: 1, 
 check_output_file_sorted_lines("$output_dir/warnings", ":2:7 ... 20, Warning - ` fruit fruit ` matches a line_forbidden.patterns entry: `\\s([A-Z]{3,}|[A-Z][a-z]{2,}|[a-z]{3,})\\s\\g{-1}\\s`. (forbidden-pattern)
 :3:19 ... 24, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
 :3:7 ... 12, Warning - `donut` matches a line_forbidden.patterns entry: `\\bdonut\\b`. (forbidden-pattern)
-:4:6 ... 9: 'ham'
+:4:6 ... 9: `ham`
 ");
 check_output_file("$output_dir/unknown", 'ham
 ');
@@ -213,7 +213,7 @@ ok($output_directory =~ /.*\n/);
 chomp($output_directory);
 ok(-d $output_directory);
 check_output_file("$output_directory/stats", '{words: 13, unrecognized: 1, unknown: 1, unique: 6, candidates: [0,1], candidate_lines: [0,4:6:9], forbidden: [0,0], forbidden_lines: [0,0]}');
-check_output_file_sorted_lines("$output_directory/warnings", ":4:6 ... 9: 'ham'
+check_output_file_sorted_lines("$output_directory/warnings", ":4:6 ... 9: `ham`
 ");
 check_output_file("$output_directory/unknown", 'ham
 ');
@@ -271,9 +271,9 @@ check_output_file("$output_dir/unknown", "fa'ad
 foad
 fooo'd
 ");
-check_output_file("$output_dir/warnings", ":3:1 ... 5: 'foad'
-:4:1 ... 7: 'fooo'd'
-:6:1 ... 6: 'fa'ad'
+check_output_file("$output_dir/warnings", ":3:1 ... 5: `foad`
+:4:1 ... 7: `fooo'd`
+:6:1 ... 6: `fa'ad`
 ");
 $dirname = tempdir();
 ($fh, $filename) = tempfile();
@@ -326,5 +326,5 @@ print $fh "======= ==== === a ==== ======\r\n"x127;
 print $fh "======= wrnog === a ==== ======\r\n";
 close $fh;
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
-check_output_file("$output_dir/warnings", ":128:9 ... 14: 'wrnog'
+check_output_file("$output_dir/warnings", ":128:9 ... 14: `wrnog`
 ");

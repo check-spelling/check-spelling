@@ -124,13 +124,13 @@ check_output_file($counter_summary, '{
 check_output_file($more_warnings, '');
 
 my $file_name='test.txt';
-$directory = stage_test($file_name, '{words: 3, unrecognized: 2, unknown: 2, unique: 2}', '', ":2:3 ... 8: 'something'
-:3:3 ... 5: 'Foo'
-:4:3 ... 6: 'foos'
-:5:7 ... 9: 'foo'
-:6:3 ... 9: 'fooies'
-:6:3 ... 9: 'fozed'
-:10:4 ... 10: 'something'", "xxxpaz
+$directory = stage_test($file_name, '{words: 3, unrecognized: 2, unknown: 2, unique: 2}', '', ":2:3 ... 8: `something`
+:3:3 ... 5: `Foo`
+:4:3 ... 6: `foos`
+:5:7 ... 9: `foo`
+:6:3 ... 9: `fooies`
+:6:3 ... 9: `fozed`
+:10:4 ... 10: `something`", "xxxpaz
 xxxpazs
 jjjjjy
 jjjjjies
@@ -185,7 +185,7 @@ Jjj
 lll
 );
 $directory = stage_test('case.txt', '{words: 1000, unique: 1000}', '',
-(join "\n", map { ":1:1 ... 1: '$_'" } @word_variants),
+(join "\n", map { ":1:1 ... 1: `$_`" } @word_variants),
 (join "\n", @word_variants));
 ($output, $error_lines) = run_test($directory);
 is($output, "aaa (AAA, Aaa, aaa)
@@ -220,11 +220,11 @@ alloc
 malloc
 >);
 
-$directory = stage_test('punctuation.txt', '{words: 1000, unique: 1000}', '', ":1:1 ... 1: 'calloc'
-:1:1 ... 1: 'calloc'd'
-:1:1 ... 1: 'a'calloc'
-:1:1 ... 1: 'malloc'
-:1:1 ... 1: 'malloc'd'
+$directory = stage_test('punctuation.txt', '{words: 1000, unique: 1000}', '', ":1:1 ... 1: `calloc`
+:1:1 ... 1: `calloc'd`
+:1:1 ... 1: `a'calloc`
+:1:1 ... 1: `malloc`
+:1:1 ... 1: `malloc'd`
 ", q<
 calloc
 calloc'd
@@ -263,11 +263,11 @@ close $fh;
 fill_file($forbidden_patterns, '# please avoid starting lines with "pe" followed by a letter.
 ^pe.
 ');
-$directory = stage_test($file_names, '{forbidden: [1], forbidden_lines: [2:1:3]}}', '', ":1:1 ... 5: 'apple'
-:2:1 ... 4: 'pear'
+$directory = stage_test($file_names, '{forbidden: [1], forbidden_lines: [2:1:3]}}', '', ":1:1 ... 5: `apple`
+:2:1 ... 4: `pear`
 :2:1 ... 3, Warning - `pea` matches a line_forbidden.patterns entry: `^pe.`. (forbidden-pattern)
-:3:3 ... 6: 'pear'
-:4:3 ... 6: 'pear'
+:3:3 ... 6: `pear`
+:4:3 ... 6: `pear`
 ", 'apple
 pear');
 $ENV{'check_file_names'} = $file_names;
@@ -300,10 +300,10 @@ apple
 pear';
 close $fh;
 $directory = stage_test($file_names, '{words: 3, unrecognized: 2, unknown: 2, unique: 2}', '', "
-:1:1 ... 4: 'apple'
-:2:1 ... 4: 'apple'
-:3:1 ... 4: 'apple'
-:4:1 ... 4: 'apple'
+:1:1 ... 4: `apple`
+:2:1 ... 4: `apple`
+:3:1 ... 4: `apple`
+:4:1 ... 4: `apple`
 ");
 $ENV{'unknown_word_limit'} = 3;
 ($output, $error_lines) = run_test($directory);

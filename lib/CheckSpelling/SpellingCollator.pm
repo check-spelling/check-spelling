@@ -383,7 +383,8 @@ sub main {
                 my $pattern = (split /\n/,$candidates[$i])[-1];
                 my $position = $lines[$i];
                 $position =~ s/:(\d+)$/ ... $1/;
-                push @delayed_warnings, "$file:$position, Notice - `Line` matches candidate pattern `$pattern` (candidate-pattern)\n";
+                my $wrapped = CheckSpelling::Util::wrap_in_backticks($pattern);
+                push @delayed_warnings, "$file:$position, Notice - `Line` matches candidate pattern $wrapped (candidate-pattern)\n";
               }
             }
           }
@@ -503,8 +504,10 @@ sub main {
     if (!$is_file_list) {
       for $warning (<WARNINGS>) {
         chomp $warning;
-        if ($warning =~ s/:(\d+):(\d+ \.\.\. \d+): '(.*)'/:$1:$2, Warning - `$3` is not a recognized word\. \(unrecognized-spelling\)/) {
+        if ($warning =~ m/:(\d+):(\d+ \.\.\. \d+): `(.*)`/) {
           my ($line, $range, $item) = ($1, $2, $3);
+          my $wrapped = CheckSpelling::Util::wrap_in_backticks($item);
+          $warning =~ s/:\d+:\d+ \.\.\. \d+: `.*`/:$line:$range, Warning - $wrapped is not a recognized word\. \(unrecognized-spelling\)/;
           next if log_skip_item($item, $file, $warning, $unknown_word_limit);
         } else {
           if ($warning =~ /\`(.*?)\` in line\. \(token-is-substring\)/) {
@@ -519,7 +522,7 @@ sub main {
         chomp $warning;
         next unless $warning =~ s/^:(\d+)/:1/;
         $file = $check_file_paths[$1];
-        if ($warning =~ s/:(\d+ \.\.\. \d+): '(.*)'/:$1, Warning - `$2` is not a recognized word\. \(check-file-path\)/) {
+        if ($warning =~ s/:(\d+ \.\.\. \d+): `(.*)`/:$1, Warning - `$2` is not a recognized word\. \(check-file-path\)/) {
           next if skip_item($2);
           if (defined $unknown_file_word_limit) {
             next if ++$unknown_file_word_count{$2} > $unknown_file_word_limit;
