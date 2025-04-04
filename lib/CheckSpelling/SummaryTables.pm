@@ -32,7 +32,7 @@ sub find_git {
     return $git_dir if defined $git_dir;
     if ($ENV{PATH} =~ /(.*)/) {
         my $path = $1;
-        for $maybe_git (split /:/, $path) {
+        for my $maybe_git (split /:/, $path) {
             if (-x "$maybe_git/git") {
                 $git_dir = $maybe_git;
                 return $git_dir;
