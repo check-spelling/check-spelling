@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 
-plan tests => 42;
+plan tests => 44;
 use_ok('CheckSpelling::Util');
 
 $ENV{'EMPTY_VAR'}='';
@@ -198,3 +198,6 @@ my @expected_sort = qw(
 );
 @sorted = sort CheckSpelling::Util::number_biased @unsorted;
 is_deeply(\@sorted, \@expected_sort, 'sorting with number_biased');
+
+is(CheckSpelling::Util::wrap_in_backticks('this'), '`this`');
+is(CheckSpelling::Util::wrap_in_backticks('this `thing` is good'), '``this `thing` is good``');

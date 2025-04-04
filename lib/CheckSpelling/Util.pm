@@ -115,4 +115,15 @@ sub calculate_delay {
   return $delay;
 }
 
+sub wrap_in_backticks {
+  my ($a) = @_;
+  my $longest = 0;
+  while ($a =~ /(`+)/g) {
+    my $length = length $1;
+    $longest = $length if $length > $longest;
+  }
+  my $q = '`'x ($longest + 1);
+  return "$q$a$q";
+}
+
 1;
