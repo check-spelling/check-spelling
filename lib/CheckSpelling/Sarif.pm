@@ -147,6 +147,7 @@ sub parse_warnings {
                 my $limit = scalar @locations_json;
                 for (my $i = 0; $i < $limit; ++$i) {
                     my $locations_json_flat = $locations_json[$i];
+                    my $partialFingerprints = '';
                     my $partialFingerprint = $fingerprints[$i];
                     if ($partialFingerprint ne '') {
                         $partialFingerprints = qq<"partialFingerprints": { "cs0" : "$partialFingerprint" },>;
@@ -305,7 +306,8 @@ sub main {
         $sarif{'runs'}[0]{'tool'}{'driver'}{'rules'} = \@rules;
         for my $result_index (0 .. scalar @{$results}) {
             my $result = $results->[$result_index];
-            next if defined $defined_codes{$result->{'ruleId'}};
+            my $ruleId = $result->{'ruleId'};
+            next if defined $ruleId && defined $defined_codes{$ruleId};
             $result->{'ruleIndex'} = $missing_rule_definition_index;
         }
     }
