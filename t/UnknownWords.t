@@ -23,7 +23,7 @@ my $config = "$sandbox/t/unknown-words/config";
 my $github_repository = $ENV{GITHUB_REPOSITORY} || 'check-spelling/check-spelling';
 
 my @environment_variables_to_drop = split /\n/, `git ls-files -z |
-  xargs -0 grep GITHUB_ |
+  xargs -0 grep GITHUB_ 2>/dev/null |
   perl -pe 's/[^_A-Z]+/\n/g' |
   grep ^GITHUB_ |
   sort -u`;
