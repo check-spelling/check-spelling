@@ -45,12 +45,15 @@ my $expected_json;
 my $formatted_sarif_json;
 {
   local $/;
-  open my $expected_json_file, '<', "$tests/sarif/expected.json";
-  $expected_json = decode_json(<$expected_json_file>);
-  close $expected_json_file;
-  open my $formatted_sarif_file, '<', $formatted_sarif;
-  $formatted_sarif_json = decode_json(<$formatted_sarif_file>);
-  close $formatted_sarif_file;
-}
+  if (open(my $expected_json_file, '<', "$tests/sarif/expected.json")) {
+    $expected_json = decode_json(<$expected_json_file>);
+    close $expected_json_file;
+    open my $formatted_sarif_file, '<', $formatted_sarif;
+    $formatted_sarif_json = decode_json(<$formatted_sarif_file>);
+    close $formatted_sarif_file;
 
-is_deeply($formatted_sarif_json, $expected_json);
+    is_deeply($formatted_sarif_json, $expected_json);
+  } else {
+    fail("expected to open $tests/sarif/expected.json");
+  }
+}
