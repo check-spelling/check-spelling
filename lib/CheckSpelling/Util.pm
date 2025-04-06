@@ -79,7 +79,7 @@ sub read_file {
     $text = <$file>;
     close $file;
   } else {
-    print STDERR "Could not open file ($file)\n";
+    print STDERR "Could not open file ($name)\n";
   }
   return $text;
 }

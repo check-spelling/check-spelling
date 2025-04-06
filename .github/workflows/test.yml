@@ -151,6 +151,7 @@ jobs:
             $state = $new_state;
             next unless /\w/;
             next if $last_line eq $_;
+            next if /\QCould not open file (no-such-file)\E/;
             $last_line = $_;
             s/ \.+ ok/|:white_check_mark:/ || s/ \.+ /|/;
             s/^\s+(.*):\s*/... $1|/;
