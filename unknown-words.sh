@@ -1358,7 +1358,7 @@ check_for_newline_at_eof() {
       line="$(( $(line_count < "$maybe_missing_eol") + 1 ))"
       start="$(tail -1 "$maybe_missing_eol" | char_count)"
       stop="$(( start + 1 ))"
-      echo "$maybe_missing_eol:$line:$start ... $stop, Warning - No newline at eof. (no-newline-at-eof)" >> "$early_warnings"
+      echo "$maybe_missing_eol:$line:$start ... $stop, Warning - Missing newline at eof. (no-newline-at-eof)" >> "$early_warnings"
       echo >> "$update_file"
     fi
   fi

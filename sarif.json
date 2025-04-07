@@ -329,7 +329,7 @@
               "name": "NoNewlineAtEOF",
               "helpUri": "https://docs.check-spelling.dev/Event-descriptions#no-newline-at-eof",
               "shortDescription": {
-                "text": "No newline at EOF"
+                "text": "Missing newline at EOF"
               },
               "fullDescription": {
                 "text": "The specified file is missing a newline at the end of the file."
