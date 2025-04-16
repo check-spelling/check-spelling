@@ -478,6 +478,12 @@ runs:
       uses: ./../check-spelling-actions/checkout-merge
       with:
         path: ${{ inputs.experimental_path }}
+    - name: clear credentials
+      if: ${{ steps.checkout.outputs.outcome == 'success' && !(toJSON(inputs.experimental_apply_changes_via_bot || 'false') && github.event_name == 'issue_comment') }}
+      shell: bash
+      working-directory: ${{ inputs.experimental_path }}
+      run: |
+        remove-persisted-credentials
     - name: save sha
       id: save-sha
       if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && fromJSON(inputs.checkout) && !inputs.custom_task && !inputs.task) && steps.checkout-merge.outputs.message == ''
