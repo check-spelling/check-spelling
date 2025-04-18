@@ -440,7 +440,7 @@ runs:
         secpoll
     - name: checkout
       id: checkout
-      if: inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task
+      if: inputs.checkout && fromJSON(inputs.checkout) && !inputs.custom_task
       uses: ./../check-spelling-actions/checkout
       with:
         show-progress: false
@@ -468,13 +468,13 @@ runs:
         diagnose-failed-checkout
     - name: checkout-merge
       id: checkout-merge
-      if: github.event.pull_request.number && (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task)
+      if: github.event.pull_request.number && (contains(github.event_name, 'pull_request')) && (inputs.checkout && fromJSON(inputs.checkout) && !inputs.custom_task && !inputs.task)
       uses: ./../check-spelling-actions/checkout-merge
       with:
         path: ${{ inputs.experimental_path }}
     - name: save sha
       id: save-sha
-      if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && inputs.checkout != 'false' && !inputs.custom_task && !inputs.task) && inputs.use_sarif && steps.checkout-merge.outputs.message == ''
+      if: (contains(github.event_name, 'pull_request')) && (inputs.checkout && fromJSON(inputs.checkout) && !inputs.custom_task && !inputs.task) && steps.checkout-merge.outputs.message == ''
       shell: bash
       working-directory: ${{ inputs.experimental_path }}
       run: |
