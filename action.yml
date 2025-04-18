@@ -480,12 +480,15 @@ runs:
       run: |
         : Save SHA
         git show HEAD
-        PRIVATE_SARIF_REF="refs/pull/${{ github.event.pull_request.number }}/merge"
-        echo "PRIVATE_SARIF_REF=$PRIVATE_SARIF_REF" >> "$GITHUB_ENV"
-        if git fetch origin "$PRIVATE_SARIF_REF"; then
-          echo "PRIVATE_SARIF_SHA=$(git rev-parse FETCH_HEAD)" >> "$GITHUB_ENV"
+        PRIVATE_CHECKOUT_REF="refs/pull/${{ github.event.pull_request.number }}/merge"
+        echo "PRIVATE_CHECKOUT_REF=$PRIVATE_CHECKOUT_REF" >> "$GITHUB_ENV"
+        if git fetch origin "$PRIVATE_CHECKOUT_REF"; then
+          (
+            echo "PRIVATE_SYNTHETIC_SHA=$(git rev-parse HEAD)"
+            echo "PRIVATE_MERGE_SHA=$(git rev-parse FETCH_HEAD)"
+          ) >> "$GITHUB_ENV"
         else
-          echo "::warning ::$PRIVATE_SARIF_REF is unavailable (missing-merge-head)"
+          echo "::warning ::$PRIVATE_CHECKOUT_REF is unavailable (missing-merge-head)"
           echo "skip-upload=1" >> "$GITHUB_OUTPUT"
         fi
     - name: prepare
@@ -569,8 +572,8 @@ runs:
         sarif_file: ${{ env.UPLOAD_SARIF_LIMITED }}
         category: ${{ inputs.report_title_suffix && format('{0}-{1}', 'check-spelling', inputs.report_title_suffix) || 'check-spelling' }}
         checkout_path: ${{ inputs.experimental_path }}
-        ref: ${{ env.PRIVATE_SARIF_REF }}
-        sha: ${{ env.PRIVATE_SARIF_SHA }}
+        ref: ${{ env.PRIVATE_CHECKOUT_REF }}
+        sha: ${{ env.PRIVATE_MERGE_SHA }}
         token: ${{ inputs.sarif-token || inputs.GITHUB_TOKEN }}
         started-at: ${{ steps.spelling.outputs.started-at }}
         analysis-key: ${{ steps.spelling.outputs.workflow-path }}:check-spelling
