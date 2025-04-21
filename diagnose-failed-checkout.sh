@@ -179,12 +179,45 @@ check_for_not_our_ref() {
   fi
 }
 
+check_for_submodules() {
+  submodules=$(mktemp)
+  if git ls-files --stage|grep ^160000 > "$submodules"; then
+    (
+      echo '## git submodules'
+      echo 'actions/checkout has code for `persist-credentials: false` which relies on `git` to play nice...'
+      echo 'if your .gitmodules list does not cover your submodules, that could be the problem'
+      echo
+      echo '### `.gitmodules`'
+      if [ -s .gitmodules ]; then
+        echo '```ini'
+        cat .gitmodules
+        echo
+        echo '```'
+      elif [ -f .gitmodules ]; then
+        echo 'Empty file...'
+      else
+        echo 'Did not find `.gitmodules`'
+      fi
+      echo
+      echo '### modules'
+      echo 'These objects were reported by `git` as being a commit (roughly a submodule).'
+      echo 'In order for `git submodule` to be happy, each item here needs to correspond to an entry in `.gitmodules`, if it does not, that could explain a checkout failure.'
+      echo 'Please review the items below:'
+      echo '```'
+      cat "$submodules"
+      echo
+      echo '```'
+    ) >> "$GITHUB_STEP_SUMMARY"
+  fi
+}
+
 check_ssh_key
 check_for_empty_github_token
 check_wiki
 check_repository_existence
 check_repository_read_permission
 check_for_not_our_ref "$GITHUB_SHA"
+check_for_submodules
 
 (
   echo '## Checkout Failed'
