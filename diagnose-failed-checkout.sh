@@ -188,6 +188,6 @@ check_for_not_our_ref "$GITHUB_SHA"
 
 (
   echo '## Checkout Failed'
-  echo 'check-spelling is not familiar with this failure case, please file a bug (checkout-failed-unknown-cause)'
+  echo '😕 check-spelling is not familiar with this failure case, please file a 🐛 bug (checkout-failed-unknown-cause)'
 ) >> "$GITHUB_STEP_SUMMARY"
 exit 1
