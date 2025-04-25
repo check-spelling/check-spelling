@@ -84,7 +84,7 @@ These forbidden patterns matched content:
 
 </details>
 
-<details><summary>Errors (1)</summary>
+<details><summary>Errors :x: (1)</summary>
 
 [:x: Errors](https://docs.check-spelling.dev/Event-descriptions) | Count
 -|-

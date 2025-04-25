@@ -2633,11 +2633,13 @@ get_has_errors() {
     jq -r 'keys | .[]' "$counter_summary_file" > "$counter_summary_keys"
     if grep -E -q -v "$(echo "$INPUT_IGNORED,$INPUT_WARNINGS,$INPUT_NOTICES" | events_to_regular_expression)" "$counter_summary_keys" 2> /dev/null; then
       has_errors=1
-    elif grep -E -q "$(
+    fi
+    if grep -E -q "$(
       echo "$INPUT_WARNINGS" | events_to_regular_expression
     )" "$counter_summary_keys" 2> /dev/null; then
       has_warnings=1
-    elif grep -E -q "$(
+    fi
+    if grep -E -q "$(
       echo "$INPUT_NOTICES" | events_to_regular_expression
     )" "$counter_summary_keys" 2> /dev/null; then
       has_notices=1
@@ -2926,16 +2928,27 @@ spelling_body() {
     fi
     if [ -s "$counter_summary_file" ]; then
       get_has_errors
-      if [ -n "$has_errors" ]; then
-        event_title='Errors'
-        event_icon=':x:'
-      elif jq -r 'keys[]' "$counter_summary_file" |
-        grep -E -q "$(echo "$INPUT_WARNINGS" | events_to_regular_expression)"; then
-        event_title='Warnings'
+      if [ -n "$has_notices" ]; then
+        event_title_notices='Notices'
+        event_icon=':information_source:'
+      else
+        event_title_notices=''
+      fi
+      if [ -n "$has_warnings" ]; then
+        event_title_warnings='Warnings'
         event_icon=':warning:'
       else
-        event_title='Notices'
-        event_icon=':information_source:'
+        event_title_warnings=''
+      fi
+      if [ -n "$has_errors" ]; then
+        event_title_errors='Errors'
+        event_icon=':x:'
+      else
+        event_title_errors=''
+      fi
+      event_title=$(build-english-list "$event_title_errors" "$event_title_warnings" "$event_title_notices")
+      if [ -z "$event_title" ]; then
+        event_title=Events
       fi
       if [ -s "$counter_summary_file" ]; then
         warnings_details="$(echo "
@@ -2975,7 +2988,7 @@ spelling_body() {
           details_heading=""
         fi
         output_warnings="$(echo "
-        <details><summary>$event_title ($(grep -c ':' "$counter_summary_file"))</summary>
+        <details><summary>$event_title $event_icon ($(grep -c ':' "$counter_summary_file"))</summary>
 
         $details_heading
 
