@@ -3052,8 +3052,8 @@ spelling_body() {
         $(relative_note)
 
         $B sh
-        $err
-        $(generate_merge_instructions "git commit -m 'updating check-spelling metadata' && " "")
+        $(generate_merge_instructions "" " && $n"
+        )$err &&$n git commit -m 'Update check-spelling metadata'
         $B
         </details>
         " | strip_lead)"
@@ -3319,7 +3319,11 @@ generate_merge_instructions() {
   text_before="$1"
   text_after="$2"
   if [ -n "$GITHUB_HEAD_REF" ] && [ "$remote_ref" != "$GITHUB_HEAD_REF" ]; then
-    echo "${text_before}git checkout '$(escape_git_branch "$GITHUB_HEAD_REF")' && git merge '$(escape_git_branch "$remote_ref")'${text_after}"
+    head_prefix=''
+    if ! echo "$remote_ref" | grep -q '^refs/'; then
+      head_prefix=refs/heads/
+    fi
+    echo "${text_before}git fetch '$(git remote get-url origin)' $head_prefix'$(escape_git_branch "$remote_ref")':refs/private/check-spelling-merge-base &&${n}git checkout '$(escape_git_branch "$GITHUB_HEAD_REF")' &&${n}git merge -m 'Merge $(escape_git_branch "$remote_ref")' 'refs/private/check-spelling-merge-base'${text_after}${n}git push . :'refs/private/check-spelling-merge-base'"
   fi
 }
 
@@ -3379,10 +3383,10 @@ generate_sample_commit_help() {
     git format-patch HEAD~..HEAD --stdout > "$git_apply_commit"
     delim="@@@@$(shasum "$git_apply_commit" |perl -pe 's/\s.*//')--$(date +%s)"
     echo "<details><summary>To accept these unrecognized words as correct, you could apply this commit</summary>$N$(repo_clone_note | strip_lead)$n${B}sh"
+    generate_merge_instructions "" " &&"
     echo "git am <<'$delim'"
     cat "$git_apply_commit"
     echo "$delim$n$B$N"
-    generate_merge_instructions "$b" "$b"
     echo 'And `git push` ...'
     echo "</details>$N**OR**$N"
   else
