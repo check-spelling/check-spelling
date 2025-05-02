@@ -3651,10 +3651,13 @@ set_patch_remove_add() {
     get_has_errors
     if [ -z "$has_errors" ] && [ -z "$patch_add" ]; then
       begin_group 'No misspellings'
-      expect_count="$(line_count < "$expect_path")"
-      if [ "$expect_count" = 0 ]; then
+      expect_count="$(grep . "$expect_path" | line_count)"
+      if [ "$expect_count" = 1 ]; then
         headline="There is currently _one_ expected item."
       else
+        if [ "$expect_count" = 0 ]; then
+          expect_count=no
+        fi
         headline="There are currently $expect_count expected items."
       fi
       title="No new misspelled words found"
