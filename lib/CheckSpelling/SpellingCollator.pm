@@ -8,6 +8,7 @@ use File::Path qw(remove_tree);
 use CheckSpelling::Util;
 
 my %letter_map;
+my %ignored_event_map;
 my $disable_word_collating;
 
 sub get_field {
@@ -184,8 +185,10 @@ sub group_related_words {
 sub count_warning {
   my ($warning) = @_;
   our %counters;
+  our %ignored_event_map;
   if ($warning =~ /\(([-\w]+)\)$/) {
     my ($code) = ($1);
+    next if defined $ignored_event_map{$code};
     ++$counters{$code};
   }
 }
@@ -271,6 +274,13 @@ sub main {
   my $warning_output = CheckSpelling::Util::get_file_from_env('warning_output', '/dev/stderr');
   my $more_warnings = CheckSpelling::Util::get_file_from_env('more_warnings', '/dev/stderr');
   my $counter_summary = CheckSpelling::Util::get_file_from_env('counter_summary', '/dev/stderr');
+  my $ignored_events = CheckSpelling::Util::get_file_from_env('ignored_events', '');
+  if ($ignored_events) {
+    our %ignored_event_map;
+    for my $event (split /,/, $ignored_events) {
+      $ignored_event_map{$event} = 1;
+    }
+  }
   my $should_exclude_file = CheckSpelling::Util::get_file_from_env('should_exclude_file', '/dev/null');
   my $unknown_word_limit = CheckSpelling::Util::get_val_from_env('unknown_word_limit', undef);
   my $unknown_file_word_limit = CheckSpelling::Util::get_val_from_env('unknown_file_word_limit', undef);

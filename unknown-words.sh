@@ -2494,6 +2494,7 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
     more_warnings="$more_warnings" \
     should_exclude_file="$should_exclude_file" \
     counter_summary="$counter_summary_file" \
+    ignored_events="$INPUT_IGNORED" \
     unknown_word_limit="$INPUT_UNKNOWN_WORD_LIMIT" \
     INPUT_ONLY_CHECK_CHANGED_FILES="$INPUT_ONLY_CHECK_CHANGED_FILES" \
     candidates_path="$candidates_path" \
