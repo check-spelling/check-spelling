@@ -18,7 +18,12 @@ sub get_severities {
     for my $rule (@$rules) {
         my $id = $rule->{'id'};
         my $severity = $rule->{'properties'}->{"problem.severity"};
-        $severity = 'notice' if $severity eq 'recommendation';
+        if ($severity) {
+            $severity = 'notice' if $severity eq 'recommendation';
+        } else {
+            $severity = $rule->{'defaultConfiguration'}->{'level'};
+            $severity = 'notice' if $severity eq 'note';
+        }
         $severity = 'notice' unless $severity =~ /\w/;
         $severities{$id} = $severity;
     }

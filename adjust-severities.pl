@@ -38,6 +38,10 @@ $severity_map{error} = [];
 
 
 while (my($id, $s) = each %{$severities}) {
+  unless (defined $severity_map{$s}) {
+    print STDERR "Unexpected severity `$s` for id `$id`\n";
+    next;
+  }
   my @list = @{$severity_map{$s}};
   push @list, $id;
   $severity_map{$s} = \@list;
