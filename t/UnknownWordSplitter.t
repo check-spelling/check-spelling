@@ -225,7 +225,7 @@ $ENV{PATH}='/usr/bin';
 $ENV{INPUT_USE_MAGIC_FILE}=1;
 CheckSpelling::UnknownWordSplitter::init($dirname);
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
-check_output_file("$output_dir/skipped", "appears to be a binary file ('inode/x-empty'). (binary-file)
+check_output_file("$output_dir/skipped", "it appears to be a binary file (`inode/x-empty`). (binary-file)
 ");
 
 $dirname = tempdir();
@@ -236,7 +236,7 @@ CheckSpelling::UnknownWordSplitter::init($dirname);
 $CheckSpelling::UnknownWordSplitter::INPUT_LARGEST_FILE = 0;
 $CheckSpelling::UnknownWordSplitter::INPUT_LARGEST_FILE = undef;
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
-check_output_file("$output_dir/skipped", "appears to be a binary file ('application/octet-stream'). (binary-file)
+check_output_file("$output_dir/skipped", "it appears to be a binary file (`application/octet-stream`). (binary-file)
 ");
 
 my $hunspell_dictionary_path = tempdir();

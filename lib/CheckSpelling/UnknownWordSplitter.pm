@@ -366,7 +366,7 @@ sub split_file {
       my $file_kind = <$file_fh>;
       close $file_fh;
       if ($file_kind =~ /^(.*?); charset=binary/) {
-        skip_file($temp_dir, "appears to be a binary file ('$1'). (binary-file)\n");
+        skip_file($temp_dir, "it appears to be a binary file (`$1`). (binary-file)\n");
         return $temp_dir;
       }
     }
