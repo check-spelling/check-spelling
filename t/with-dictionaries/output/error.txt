@@ -23,6 +23,7 @@ Retrieved http://localhost:8123/503.php
 Retrieved http://localhost:8123/sample.txt
 Retry-After: 2
 Retry-After: 2
+Summary Tables budget: INITIAL_BUDGET
 call_curl received a 429 and will wait for 5s:
 call_curl received a 503 and will wait for 5s:
 result_code=0

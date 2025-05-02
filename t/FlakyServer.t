@@ -162,6 +162,7 @@ $stderr =~ s/^\[(?:[A-Z][a-z]{2} ){2}[ \d]\d (\d+:){2}\d+\d+ \d+\]/DATESTAMP/gm;
 $stderr =~ s/PHP \d+.*?( Development Server)/PHP PHP_VERSION$1/;
 $stderr =~ s/^DATESTAMP \[.*?\]:\d+/DATESTAMP [LOCAL_ADDRESS]:PORT/gm;
 $stderr =~ s/^Installed:.*\n//gm;
+$stderr =~ s/Summary Tables budget: \d+/Summary Tables budget: INITIAL_BUDGET/;
 
 $stderr = sort_lines($stderr);
 

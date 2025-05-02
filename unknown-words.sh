@@ -3591,6 +3591,7 @@ exit_if_no_unknown_words() {
     get_has_errors
   fi
   if [ -z "$has_errors" ] && [ ! -s "$run_output" ]; then
+    no_misspellings
     should_collapse_previous_and_not_comment
     quit 0
   fi
@@ -3643,6 +3644,22 @@ generate_curl_instructions() {
   echo "$instructions"
 }
 
+no_misspellings() {
+  begin_group 'No misspellings'
+  expect_count="$(grep . "$expect_path" | line_count)"
+  if [ "$expect_count" = 1 ]; then
+    headline="There is currently _one_ expected item."
+  else
+    if [ "$expect_count" = 0 ]; then
+      expect_count=no
+    fi
+    headline="There are currently $expect_count expected items."
+  fi
+  title="No new misspelled words found"
+  spelling_info "$title" "$headline" ""
+  end_group
+}
+
 set_patch_remove_add() {
   patch_remove="$(perl -ne 'next unless s/^-([^-])/$1/; s/\n/ /; print' "$diff_output")"
   begin_group 'New output'
@@ -3650,19 +3667,7 @@ set_patch_remove_add() {
 
     get_has_errors
     if [ -z "$has_errors" ] && [ -z "$patch_add" ]; then
-      begin_group 'No misspellings'
-      expect_count="$(grep . "$expect_path" | line_count)"
-      if [ "$expect_count" = 1 ]; then
-        headline="There is currently _one_ expected item."
-      else
-        if [ "$expect_count" = 0 ]; then
-          expect_count=no
-        fi
-        headline="There are currently $expect_count expected items."
-      fi
-      title="No new misspelled words found"
-      spelling_info "$title" "$headline" ""
-      end_group
+      no_misspellings
       should_collapse_previous_and_not_comment
       quit 0
     fi

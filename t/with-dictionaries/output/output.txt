@@ -11,5 +11,15 @@ t/with-dictionaries/config/test.txt
 ::group::Spell check
 
 ::endgroup::
+::group::No misspellings
+::group::Building summary table
+::endgroup::
+
+# @check-spelling-bot Report
+
+No new misspelled words found
+
+There are currently no expected items.
+::endgroup::
 ::remove-matcher owner=check-spelling::
 ::remove-matcher owner=check-spelling-https::
