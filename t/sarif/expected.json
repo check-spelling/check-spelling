@@ -10,6 +10,17 @@
 "tool": {
 "driver": {
 "name": "check-spelling",
+"isComprehensive": false,
+"shortDescription": {
+"markdown": "Action to check spelling in a repository. [check-spelling.dev](https://www.check-spelling.dev/)",
+"text": "Action to check spelling in a repository"
+},
+"fullDescription": {
+"markdown": "Action to check spelling in a repository. [check-spelling.dev](https://www.check-spelling.dev/)",
+"text": "Action to check spelling in a repository. Supports multiple dictionaries, patterns, exclusions, .... https://www.check-spelling.dev/"
+},
+"organization": "check-spelling",
+"product": "check-spelling",
 "informationUri": "https://github.com/check-spelling/check-spelling",
 "version": "0.0.0",
 "rules": [
