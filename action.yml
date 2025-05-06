@@ -623,6 +623,12 @@ runs:
           echo '```'
           echo '</details>'
         ) >> "$GITHUB_STEP_SUMMARY"
+    - name: report failure status because sarif failed
+      shell: bash
+      if: ${{ steps.upload-sarif.conclusion != 'skipped' && !steps.upload-sarif.outputs.sarif-id && !(inputs.quit_without_error && fromJSON(inputs.quit_without_error)) && env.result_code && fromJSON(env.result_code) }}
+      run: |
+        : SARIF Upload failed to report. Report check-spelling failure.
+        exit $result_code
     - name: act-step-summary
       continue-on-error: true
       if: (success() || failure()) && env.ACT_STEP_SUMMARY

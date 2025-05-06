@@ -1889,6 +1889,8 @@ set_up_reporter() {
   fi
   if ! to_boolean "$INPUT_USE_SARIF"; then
     echo "::add-matcher::$spellchecker/reporter.json"
+  else
+    quit_without_error=1
   fi
 }
 
