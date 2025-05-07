@@ -27,6 +27,7 @@ t/unknown-words/input/sample.file:2:22 ... 27, Error - `thiss` is not a recogniz
 Preparing a comment for push
 
 # @check-spelling-bot Report
+
 ## :red_circle: Please review
 
 ### Unrecognized words (4)

@@ -1208,6 +1208,7 @@ define_variables() {
   export sarif_overlay_path="$data_dir/overlay.sarif.json"
   file_list="$data_dir/checked_files.lst"
   BODY="$data_dir/comment.md"
+  delay_step_summary_warnings="$(mktemp)"
   output_variables="$(mktemp)"
   instructions_preamble="$(mktemp)"
   if to_boolean "$INPUT_REPORT_TIMING"; then
@@ -1465,23 +1466,55 @@ download() {
   return "$exit_value"
 }
 
-github_step_summary_likely_fatal() {
-  head="$1"
-  body="$2"
-  hint="$3"
+github_step_summary_kind() {
+  # github_step_summary_kind head body hint kind
   (
-    echo "# :stop_sign: $head"
+    echo "# :$4: $1"
     echo
-    echo "$body"
+    echo "$2"
     echo
-    echo "$hint"
+    echo "$3"
     echo
-  ) >> "$GITHUB_STEP_SUMMARY"
+  ) >> "$delay_step_summary_warnings"
+}
+
+more_info_message() {
+  echo "For more information, see [$1](https://docs.check-spelling.dev/Event-descriptions#$1)."
+}
+
+github_step_summary_warning() {
+  github_step_summary_kind "$1" "$2" "$3" 'warning'
+}
+
+github_step_summary_likely_fatal() {
+  github_step_summary_kind "$1" "$2" "$3" 'stop_sign'
 }
 
 github_step_summary_likely_fatal_event() {
-  category="$3"
-  github_step_summary_likely_fatal "$1" "$2" ":warning: For more information, see [$category](https://docs.check-spelling.dev/Event-descriptions#$category)."
+  github_step_summary_likely_fatal "$1" "$2" ":warning: $(more_info_message "$3")"
+}
+
+github_step_summary_dictionaries_failed() {
+  message="Problems were encountered retrieving $1 dictionaries ($(echo "$2"|xargs))."
+
+  if [ "$GITHUB_EVENT_NAME" = 'pull_request_target' ]; then
+    message=$(echo "
+    $message
+
+    This workflow is running from a ${b}pull_request_target${b} event. In order to test changes to
+    dictionaries, you will need to use a workflow that is **not** associated with a ${b}pull_request${b} as
+    pull_request_target relies on the configuration of the destination branch, not the branch which
+    you are changing.
+    " | strip_lead)
+  fi
+
+  dictionary_not_found="$1-dictionary-not-found"
+  echo -n '#' >> "$delay_step_summary_warnings"
+  if [ "$1" = extra ]; then
+    github_step_summary_likely_fatal_event 'Dictionary not found' "$message" "$dictionary_not_found"
+  else
+    github_step_summary_warning 'Dictionary not found' "$message" ":warning: $(more_info_message "$dictionary_not_found")"
+  fi
 }
 
 download_or_quit_with_error() {
@@ -2124,6 +2157,11 @@ set_up_files() {
       if [ -n "$check_extra_dictionaries" ]; then
         check_extra_dictionaries_canary=$(mktemp)
         export check_extra_dictionaries_dir="$(get_extra_dictionaries check "$check_extra_dictionaries" "$check_extra_dictionaries_canary")"
+        if [ ! -e "$check_extra_dictionaries_canary" ]; then
+          github_step_summary_dictionaries_failed \
+            'check' \
+            "$check_extra_dictionaries"
+        fi
       fi
       end_group
     fi
@@ -2134,25 +2172,9 @@ set_up_files() {
       extra_dictionaries_dir="$(get_extra_dictionaries extra "$INPUT_EXTRA_DICTIONARIES" "$extra_dictionaries_canary")"
       if [ -n "$extra_dictionaries_dir" ]; then
         if [ ! -e "$extra_dictionaries_canary" ]; then
-          message="Problems were encountered retrieving extra dictionaries ($INPUT_EXTRA_DICTIONARIES)."
-          if [ "$GITHUB_EVENT_NAME" = 'pull_request_target' ]; then
-            message=$(echo "
-            $message
-
-            This workflow is running from a ${b}pull_request_target${b} event. In order to test changes to
-            dictionaries, you will need to use a workflow that is **not** associated with a ${b}pull_request${b} as
-            pull_request_target relies on the configuration of the destination branch, not the branch which
-            you are changing.
-            " | strip_lead)
-          fi
-          github_step_summary_likely_fatal_event \
-            'Dictionary not found' \
-            "$message" \
-            'extra-dictionary-not-found'
-          github_step_summary_likely_fatal_event \
-            'Dictionary not found' \
-            "$message" \
-            'fallback-dictionary-not-found'
+          github_step_summary_dictionaries_failed \
+            'extra' \
+            "$INPUT_EXTRA_DICTIONARIES"
           if [ -n "$INPUT_CHECK_EXTRA_DICTIONARIES" ]; then
             end_group
             begin_group 'Check default extra dictionaries'
@@ -2172,11 +2194,14 @@ set_up_files() {
               fallback_extra_dictionaries_dir="$(get_extra_dictionaries fallback "$check_extra_dictionaries" "$fallback_extra_dictionaries_canary")"
               if [ ! -e "$fallback_extra_dictionaries_canary" ]; then
                 fallback_extra_dictionaries_dir=
+                github_step_summary_dictionaries_failed \
+                  'fallback' \
+                  "$check_extra_dictionaries"
               fi
               if [ -d "$fallback_extra_dictionaries_dir" ]; then
                 # should handle hunspell
                 if [ -n "$check_extra_dictionaries_dir" ] && [ -d "$check_extra_dictionaries_dir" ]; then
-                  (cd "$fallback_extra_dictionaries_dir"; mv ./* "$check_extra_dictionaries_dir")
+                  (cd "$fallback_extra_dictionaries_dir"; for a in ./*; do mv "$a" ".$(basename "$a")" "$check_extra_dictionaries_dir" & done)
                 else
                   check_extra_dictionaries_dir="$fallback_extra_dictionaries_dir"
                   fallback_extra_dictionaries_dir=
@@ -2194,7 +2219,7 @@ set_up_files() {
           (
             cd "$extra_dictionaries_dir"
             if [ -d "$hunspell_dictionary_path" ]; then
-              mv ./*.aff ./*.dic "$hunspell_dictionary_path" 2>/dev/null || true
+              for a in ./*.aff ./*.dic; do mv "$a" ".$(basename "$a")" "$hunspell_dictionary_path" 2>/dev/null || true & done
             fi
             # Items that aren't proper should be moved to patterns instead
             "$spellchecker/dictionary-word-filter.pl" ./* | sort -u >> "$dict"
@@ -3076,11 +3101,23 @@ spelling_body() {
     else
       details_heading=""
     fi
-    OUTPUT=$(echo "$n$report_header$n$OUTPUT$details_heading$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_forbidden_patterns$output_candidate_pattern_suggestions$output_warnings$output_advice
+    step_summary_warnings="$(flush_step_summary_warnings)"
+    OUTPUT=$(echo "$n$report_header$n$step_summary_warnings$n$OUTPUT$details_heading$N$message$extra$output_remove_items$output_excludes$output_excludes_large$output_excludes_suffix$output_accept_script$output_quote_reply_placeholder$output_dictionaries$output_forbidden_patterns$output_candidate_pattern_suggestions$output_warnings$output_advice
       " | perl -pe 's/^\s+$/\n/;'| uniq)
 }
 
+flush_step_summary_warnings() {
+  if [ -s "$delay_step_summary_warnings" ]; then
+    echo
+    cat "$delay_step_summary_warnings"
+    echo
+    echo
+    truncate -s 0 "$delay_step_summary_warnings"
+  fi
+}
+
 quit() {
+  flush_step_summary_warnings >> "$GITHUB_STEP_SUMMARY"
   echo "::remove-matcher owner=check-spelling::"
   echo "::remove-matcher owner=check-spelling-https::"
   status="$1"
