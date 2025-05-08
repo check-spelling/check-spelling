@@ -4,8 +4,9 @@ use strict;
 use warnings;
 
 use Test::More;
+use Capture::Tiny ':all';
 
-plan tests => 45;
+plan tests => 47;
 use_ok('CheckSpelling::Util');
 
 $ENV{'EMPTY_VAR'}='';
@@ -41,7 +42,12 @@ my $file;
 }
 is(CheckSpelling::Util::read_file('t/Util.t'), $file, 'read_file');
 
-is(CheckSpelling::Util::read_file('no-such-file'), undef, "undefined as expected");
+my ($stdout, $stderr, $result) = capture { CheckSpelling::Util::read_file('no-such-file') };
+
+is($stdout, '');
+is($stderr, 'Could not open file (no-such-file)
+');
+is($result, undef);
 
 is(CheckSpelling::Util::calculate_delay(
     'Ignored: 2'
