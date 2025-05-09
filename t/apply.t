@@ -10,7 +10,7 @@ use File::Basename;
 use Test::More;
 use Capture::Tiny ':all';
 
-plan tests => 14;
+plan tests => 17;
 
 our $spellchecker = dirname(dirname(abs_path(__FILE__)));
 
@@ -62,6 +62,11 @@ if ($?) {
     is($result, 1, 'apply.pl (exit code) expired');
   }
 }
+
+($stdout, $stderr, $result) = run_apply("$spellchecker/apply.pl", "https://localhost/check-spelling/imaginary-repository/actions/runs/$expired_artifact/attempts/1");
+like($stdout, qr{The referenced repository \(check-spelling/imaginary-repository\) may not exist, perhaps you do not have permission to see it\.\s+If the repository is hosted by GitHub Enterprise, check-spelling does not know how to integrate with it\.}, 'apply.pl (stdout) localhost-url');
+is($stderr, '', 'apply.pl (stderr) localhost-url');
+is($result, 8, 'apply.pl (exit code) localhost-url');
 
 my $gh_token = $ENV{GH_TOKEN};
 delete $ENV{GH_TOKEN};
