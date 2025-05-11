@@ -112,6 +112,7 @@ sub cleanup {
     $text =~ s/^index 0+\.\.[0-9a-f]{6,}$/index GIT_DIFF_NEW_FILE/gm;
     $text =~ s/^index [0-9a-f]{6,}\.\.[0-9a-f]{6,} 100644$/index GIT_DIFF_CHANGED_FILE/gm;
   }
+  $text =~ s!\S*(\Q/expect.words.txt\E)!EXPECT_SANDBOX$1!gm;
   return $text;
 }
 
@@ -184,6 +185,7 @@ unless (defined $internal_state_directory) {
 make_path($run);
 
 write_file("$run/output.txt", $stdout);
+
 my @stdout = split /\n/, $stdout;
 my @expected_stdout = split /\n/, $expected_stdout;
 is_deeply(\@stdout, \@expected_stdout, 'unknown-words.sh (stdout)');
@@ -199,7 +201,10 @@ my $summary = read_file($github_step_summary, @cleanup_arguments);
 $summary =~ s!\QCurrent apply script differs from 'https://raw.githubusercontent.com/CHECK-SPELLING/CHECK-SPELLING/\E[^']+?\Q/apply.pl' (locally downloaded to ...). You may wish to upgrade.\E\n!!;
 
 write_file("$run/summary.md", $summary);
-is($summary, $expected_summary, 'GITHUB_STEP_SUMMARY');
+
+my @summary_list = split /\n/, $summary;
+my @expected_summary_list = split /\n/, $expected_summary;
+is_deeply(\@summary_list, \@expected_summary_list, 'GITHUB_STEP_SUMMARY');
 
 my $warning_content = read_file($warnings_path, @cleanup_arguments);
 

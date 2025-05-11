@@ -11,6 +11,9 @@ TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/paths-of-checked-f
 t/unknown-words/input/sample.file
 ::endgroup::
 ::group::Spell check
+EXPECT_SANDBOX/expect.words.txt:1:8 ... 9, Warning - Ignoring entry because it contains non-alpha characters. (non-alpha-in-dictionary)
+WORKSPACE/t/unknown-words/config/expect.txt:1:8 ... 9, Error - `+` matches a line_forbidden.patterns entry: `(?![A-Z]|[a-z]|'|\s|=).`. (forbidden-pattern)
+WORKSPACE/t/unknown-words/config/expect.txt:2:1 ... 17, Warning - `Unexpectedlylong` is ignored by check-spelling because another more general variant is also in expect. (ignored-expect-variant)
 t/unknown-words/input/sample.file:1:23 ... 34, Error - `sample.file` matches a line_forbidden.patterns entry: `\bsample\.file\b`. (forbidden-pattern)
 t/unknown-words/input/sample.file:2:7 ... 11, Error - `diid` is not a recognized word. (unrecognized-spelling)
 t/unknown-words/input/sample.file:2:12 ... 16, Error - `youu` is not a recognized word. (unrecognized-spelling)
@@ -39,7 +42,7 @@ thiss
 youu
 
 <details><summary>These words are not needed and should be removed
-</summary>unexpectedlylong=
+</summary>invalid unexpectedlylong=
 </details><p></p>
 
 <details><summary>To accept these unrecognized words as correct and remove the previously acknowledged and now absent words,
@@ -68,13 +71,15 @@ These forbidden patterns matched content:
 
 </details>
 
-<details><summary>Errors :x: (1)</summary>
+<details><summary>Errors and Warnings :x: (3)</summary>
 
 #### See the [:scroll:action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or :memo: job summary for details.
 
-[:x: Errors](https://docs.check-spelling.dev/Event-descriptions) | Count
+[:x: Errors and Warnings](https://docs.check-spelling.dev/Event-descriptions) | Count
 -|-
-[:x: forbidden-pattern](https://docs.check-spelling.dev/Event-descriptions#forbidden-pattern) | 1
+[:x: forbidden-pattern](https://docs.check-spelling.dev/Event-descriptions#forbidden-pattern) | 2
+[:warning: ignored-expect-variant](https://docs.check-spelling.dev/Event-descriptions#ignored-expect-variant) | 1
+[:warning: non-alpha-in-dictionary](https://docs.check-spelling.dev/Event-descriptions#non-alpha-in-dictionary) | 1
 
 See [:x: Event descriptions](https://docs.check-spelling.dev/Event-descriptions) for more information.
 
