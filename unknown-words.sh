@@ -2534,6 +2534,7 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
     "$word_collator" |\
   "$strip_word_collator_suffix" > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
+  sort -u "$warning_output" > "$warning_output.0"; mv "$warning_output.0" "$warning_output"
   check_file_names_warning="$(check_file_names="$check_file_names" perl -i -e '
     while (<>) {
       if (s/^$ENV{check_file_names}:\d+:\d+ \.\.\. \d+, (Warning - Skipping .*?\([^)]+-list\))/$1/ ||
@@ -2825,7 +2826,7 @@ spelling_body() {
       details_note="See the [:open_file_folder: files]($(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")/files/) view, $action_log_markdown, $sarif_report or $memo for details.";;
     push)
       if [ -n "$action_log_markdown" ]; then
-        details_note="See $action_log_markdown${sarif_report:+,} $sarif_report or $memo for details."
+        details_note="See $action_log_markdown${sarif_report:+", $sarif_report"} or $memo for details."
       else
         details_note=""
       fi
