@@ -72,6 +72,7 @@ sub cleanup {
   $text =~ s!in a clone of the \[.*?\]\(.*?\) repository!in a clone of the [https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!g;
   $text =~ s!^Devel::Cover: Deleting old coverage for changed file .*$!!m;
   $text =~ s!(locally downloaded to )\`.*?\`!$1...!;
+  $text =~ s/^Installed: .*\n//g;
   $text =~ s/\Q$sandbox\E/WORKSPACE/g;
   $text =~ s!/tmp/check-spelling!TEMP_DIRECTORY!g;
   my $github_sha = $ENV{GITHUB_SHA} || `git rev-parse HEAD`;
