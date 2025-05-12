@@ -107,7 +107,7 @@ jobs:
             fi
             perl `command -v cpanm` -S --notest $cpan_modules
           fi
-        ) > /tmp/prework || (cat /tmp/prework && false)
+        )
 
     - name: gh-program-downloader
       if: steps.depedencies.outputs.gh-location
