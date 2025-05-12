@@ -1327,7 +1327,7 @@ project_file_path() {
 }
 
 check_pattern_file() {
-  perl -i -e 'open WARNINGS, ">>", $ENV{early_warnings};
+  perl -i -e 'open WARNINGS, ">>:encoding(UTF-8)", $ENV{early_warnings};
   while (<>) {
     next if /^#/;
     my $line = $_;
