@@ -3061,6 +3061,9 @@ spelling_body() {
 
         $B
 
+        Alternatively, if a pattern suggestion doesn't make sense for this project, add a ${b}#${b}
+        to the beginning of the line in the candidates file with the pattern to stop suggesting it.
+
         </details>
       " | strip_lead)"
     fi
