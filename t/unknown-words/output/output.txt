@@ -29,6 +29,7 @@ Preparing a comment for push
 # @check-spelling-bot Report
 
 ## :red_circle: Please review
+### See the [:scroll:action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or :memo: job summary for details.
 
 ### Unrecognized words (4)
 
@@ -44,12 +45,12 @@ youu
 <details><summary>To accept these unrecognized words as correct and remove the previously acknowledged and now absent words,
 you could run the following commands</summary>
 
-... in a clone of the [https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository
+... in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository
 on the `GITHUB_BRANCH` branch ([:information_source: how do I use this?](
 https://docs.check-spelling.dev/Accepting-Suggestions)):
 
 ``` sh
-WORKSPACE/apply.pl 'ARTIFACT_DIRECTORY/artifact.zip' &&
+WORKSPACE/apply.pl 'GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID/attempts/' &&
 git commit -m 'Update check-spelling metadata'
 ```
 </details>
@@ -68,6 +69,8 @@ These forbidden patterns matched content:
 </details>
 
 <details><summary>Errors :x: (1)</summary>
+
+#### See the [:scroll:action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or :memo: job summary for details.
 
 [:x: Errors](https://docs.check-spelling.dev/Event-descriptions) | Count
 -|-

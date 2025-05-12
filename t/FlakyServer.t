@@ -72,7 +72,7 @@ my ($stdout, $stderr, @results);
 sub cleanup {
   my ($text, $working_directory, $sandbox, $github_repository, $internal_state_directory) = @_;
   $text =~ s!\Qraw.githubusercontent.com/check-spelling/check-spelling\E/[^/]+/!raw\.githubusercontent\.com/CHECK-SPELLING/CHECK-SPELLING/BRANCH/!g;
-  $text =~ s!in a clone of the \[.*?\]\(.*?\) repository!in a clone of the [https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!g;
+  $text =~ s!in a clone of the \[.*?\]\(.*?\) repository!in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!g;
   $text =~ s!^Devel::Cover: Deleting old coverage for changed file .*$!!m;
   $text =~ s!(locally downloaded to )\`.*?\`!$1...!;
   $text =~ s/\Q$sandbox\E/WORKSPACE/g;

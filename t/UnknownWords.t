@@ -34,6 +34,8 @@ for my $key (@environment_variables_to_drop) {
 }
 
 $ENV{GITHUB_STEP_SUMMARY} = $github_step_summary;
+$ENV{GITHUB_SERVER_URL} = 'https://github.com';
+$ENV{GITHUB_RUN_ID} = 7515;
 $ENV{GITHUB_REPOSITORY} = $github_repository;
 
 my $github_output;
@@ -69,7 +71,9 @@ my ($stdout, $stderr, @results);
 sub cleanup {
   my ($text, $working_directory, $sandbox, $github_repository, $internal_state_directory) = @_;
   $text =~ s!\Qraw.githubusercontent.com/check-spelling/check-spelling\E!raw.githubusercontent.com/CHECK-SPELLING/CHECK-SPELLING!g;
-  $text =~ s!in a clone of the \[.*?\]\(.*?\) repository!in a clone of the [https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!g;
+  $text =~ s!$ENV{GITHUB_SERVER_URL}!GITHUB_SERVER_URL!g;
+  $text =~ s!$ENV{GITHUB_RUN_ID}!GITHUB_RUN_ID!g;
+  $text =~ s!in a clone of the \[.*?\]\(.*?\) repository!in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!g;
   $text =~ s!^Devel::Cover: Deleting old coverage for changed file .*$!!m;
   $text =~ s!(locally downloaded to )\`.*?\`!$1...!;
   $text =~ s/^Installed: .*\n//g;

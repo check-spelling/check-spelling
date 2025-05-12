@@ -2,6 +2,7 @@
 # @check-spelling-bot Report
 
 ## :red_circle: Please review
+### See the [:scroll:action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or :memo: job summary for details.
 
 ### Unrecognized words (4)
 
@@ -17,7 +18,7 @@ youu
 <details><summary>To accept these unrecognized words as correct, you could apply this commit</summary>
 
 
-... in a clone of the [https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository
+... in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository
 on the `` branch ([:information_source: how do I use this?](
 https://docs.check-spelling.dev/Accepting-Suggestions)):
  =
@@ -62,12 +63,12 @@ And `git push` ...
 <details><summary>To accept these unrecognized words as correct and remove the previously acknowledged and now absent words,
 you could run the following commands</summary>
 
-... in a clone of the [https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository
+... in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository
 on the `GITHUB_BRANCH` branch ([:information_source: how do I use this?](
 https://docs.check-spelling.dev/Accepting-Suggestions)):
 
 ``` sh
-WORKSPACE/apply.pl 'ARTIFACT_DIRECTORY/artifact.zip' &&
+WORKSPACE/apply.pl 'GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID/attempts/' &&
 git commit -m 'Update check-spelling metadata'
 ```
 </details>
@@ -87,6 +88,8 @@ These forbidden patterns matched content:
 
 <details><summary>Errors :x: (1)</summary>
 
+#### See the [:scroll:action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or :memo: job summary for details.
+
 [:x: Errors](https://docs.check-spelling.dev/Event-descriptions) | Count
 -|-
 [:x: forbidden-pattern](https://docs.check-spelling.dev/Event-descriptions#forbidden-pattern) | 1
@@ -100,17 +103,17 @@ See [:x: Event descriptions](https://docs.check-spelling.dev/Event-descriptions)
 
 note|path
 -|-
-`sample.file` matches a line_forbidden.patterns entry: `\bsample\.file\b`. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L1
+`sample.file` matches a line_forbidden.patterns entry: `\bsample\.file\b`. | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L1
 </details>
 
 <details><summary>:open_file_folder: unrecognized-spelling</summary>
 
 note|path
 -|-
-`diid` is not a recognized word. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
-`fixx` is not a recognized word. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
-`thiss` is not a recognized word. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
-`youu` is not a recognized word. | https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
+`diid` is not a recognized word. | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
+`fixx` is not a recognized word. | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
+`thiss` is not a recognized word. | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
+`youu` is not a recognized word. | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/input/sample.file#L2
 </details>
 
 
