@@ -32,7 +32,7 @@ while ($content =~ s/([^\r\n\x0b\f\x85\x{2028}\x{2029}]*)(\r\n|\n|\r|\x0b|\f|\x8
     unless (defined $first_end) {
         $first_end = $end;
     } elsif ($end ne $first_end) {
-        print WARNINGS "$file:$.:$-[0] ... $+[0], Warning - Entry has inconsistent line ending. (unexpected-line-ending)\n";
+        print WARNINGS "$file:$.:$-[0] ... $+[0], Warning - Entry has inconsistent line endings. (unexpected-line-ending)\n";
     }
     my ($line, $warning) = CheckSpelling::CheckDictionary::process_line($file, $line);
     if ($warning ne '') {

@@ -54,8 +54,8 @@ my ($stdout, $stderr, @results);
 };
 is($stdout, '', 'wrappers/check-dictionary (stdout)');
 is($stderr, "$filename:1:6 ... 10, Warning - Ignoring entry because it contains non-alpha characters. (non-alpha-in-dictionary)
-$filename:2:0 ... 6, Warning - Entry has inconsistent line ending. (unexpected-line-ending)
-$filename:3:0 ... 7, Warning - Entry has inconsistent line ending. (unexpected-line-ending)
+$filename:2:0 ... 6, Warning - Entry has inconsistent line endings. (unexpected-line-ending)
+$filename:3:0 ... 7, Warning - Entry has inconsistent line endings. (unexpected-line-ending)
 ", 'wrappers/check-dictionary (stderr)');
 my $result = $results[0] >> 8;
 is($result, '0', 'wrappers/check-dictionary (exit code)');
@@ -89,8 +89,8 @@ SKIP: {
 
   is($stdout, '', 'wrappers/check-dictionary (stdout)');
   is($stderr, "$filename:1:6 ... 10, Warning - Ignoring entry because it contains non-alpha characters. (non-alpha-in-dictionary)
-$filename:2:0 ... 6, Warning - Entry has inconsistent line ending. (unexpected-line-ending)
-$filename:3:0 ... 7, Warning - Entry has inconsistent line ending. (unexpected-line-ending)
+$filename:2:0 ... 6, Warning - Entry has inconsistent line endings. (unexpected-line-ending)
+$filename:3:0 ... 7, Warning - Entry has inconsistent line endings. (unexpected-line-ending)
 ", 'wrappers/check-dictionary (stderr)');
   $result = $results[0] >> 8;
   is($result, '0', 'wrappers/check-dictionary (exit code)');
