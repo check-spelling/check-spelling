@@ -2040,12 +2040,14 @@ set_up_files() {
       echo '# Allow commented lines in `expect.txt` files'
       echo '^#.*'
     ) > "$expect_splitter_configuration/patterns.txt"
+    touch "$early_warnings.1"
     echo "$expect_files" |
     xargs env -i \
     SHELL="$SHELL" \
     PATH="$PATH" \
     LC_ALL="C" \
     HOME="$HOME" \
+    early_warnings="$early_warnings.1" \
     splitter_configuration="$expect_splitter_configuration" \
     INPUT_LONGEST_WORD="$INPUT_LONGEST_WORD" \
     INPUT_SHORTEST_WORD="$INPUT_SHORTEST_WORD" \
@@ -2062,6 +2064,7 @@ set_up_files() {
     dict="$dict" \
     spellchecker="$spellchecker" \
     "$word_splitter" 2> /dev/null |
+    early_warnings="$early_warnings.1" \
     INPUT_USE_SARIF='' INPUT_DISABLE_CHECKS=noisy-file "$word_collator" 2> "$expect_notes" > "$expect_collated"
     perl -pe 's/ \(.*\)//' "$expect_collated" > "$expect_path"
     "$expect_collator" "$expect_collated" "$expect_notes" >> "$early_warnings"
