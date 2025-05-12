@@ -2065,7 +2065,10 @@ set_up_files() {
     spellchecker="$spellchecker" \
     "$word_splitter" 2> /dev/null |
     early_warnings="$early_warnings.1" \
-    INPUT_USE_SARIF='' INPUT_DISABLE_CHECKS=noisy-file "$word_collator" 2> "$expect_notes" > "$expect_collated"
+    counter_summary=/dev/null \
+    more_warnings=/dev/null \
+    warning_output="$expect_notes" \
+    INPUT_USE_SARIF='' INPUT_DISABLE_CHECKS=noisy-file "$word_collator" > "$expect_collated"
     perl -pe 's/ \(.*\)//' "$expect_collated" > "$expect_path"
     "$expect_collator" "$expect_collated" "$expect_notes" >> "$early_warnings"
   else
