@@ -70,6 +70,16 @@ outputs:
 runs:
   using: "composite"
   steps:
+  - name: Suppress git default branch message
+    id: quiet
+    shell: bash
+    run: |
+      : Suppress git default branch message
+      if git config --global init.defaultBranch|grep -q .; then
+        exit 0
+      fi
+      git config --global init.defaultBranch silence_warning_about_default_branch
+      echo 'cleanup=1' >> "$GITHUB_OUTPUT"
   - name: Checkout
     id: action
     continue-on-error: true
@@ -95,3 +105,9 @@ runs:
       ssh-user: ${{ inputs.ssh-user }}
       submodules: ${{ inputs.submodules }}
       token: ${{ inputs.token }}
+  - name: Restore silly message
+    if: steps.quiet.outputs.cleanup
+    shell: bash
+    run: |
+      : Restore silly git message
+      git config --global init.defaultBranch ''
