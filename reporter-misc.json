@@ -132,6 +132,18 @@
             ]
         },
         {
+            "owner": "check-spelling-perl-syntax-error",
+            "severity":"warning",
+            "pattern": [
+                {
+                    "regexp": "(syntax error) at (.*) line (\\d+), near",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
             "owner": "github-internal-server-error",
             "pattern": [
                 {
