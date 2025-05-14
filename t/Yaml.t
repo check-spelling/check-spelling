@@ -9,7 +9,7 @@ use Cwd qw();
 use Test::More;
 use File::Temp qw/ tempfile tempdir /;
 
-plan tests => 22;
+plan tests => 30;
 use_ok('CheckSpelling::Yaml');
 
 is(CheckSpelling::Yaml::get_yaml_value(
@@ -67,12 +67,28 @@ $triggered = 0;
     is($end, 16);
     is($message, 'Good night');
     is($match, 'fruit: salad');
+    is($report_match, 0);
+    ++$main::triggered;
+};
+
+CheckSpelling::Yaml::check_yaml_key_value('fruit', 'salad', 'Good night', 0, '-', $yaml_content);
+is($triggered, 1, 'should call CheckSpelling::Yaml::report (fruit: salad)');
+
+$triggered = 0;
+*CheckSpelling::Yaml::report = sub {
+    my ($file, $start_line, $start_pos, $end, $message, $match, $report_match) = @_;
+    is($file, '-');
+    is($start_line, 8);
+    is($start_pos, 1);
+    is($end, 15);
+    is($message, 'Good night');
+    is($match, "berry: |\n  blue");
     is($report_match, 1);
     ++$main::triggered;
 };
 
-CheckSpelling::Yaml::check_yaml_key_value('fruit', 'salad', 'Good night', 1, '-', $yaml_content);
-is($triggered, 1, 'should call CheckSpelling::Yaml::report (fruit: salad)');
+CheckSpelling::Yaml::check_yaml_key_value('berry', 'blue', 'Good night', 1, '-', $yaml_content);
+is($triggered, 1, 'should call CheckSpelling::Yaml::report (berry: blue)');
 
 $triggered = 0;
 *CheckSpelling::Yaml::report = sub {

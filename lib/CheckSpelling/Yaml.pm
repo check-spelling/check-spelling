@@ -129,8 +129,13 @@ sub check_yaml_key_value {
       if (/^\s*(($key)\s*:\s*([|>](?:[-+]\d*)?|\$\{\{.*|(?:"\s*|)$value))\s*$/) {
         $gh_yaml_mode = $3;
         ($start_line, $start_pos, $end, $match) = ($line, $-[2] + 1, $+[3] + 1, $1);
-        $match = "$key: " if $gh_yaml_mode =~ /^>/;
         report($file, $start_line, $start_pos, $end, $message, $match, $report_match) if ($gh_yaml_mode =~ /$value|\$\{\{/);
+        if ($report_match) {
+          $_ =~ /^\s*(.*)/;
+          $match = "$_\n";
+        } else {
+          $match = "$key: ";
+        }
         $state = 1;
       }
     } elsif ($state == 1) {
@@ -143,7 +148,11 @@ sub check_yaml_key_value {
       $len = length $spaces;
       if (scalar @nests && $len > $nests[$#nests] && $v =~ /$value/) {
         $end += $len + length $v;
-        $match .= $v;
+        if ($report_match) {
+          $match .= $_;
+        } else {
+          $match .= $v;
+        }
         report($file, $start_line, $start_pos, $end, $message, $match, $report_match);
       }
       pop @nests;

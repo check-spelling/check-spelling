@@ -150,7 +150,7 @@ dispatcher() {
                 echo
                 echo 'You appear to be running nektos/act, you should probably comment out:'
                 echo
-                echo "        ${matched_yaml_key_value:-"suppress_push_for_open_pull_request: $INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"}"
+                echo "${matched_yaml_key_value:-"        suppress_push_for_open_pull_request: $INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"}"
               fi
             ) >&2
             exit 0
