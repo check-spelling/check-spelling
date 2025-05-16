@@ -1457,11 +1457,15 @@ get_project_files_deprecated() {
 
 download() {
   exit_value=0
-  curl -A "$curl_ua" -L -s "$1" -o "$2" -f || exit_value=$?
-  if [ "$exit_value" = 0 ]; then
-    echo "Downloaded $1 (to $2)" >&2
+  keep_headers=1 call_curl "$1" > "$2"
+  if { [ -z "$response_code" ] || [ "$response_code" -ge 400 ] || [ "$response_code" -eq 000 ] ; } 2> /dev/null; then
+    exit_value=1
+    (
+      echo "Failed to download $1 (to $2)"
+      cat "$response_headers"
+    ) >&2
   else
-    echo "Failed to download $1 (to $2)" >&2
+    echo "Downloaded $1 (to $2)" >&2
   fi
   return "$exit_value"
 }
@@ -1521,10 +1525,10 @@ download_or_quit_with_error() {
   exit_code="$(mktemp)"
   download "$1" "$2" || (
     echo "$?" > "$exit_code"
-    echo "Could not download $1 (to $2) (required-download-failed)" >&2
+    echo "Could not download $1 (required-download-failed)" >&2
     github_step_summary_likely_fatal_event \
       'Required download failed' \
-      "Could not download $1 (to $2)." \
+      "Could not download $1." \
       'required-download-failed'
   )
   if [ -s "$exit_code" ]; then
