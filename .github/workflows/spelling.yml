@@ -94,6 +94,16 @@ jobs:
       # note: If you use only_check_changed_files, you do not want cancel-in-progress
       cancel-in-progress: true
     steps:
+      - name: Suppress git default branch message
+        id: quiet
+        shell: bash
+        run: |
+          : Suppress git default branch message
+          if git config --global init.defaultBranch|grep -q .; then
+            exit 0
+          fi
+          git config --global init.defaultBranch silence_warning_about_default_branch
+          echo 'cleanup=1' >> "$GITHUB_OUTPUT"
       - name: checkout
         uses: actions/checkout@v4
         with:
