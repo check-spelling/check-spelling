@@ -535,6 +535,7 @@ runs:
                   echo '```'
                   cat "$gh_api_err"
                   cat "$gh_api_out"
+                  echo
                   echo '```'
                 ) >> "$GITHUB_STEP_SUMMARY"
               fi
