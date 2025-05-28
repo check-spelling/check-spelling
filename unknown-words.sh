@@ -616,9 +616,10 @@ get_github_user_and_email() {
 git_commit() {
   commit_reason="$1"
   git add -u
-  git config user.email "check-spelling-bot@users.noreply.github.com"
-  git config user.name "check-spelling-bot"
-  git commit \
+  git \
+    -c user.email="check-spelling-bot@users.noreply.github.com" \
+    -c user.name="check-spelling-bot" \
+    commit \
     "$COMMIT_AUTHOR" \
     --date="$created_at" \
     -m "$(echo "[check-spelling] Update metadata
