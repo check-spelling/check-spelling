@@ -284,7 +284,7 @@ get_is_comment_minimized() {
   -H "Content-Type: application/json" \
   --data-binary "$comment_is_collapsed_json" \
   |
-  jq -r '.data.node.minimizedReason'
+  jq -r '.data.node.minimizedReason' 2>/dev/null
 }
 
 is_comment_minimized() {
