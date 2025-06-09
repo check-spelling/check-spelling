@@ -11,18 +11,17 @@ use File::Path qw(make_path);
 use Test::More;
 use Capture::Tiny ':all';
 
-plan tests => 11;
-
-my ($fh, $github_step_summary) = tempfile();
-close $fh;
+plan tests => 22;
 
 my $working_directory = getcwd();
 my $sandbox = $working_directory;
-my $config = "$sandbox/t/unknown-words/config";
 
-my $repository_owner = 'repository-owner';
-my $github_repository_name = 'repository-name';
-my $github_repository = "$repository_owner/$github_repository_name";
+my $repository_owner = 'GITHUB_REPOSITORY_OWNER';
+my $github_repository_name = 'GITHUB_REPOSITORY_NAME';
+my $github_repository = $ENV{GITHUB_REPOSITORY} || 'check-spelling/check-spelling';
+
+system(qw(git remote rename origin origin.real));
+system(qq(git remote add origin https://github.com/$repository_owner/$github_repository_name --no-tags));
 
 my @environment_variables_to_drop = split /\n/, `git ls-files -z |
   xargs -0 grep GITHUB_ 2>/dev/null |
@@ -35,42 +34,17 @@ for my $key (@environment_variables_to_drop) {
   delete $ENV{$key};
 }
 
-$ENV{GITHUB_STEP_SUMMARY} = $github_step_summary;
 $ENV{GITHUB_SERVER_URL} = 'https://github.com';
 $ENV{GITHUB_RUN_ID} = 7515;
 $ENV{GITHUB_REPOSITORY} = $github_repository;
 $ENV{GITHUB_REPOSITORY_OWNER} = $repository_owner;
 $ENV{GITHUB_REPOSITORY_NAME} = $github_repository_name;
 
-my $github_output;
-($fh, $github_output) = tempfile();
-$ENV{GITHUB_OUTPUT} = $github_output;
-
 system(qw(git config user.email check-spelling-bot@users.noreply.github.com));
 system(qw(git config user.name check-spelling-bot));
 
 `perl -MDevel::Cover -e 1 2>&1`;
 $ENV{PERL5OPT} = '-MDevel::Cover' unless $?;
-$ENV{INPUTS} = qq<{
-  "check_file_names" : 1,
-  "config": "$config",
-  "check_extra_dictionaries": " ",
-  "extra_dictionaries": " ",
-  "": "ignored-empty",
-  "ignoredEmpty": "",
-  "ignoredValue":
-  "github_pat_ignored",
-  "ignored_key": "ignored",
-  "ignored item": "ignored",
-  "unused": "unused",
-  "conflicting-item": 1,
-  "conflicting_item": 2
-}>;
-
-my ($stdout, $stderr, @results);
-($stdout, $stderr, @results) = capture {
-  system("$working_directory/unknown-words.sh")
-};
 
 sub cleanup {
   my ($text, $working_directory, $sandbox, $github_repository, $internal_state_directory) = @_;
@@ -143,9 +117,58 @@ sub retrieve_value {
   return $1;
 }
 
+sub extra_cleanup {
+  my ($stderr, $stdout, @cleanup_arguments) = @_;
+  $stderr = cleanup($stderr, @cleanup_arguments);
+  $stderr =~ s<dict.txt \(to \S+\)><dict.txt (to ...)>;
+
+  $stderr =~ s/Installed: [-\w]+\n//;
+  $stderr =~ s/Summary Tables budget: \d+/Summary Tables budget: INITIAL_BUDGET/;
+  $stderr =~ s/Summary Tables budget reduced to: \d+/Summary Tables budget reduced to: REDUCED_BUDGET/g;
+
+  $stdout =~ s!the \Q[.](.)\E repository!the [https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!;
+
+  $stdout = cleanup($stdout, @cleanup_arguments);
+  return ($stderr, $stdout);
+}
+
+sub test {
+my ($sandbox, $instance) = @_;
+
+my $config = "$sandbox/t/$instance/config";
+
+$ENV{INPUTS} = qq<{
+  "check_file_names" : 1,
+  "config": "$config",
+  "check_extra_dictionaries": " ",
+  "extra_dictionaries": " ",
+  "": "ignored-empty",
+  "ignoredEmpty": "",
+  "ignoredValue":
+  "github_pat_ignored",
+  "ignored_key": "ignored",
+  "ignored item": "ignored",
+  "unused": "unused",
+  "conflicting-item": 1,
+  "conflicting_item": 2
+}>;
+
+my ($fh, $github_step_summary) = tempfile();
+close $fh;
+$ENV{GITHUB_STEP_SUMMARY} = $github_step_summary;
+
+my $github_output;
+($fh, $github_output) = tempfile();
+$ENV{GITHUB_OUTPUT} = $github_output;
+
+my ($stdout, $stderr, @results);
+($stdout, $stderr, @results) = capture {
+  system("$working_directory/unknown-words.sh")
+};
+
 my @cleanup_arguments = ($working_directory, $sandbox, $github_repository);
-my $outputs = "$working_directory/t/unknown-words/output";
-my $run = "$sandbox/t/unknown-words/run";
+my $outputs = "$working_directory/t/$instance/output";
+my $run = "$sandbox/t/$instance/run";
 my $expected_stdout = read_file("$outputs/output.txt", @cleanup_arguments);
 my $expected_stderr = read_file("$outputs/error.txt", @cleanup_arguments);
 my $expected_summary = read_file("$outputs/summary.md", @cleanup_arguments);
@@ -163,27 +186,18 @@ my $stale_words_path = retrieve_value('stale_words', $output);
 
 push @cleanup_arguments, $internal_state_directory;
 
-$stderr = cleanup($stderr, @cleanup_arguments);
-$stderr =~ s<dict.txt \(to \S+\)><dict.txt (to ...)>;
-
-$stderr =~ s/Installed: [-\w]+\n//;
-$stderr =~ s/Summary Tables budget: \d+/Summary Tables budget: INITIAL_BUDGET/;
-$stderr =~ s/Summary Tables budget reduced to: \d+/Summary Tables budget reduced to: REDUCED_BUDGET/g;
-
-$stdout =~ s!the \Q[.](.)\E repository!the [https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](https://github.com/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!;
-
-$stdout = cleanup($stdout, @cleanup_arguments);
+($stderr, $stdout) = extra_cleanup($stderr, $stdout, @cleanup_arguments);
 
 my $result = $results[0] >> 8;
-is($result, 1, 'unknown-words.sh (exit code)');
-is($result_code, 1, 'result_code');
-is($followup, 'comment', 'followup');
+is($result, 1, "$instance: exit code");
+is($result_code, 1, "$instance: result_code");
+is($followup, 'comment', "$instance: followup");
 
 unless (defined $internal_state_directory) {
-  is($internal_state_directory, 'internal_state_directory');
+  is($internal_state_directory, "$instance: internal_state_directory");
 } else {
   my $artifact = glob("$internal_state_directory/*.zip");
-  isnt($artifact, '', 'internal_state_directory - should have a zip file');
+  isnt($artifact, '', "$instance: internal_state_directory - should have a zip file");
 }
 
 make_path($run);
@@ -192,14 +206,14 @@ write_file("$run/output.txt", $stdout);
 
 my @stdout = split /\n/, $stdout;
 my @expected_stdout = split /\n/, $expected_stdout;
-is_deeply(\@stdout, \@expected_stdout, 'unknown-words.sh (stdout)');
+is_deeply(\@stdout, \@expected_stdout, "$instance: stdout");
 
-like($stderr, qr{^\QFound conflicting inputs for conflicting-item (1): conflicting_item (2) (migrate-underscores-to-dashes)\E$}m, 'unknown-words.sh (stderr) conflicts');
-like($stderr, qr{^\QCensoring `ignoredValue` (unexpected-input-value)\E}m, , 'unknown-words.sh (stderr) censored');
+like($stderr, qr{^\QFound conflicting inputs for conflicting-item (1): conflicting_item (2) (migrate-underscores-to-dashes)\E$}m, "$instance: stderr conflicts");
+like($stderr, qr{^\QCensoring `ignoredValue` (unexpected-input-value)\E}m, , "$instance: stderr censored");
 $stderr =~ s{^\QFound conflicting inputs for conflicting-item (1): conflicting_item (2) (migrate-underscores-to-dashes)\E$}{}m;
 $stderr =~ s{^\QCensoring `ignoredValue` (unexpected-input-value)\E$}{}m;
 write_file("$run/error.txt", $stderr);
-is($stderr, $expected_stderr, 'unknown-words.sh (stderr)');
+is($stderr, $expected_stderr, "$instance: stderr");
 
 my $summary = read_file($github_step_summary, @cleanup_arguments);
 $summary =~ s!\QCurrent apply script differs from 'https://raw.githubusercontent.com/CHECK-SPELLING/CHECK-SPELLING/\E[^']+?\Q/apply.pl' (locally downloaded to ...). You may wish to upgrade.\E\n!!;
@@ -208,12 +222,12 @@ write_file("$run/summary.md", $summary);
 
 my @summary_list = split /\n/, $summary;
 my @expected_summary_list = split /\n/, $expected_summary;
-is_deeply(\@summary_list, \@expected_summary_list, 'GITHUB_STEP_SUMMARY');
+is_deeply(\@summary_list, \@expected_summary_list, "$instance: GITHUB_STEP_SUMMARY");
 
 my $warning_content = read_file($warnings_path, @cleanup_arguments);
 
 write_file("$run/warnings.txt", $warning_content);
-is($warning_content, $expected_warnings, 'warnings');
+is($warning_content, $expected_warnings, "$instance: warnings");
 
 my $stale = '???';
 
@@ -228,7 +242,18 @@ if (defined $stale_words_path) {
 }
 
 write_file("$run/stale.txt", $stale);
-is($stale, $expected_stale_words, 'stale_words');
+is($stale, $expected_stale_words, "$instance: stale_words");
+
+}
+
+test($sandbox, 'unknown-words');
+
+$ENV{GITHUB_HEAD_REF} = 'some-head';
+$ENV{GITHUB_BASE_REF} = 'some-base';
+
+test($sandbox, 'unknown-words.pr');
 
 system(qw(git config --unset user.email));
 system(qw(git config --unset user.name));
+system(qw(git remote remove origin));
+system(qw(git remote rename origin.real origin));

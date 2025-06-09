@@ -1,0 +1,94 @@
+::add-matcher::WORKSPACE/reporter.json
+Retrieving expect from WORKSPACE/t/unknown-words.pr/config/expect.txt
+Retrieving excludes from WORKSPACE/t/unknown-words.pr/config/excludes.txt
+::group::Retrieving check extra dictionaries
+::endgroup::
+Retrieving only from WORKSPACE/t/unknown-words.pr/config/only.txt
+Retrieving line_forbidden from WORKSPACE/t/unknown-words.pr/config/line_forbidden.patterns
+Checking spelling...
+::group::Spell checking (2) files
+TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/paths-of-checked-files.txt
+t/unknown-words/input/sample.file
+::endgroup::
+::group::Spell check
+EXPECT_SANDBOX/expect.words.txt:1:8 ... 9, Warning - Ignoring entry because it contains non-alpha characters. (non-alpha-in-dictionary)
+WORKSPACE/t/unknown-words.pr/config/expect.txt:1:8 ... 9, Error - `+` matches a line_forbidden.patterns entry: `(?![A-Z]|[a-z]|'|\s|=).`. (forbidden-pattern)
+WORKSPACE/t/unknown-words.pr/config/expect.txt:2:1 ... 17, Warning - `Unexpectedlylong` is ignored by check-spelling because another more general variant is also in expect. (ignored-expect-variant)
+t/unknown-words/input/sample.file:1:23 ... 34, Error - `sample.file` matches a line_forbidden.patterns entry: `\bsample\.file\b`. (forbidden-pattern)
+t/unknown-words/input/sample.file:2:7 ... 11, Error - `diid` is not a recognized word. (unrecognized-spelling)
+t/unknown-words/input/sample.file:2:12 ... 16, Error - `youu` is not a recognized word. (unrecognized-spelling)
+t/unknown-words/input/sample.file:2:17 ... 21, Error - `fixx` is not a recognized word. (unrecognized-spelling)
+t/unknown-words/input/sample.file:2:22 ... 27, Error - `thiss` is not a recognized word. (unrecognized-spelling)
+::endgroup::
+::group::Compare expect with new output
+::endgroup::
+::group::New output
+::endgroup::
+::group::Unrecognized (4)
+::group::Building summary table
+::endgroup::
+Preparing a comment for push
+
+# @check-spelling-bot Report
+
+## :red_circle: Please review
+### See the [:scroll:action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or :memo: job summary for details.
+
+### Unrecognized words (4)
+
+diid
+fixx
+thiss
+youu
+
+<details><summary>These words are not needed and should be removed
+</summary>invalid unexpectedlylong=
+</details><p></p>
+
+<details><summary>To accept these unrecognized words as correct and remove the previously acknowledged and now absent words,
+you could run the following commands</summary>
+
+... in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository
+on the `GITHUB_BRANCH` branch ([:information_source: how do I use this?](
+https://docs.check-spelling.dev/Accepting-Suggestions)):
+
+``` sh
+git fetch 'GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME' refs/heads/'some-base':refs/private/check-spelling-merge-base &&
+git checkout 'some-head' &&
+git merge -m 'Merge some-base' 'refs/private/check-spelling-merge-base' &&
+git push . :'refs/private/check-spelling-merge-base' &&
+WORKSPACE/apply.pl 'GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID/attempts/' &&
+git commit -m 'Update check-spelling metadata'
+```
+</details>
+
+<details><summary>Forbidden patterns :no_good: (1)</summary>
+
+In order to address this, you could change the content to not match the forbidden patterns (comments before forbidden patterns may help explain why they're forbidden), add patterns for acceptable instances, or adjust the forbidden patterns themselves.
+
+These forbidden patterns matched content:
+
+#### Should be `sample-file.txt`
+```
+\bsample\.file\b
+```
+
+</details>
+
+<details><summary>Errors and Warnings :x: (3)</summary>
+
+#### See the [:scroll:action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or :memo: job summary for details.
+
+[:x: Errors and Warnings](https://docs.check-spelling.dev/Event-descriptions) | Count
+-|-
+[:x: forbidden-pattern](https://docs.check-spelling.dev/Event-descriptions#forbidden-pattern) | 2
+[:warning: ignored-expect-variant](https://docs.check-spelling.dev/Event-descriptions#ignored-expect-variant) | 1
+[:warning: non-alpha-in-dictionary](https://docs.check-spelling.dev/Event-descriptions#non-alpha-in-dictionary) | 1
+
+See [:x: Event descriptions](https://docs.check-spelling.dev/Event-descriptions) for more information.
+
+</details>
+::endgroup::
+Please review
+::remove-matcher owner=check-spelling::
+::remove-matcher owner=check-spelling-https::

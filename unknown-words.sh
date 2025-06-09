@@ -3086,6 +3086,7 @@ spelling_body() {
         fi
       fi
       accept_heading="To $(build-english-list "$add_spell_check_this_text" "$accept_words_text" "$exclude_files_text" "$cleanup_text")"
+      merge_instructions="$(generate_merge_instructions "" " &&")"
       output_accept_script="$(echo "
         <details><summary>$accept_heading,
         you could run the following commands</summary>
@@ -3093,8 +3094,7 @@ spelling_body() {
         $(relative_note)
 
         $B sh
-        $(generate_merge_instructions "" " && $n"
-        )$err &&$n git commit -m 'Update check-spelling metadata'
+        $merge_instructions${merge_instructions:+" &&$n"}$err &&$n git commit -m 'Update check-spelling metadata'
         $B
         </details>
         " | strip_lead)"
