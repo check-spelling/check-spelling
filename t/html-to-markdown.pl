@@ -24,7 +24,7 @@ while (<>) {
     }
     s{<(?:div|tr)>}{}g;
     if (m{</tr>} && $columns) {
-        print ('|-'x $columns);
+        print ('|-'x ($columns+1));
         print "|\n";
         $columns=0;
         $has_header=1;
@@ -40,5 +40,6 @@ while (<>) {
     s{</\w+?>}{}g;
     s{<br/>}{\n}g;
     s{^ +}{}g;
+    s{((?:\|[^|]+){5})(\|[^|]+)(\|[^|]+?)($)}{$1$3|$2$4};
     print;
 }
