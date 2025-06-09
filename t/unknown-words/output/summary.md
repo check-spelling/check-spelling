@@ -19,7 +19,7 @@ youu
 
 
 ... in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository
-on the `` branch ([:information_source: how do I use this?](
+([:information_source: how do I use this?](
 https://docs.check-spelling.dev/Accepting-Suggestions)):
  =
 ```sh

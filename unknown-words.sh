@@ -2755,7 +2755,7 @@ get_action_log() {
 repo_clone_note() {
   echo "
         ... in a clone of the [$remote_url_ssh]($remote_url_https) repository
-        on the $b$remote_ref$b branch ([:information_source: how do I use this?](
+        ${remote_ref:+"on the $b$remote_ref$b branch"} ([:information_source: how do I use this?](
         https://docs.check-spelling.dev/Accepting-Suggestions)):
   "
 }
