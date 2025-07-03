@@ -3560,6 +3560,10 @@ post_commit_comment() {
               echo "permissions:"
               echo "  pull-requests: write"
             fi
+            if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+              echo
+              echo 'Consider switching to `on: pull_request_target`'
+            fi
           fi
         fi
       else
