@@ -48,22 +48,6 @@ $ENV{PERL5OPT} = '-MDevel::Cover' unless $?;
 
 sub cleanup {
   my ($text, $working_directory, $sandbox, $github_repository, $internal_state_directory) = @_;
-  $text =~ s!\Qraw.githubusercontent.com/check-spelling/check-spelling\E!raw.githubusercontent.com/CHECK-SPELLING/CHECK-SPELLING!g;
-  $text =~ s!$ENV{GITHUB_SERVER_URL}!GITHUB_SERVER_URL!g;
-  $text =~ s!$ENV{GITHUB_RUN_ID}!GITHUB_RUN_ID!g;
-  $text =~ s!in a clone of the \[.*?\]\(.*?\) repository!in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!g;
-  $text =~ s!^Devel::Cover: Deleting old coverage for changed file .*$!!m;
-  $text =~ s!(locally downloaded to )\`.*?\`!$1...!;
-  $text =~ s/^Installed: .*\n//g;
-  $text =~ s/\Q$sandbox\E/WORKSPACE/g;
-  $text =~ s!/tmp/check-spelling!TEMP_DIRECTORY!g;
-  my $github_sha = $ENV{GITHUB_SHA} || `git rev-parse HEAD`;
-  $github_sha =~ s/\n|\r//g;
-  $text =~ s/$github_sha/GITHUB_SHA/g;
-  $text =~ s/\Q$working_directory\E/ENGINE/g;
-  $text =~ s!\Q$github_repository\E!GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME!g if $github_repository !~ /^\.?$/;
-  $text =~ s!\QTEMP_DIRECTORY/./\E!TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/!g if $github_repository eq '.';
-  $text =~ s/on the \`[^`]+?\` branch/on the \`GITHUB_BRANCH\` branch/g;
   if (defined $internal_state_directory) {
     $text =~ s/ $/=/gm;
     $text =~ s!'/[^']*?/artifact.zip!'ARTIFACT_DIRECTORY/artifact.zip!g;
@@ -90,6 +74,22 @@ sub cleanup {
     $text =~ s/^index 0+\.\.[0-9a-f]{6,}$/index GIT_DIFF_NEW_FILE/gm;
     $text =~ s/^index [0-9a-f]{6,}\.\.[0-9a-f]{6,} 100644$/index GIT_DIFF_CHANGED_FILE/gm;
   }
+  $text =~ s!\Qraw.githubusercontent.com/check-spelling/check-spelling\E!raw.githubusercontent.com/CHECK-SPELLING/CHECK-SPELLING!g;
+  $text =~ s!$ENV{GITHUB_SERVER_URL}!GITHUB_SERVER_URL!g;
+  $text =~ s!$ENV{GITHUB_RUN_ID}!GITHUB_RUN_ID!g;
+  $text =~ s!in a clone of the \[.*?\]\(.*?\) repository!in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!g;
+  $text =~ s!^Devel::Cover: Deleting old coverage for changed file .*$!!m;
+  $text =~ s!(locally downloaded to )\`.*?\`!$1...!;
+  $text =~ s/^Installed: .*\n//g;
+  $text =~ s/\Q$sandbox\E/WORKSPACE/g;
+  $text =~ s!/tmp/check-spelling!TEMP_DIRECTORY!g;
+  my $github_sha = $ENV{GITHUB_SHA} || `git rev-parse HEAD`;
+  $github_sha =~ s/\n|\r//g;
+  $text =~ s/$github_sha/GITHUB_SHA/g;
+  $text =~ s/\Q$working_directory\E/ENGINE/g;
+  $text =~ s!\Q$github_repository\E!GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME!g if $github_repository !~ /^\.?$/;
+  $text =~ s!\QTEMP_DIRECTORY/./\E!TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/!g if $github_repository eq '.';
+  $text =~ s/on the \`[^`]+?\` branch/on the \`GITHUB_BRANCH\` branch/g;
   $text =~ s!\S*(\Q/expect.words.txt\E)!EXPECT_SANDBOX$1!gm;
   return $text;
 }
