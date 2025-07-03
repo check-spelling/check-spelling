@@ -3538,7 +3538,7 @@ post_commit_comment() {
       lock_pr
       if [ -z "$response_code" ] || [ "$response_code" -ge 400 ] 2> /dev/null; then
         if ! to_boolean "$DEBUG"; then
-          echo "::error ::Failed posting to $COMMENTS_URL"
+          echo "::error ::Failed to post to $COMMENTS_URL"
           cat "$PAYLOAD"
           echo " -- response -- "
           echo "Response code: $response_code"
