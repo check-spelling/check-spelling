@@ -1344,6 +1344,7 @@ define_variables() {
   patterns="$splitter_configuration/patterns.txt"
   forbidden_path="$splitter_configuration/forbidden.txt"
   candidates_path="$splitter_configuration/candidates.txt"
+  block_delimiters_path="$splitter_configuration/block-delimiters.list";
   excludes=${excludes:-$(mktemp)}
   temp_sandbox=$(mktemp -d)
   excludes_path="$temp_sandbox/excludes.txt"
@@ -2508,6 +2509,8 @@ set_up_files() {
     fi
     get_project_files line_forbidden.patterns "$forbidden_path"
     get_project_files candidate.patterns "$candidates_path"
+
+    get_project_files block-delimiters.list "$block_delimiters_path"
   else
     if [ -s "$check_extra_dictionaries_list" ]; then
       export INPUT_DICTIONARY_SOURCE_PREFIXES=$(cat "$dictionary_source_prefixes_json")
@@ -2577,6 +2580,7 @@ set_up_files() {
     cache_files_checked=0
     for item in \
       "$allow_path" \
+      "$block_delimiters_path" \
       "$forbidden_path" \
       "$homoglyph_list_path" \
       "$patterns_path" \
@@ -3748,6 +3752,7 @@ quit() {
       fi
     }
     stash "$allow_path"
+    stash "$block_delimiters_path"
     stash "$forbidden_path"
     stash "$homoglyph_list_path"
     stash "$patterns_path"
