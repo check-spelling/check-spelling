@@ -197,35 +197,14 @@
 "locations": [
 {
 "physicalLocation": {
-"region": {
-"endColumn": 28,
-"startColumn": 24,
-"startLine": 1
-},
 "artifactLocation": {
-"uri": "t/sarif/sample.txt",
-"uriBaseId": "%SRCROOT%"
-}
-}
-}
-],
-"ruleId": "unrecognized-spelling"
+"uriBaseId": "%SRCROOT%",
+"uri": "t/sarif/sample.txt"
 },
-{
-"message": {
-"text": "[meep](#security-tab) is not a recognized word"
-},
-"locations": [
-{
-"physicalLocation": {
 "region": {
 "startLine": 1,
-"startColumn": 30,
-"endColumn": 34
-},
-"artifactLocation": {
-"uri": "t/sarif/sample.txt",
-"uriBaseId": "%SRCROOT%"
+"endColumn": 28,
+"startColumn": 24
 }
 }
 }
@@ -233,9 +212,6 @@
 "ruleId": "unrecognized-spelling"
 },
 {
-"partialFingerprints": {
-"cs0": "+FpQY0W/k7oLflcAHsuRPiSuDIY"
-},
 "ruleId": "unrecognized-spelling",
 "message": {
 "text": "[meep](#security-tab) is not a recognized word"
@@ -248,13 +224,37 @@
 "uri": "t/sarif/sample.txt"
 },
 "region": {
-"endColumn": 5,
-"startColumn": 1,
-"startLine": 2
+"startColumn": 30,
+"startLine": 1,
+"endColumn": 34
 }
 }
 }
 ]
+},
+{
+"partialFingerprints": {
+"cs0": "+FpQY0W/k7oLflcAHsuRPiSuDIY"
+},
+"ruleId": "unrecognized-spelling",
+"locations": [
+{
+"physicalLocation": {
+"region": {
+"startColumn": 1,
+"startLine": 2,
+"endColumn": 5
+},
+"artifactLocation": {
+"uriBaseId": "%SRCROOT%",
+"uri": "t/sarif/sample.txt"
+}
+}
+}
+],
+"message": {
+"text": "[meep](#security-tab) is not a recognized word"
+}
 },
 {
 "message": {
@@ -264,21 +264,21 @@
 {
 "physicalLocation": {
 "artifactLocation": {
-"uri": "t/sarif/sample.txt",
-"uriBaseId": "%SRCROOT%"
+"uriBaseId": "%SRCROOT%",
+"uri": "t/sarif/sample.txt"
 },
 "region": {
-"startColumn": 1,
 "startLine": 5,
-"endColumn": 7
+"endColumn": 7,
+"startColumn": 1
 }
 }
 }
 ],
-"ruleId": "unrecognized-spelling",
 "partialFingerprints": {
 "cs0": "bWBeHF6ti9VRxR+ic53fyRI48IQ"
-}
+},
+"ruleId": "unrecognized-spelling"
 },
 {
 "partialFingerprints": {
@@ -291,14 +291,14 @@
 "locations": [
 {
 "physicalLocation": {
+"region": {
+"startColumn": 1,
+"startLine": 7,
+"endColumn": 7
+},
 "artifactLocation": {
 "uriBaseId": "%SRCROOT%",
 "uri": "t/sarif/sample.txt"
-},
-"region": {
-"endColumn": 7,
-"startColumn": 1,
-"startLine": 7
 }
 }
 }
