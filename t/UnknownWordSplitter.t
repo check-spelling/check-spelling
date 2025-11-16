@@ -21,7 +21,7 @@ binmode $builder->output,         ":utf8";
 binmode $builder->failure_output, ":utf8";
 binmode $builder->todo_output,    ":utf8";
 
-plan tests => 68;
+plan tests => 82;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 use_ok('CheckSpelling::Exclude');
@@ -256,6 +256,65 @@ check_output_file_sorted_lines("$output_directory/warnings", ":4:6 ... 9: `ham`
 ", 'warnings');
 check_output_file("$output_directory/unknown", 'ham
 ', 'unknown');
+
+open $fh, '>', "$dirname/block-delimiters.list";
+print $fh '# test
+fruit
+donut
+';
+close $fh;
+
+CheckSpelling::UnknownWordSplitter::init($dirname);
+open($outputFH, '>', \$output_directory) or die; # This shouldn't fail
+$oldFH = select $outputFH;
+CheckSpelling::UnknownWordSplitter::main($directory, ($filename));
+select $oldFH;
+ok($output_directory =~ /.*\n/, 'output directory');
+chomp($output_directory);
+ok(-d $output_directory, 'output directory exists');
+check_output_file("$output_directory/name", $filename, 'name');
+check_output_file("$output_directory/stats", '{words: 4, unrecognized: 1, unknown: 1, unique: 4, candidates: [0,1], candidate_lines: [0,4:6:9], forbidden: [0,0,0], forbidden_lines: [0,0,0]}', 'stats');
+check_output_file_sorted_lines("$output_directory/warnings", ":4:6 ... 9: `ham`", 'warnings');
+check_output_file("$output_directory/unknown", 'ham
+', 'unknown');
+
+open $fh, '>', "$dirname/block-delimiters.list";
+print $fh '# test
+fruit
+missing
+';
+close $fh;
+
+CheckSpelling::UnknownWordSplitter::init($dirname);
+open($outputFH, '>', \$output_directory) or die; # This shouldn't fail
+$oldFH = select $outputFH;
+CheckSpelling::UnknownWordSplitter::main($directory, ($filename));
+select $oldFH;
+ok($output_directory =~ /.*\n/, 'output directory');
+chomp($output_directory);
+ok(-d $output_directory, 'output directory exists');
+check_output_file("$output_directory/name", $filename, 'name');
+check_output_file("$output_directory/stats", '{words: 2, unrecognized: 0, unknown: 0, unique: 2, candidates: [0,0], candidate_lines: [0,0], forbidden: [0,0,0], forbidden_lines: [0,0,0]}', 'stats');
+check_output_file_sorted_lines("$output_directory/warnings", ":2:1 ... 1, Warning - Failed to find matching end marker for `fruit` (unclosed-block-ignore-begin)
+:5:1 ... 1, Warning - Expected to find end block marker `missing` (unclosed-block-ignore-end)", 'warnings');
+check_output_file("$output_directory/unknown", '', 'unknown');
+
+open $fh, '>', "$dirname/block-delimiters.list";
+print $fh '# test
+fruit
+';
+close $fh;
+
+($fh, $filename) = tempfile();
+close $fh;
+my $early_warnings = $filename;
+$ENV{early_warnings} = $early_warnings;
+($stdout, $stderr, @result) = capture { CheckSpelling::UnknownWordSplitter::init($dirname); };
+my $warnings = $stderr;
+check_output_file($early_warnings, "$dirname/block-delimiters.list:1:Block delimiters must come in pairs (uneven-block-delimiters)
+", 'early warnings uneven-block-delimiters');
+is($warnings, "block-delimiter unmatched S: `fruit`
+", 'warnings uneven-block-delimiters');
 
 $dirname = tempdir();
 ($fh, $filename) = tempfile();

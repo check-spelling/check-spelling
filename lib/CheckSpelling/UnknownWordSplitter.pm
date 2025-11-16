@@ -25,6 +25,9 @@ our $VERSION='0.1.0';
 
 my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re, $candidates_re, $disable_word_collating, $check_file_names);
 my ($check_homoglyphs);
+my $begin_block_re = '';
+my @begin_block_list = ();
+my @end_block_list = ();
 my ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
 my ($shortest, $longest) = (255, 0);
 my @forbidden_re_list;
@@ -140,6 +143,43 @@ sub not_empty {
   return defined $thing && $thing ne '' && $thing =~ /^\d+$/;
 }
 
+sub parse_block_list {
+  my ($re) = @_;
+  my @file;
+  return @file unless (open(my $file_fh, '<:utf8', $re));
+
+  local $/=undef;
+  my $file=<$file_fh>;
+  my $last_line = $.;
+  close $file_fh;
+  for (split /\R/, $file) {
+    next if /^#/;
+    chomp;
+    s/^\\#/#/;
+    next unless /^./;
+    push @file, $_;
+  }
+
+  my $pairs = (0+@file) / 2;
+  my $true_pairs = $pairs | 0;
+  unless ($pairs == $true_pairs) {
+    my $early_warnings = CheckSpelling::Util::get_file_from_env('early_warnings', '/dev/null');
+    open my $early_warnings_fh, ">>:encoding(UTF-8)", $early_warnings;
+    print $early_warnings_fh "$re:$last_line:Block delimiters must come in pairs (uneven-block-delimiters)\n";
+    close $early_warnings_fh;
+    my $i = 0;
+    while ($i < $true_pairs) {
+      print STDERR "block-delimiter $i S: $file[$i*2]\n";
+      print STDERR "block-delimiter $i E: $file[$i*2+1]\n";
+      $i++;
+    }
+    print STDERR "block-delimiter unmatched S: `$file[$i*2]`\n";
+    @file = ();
+  }
+
+  return @file;
+}
+
 sub valid_word {
   # shortest_word is an absolute
   our ($shortest, $longest, $shortest_word, $longest_word);
@@ -246,6 +286,7 @@ sub hunspell_dictionary {
 sub init {
   my ($configuration) = @_;
   our ($word_match, %unique, $patterns_re, @forbidden_re_list, $forbidden_re, @candidates_re_list, $candidates_re);
+  our ($begin_block_re, @begin_block_list, @end_block_list);
   our $sandbox = CheckSpelling::Util::get_file_from_env('sandbox', '');
   our $hunspell_dictionary_path = CheckSpelling::Util::get_file_from_env('hunspell_dictionary_path', '');
   our $timeout = CheckSpelling::Util::get_val_from_env('splitter_timeout', 30);
@@ -263,6 +304,23 @@ sub init {
       print STDERR "Could not load Text::Hunspell for dictionaries (hunspell-unavailable)\n";
     }
   }
+
+  if (-e "$configuration/block-delimiters.list") {
+    my @block_delimiters = parse_block_list "$configuration/block-delimiters.list";
+    if (@block_delimiters) {
+      @begin_block_list = ();
+      @end_block_list = ();
+
+      while (@block_delimiters) {
+        my ($begin, $end) = splice @block_delimiters, 0, 2;
+        push @begin_block_list, $begin;
+        push @end_block_list, $end;
+      }
+
+      $begin_block_re = join '|', (map { '('.quote_re("\Q$_\E").')' } @begin_block_list);
+    }
+  }
+
   my (@patterns_re_list, %in_patterns_re_list);
   if (-e "$configuration/patterns.txt") {
     @patterns_re_list = file_to_list "$configuration/patterns.txt";
@@ -471,6 +529,7 @@ sub split_file {
     $unrecognized, $shortest, $largest_file, $words,
     $word_match, %unique, %unique_unrecognized, $forbidden_re,
     @forbidden_re_list, $patterns_re, %dictionary,
+    $begin_block_re, @begin_block_list, @end_block_list,
     $candidates_re, @candidates_re_list, $check_file_names, $use_magic_file, $disable_minified_file,
     $disable_single_line_file,
     $ignore_next_line_pattern,
@@ -572,8 +631,9 @@ sub split_file {
     alarm $timeout;
 
     my $ignore_next_line = 0;
+    my ($current_begin_marker, $next_end_marker, $start_marker_line) = ('', '', '');
     my $offset = 0;
-    while (<$file_fh>) {
+    LINE: while (<$file_fh>) {
       if ($. == 1) {
         unless ($disable_minified_file) {
           if ($file_size >= 512 && length($_) == $file_size) {
@@ -591,6 +651,30 @@ sub split_file {
       s/\R$//;
       next unless /./;
       my $raw_line = $_;
+      my $parsed_block_markers;
+
+      # hook for custom multiline based text exclusions:
+      if ($begin_block_re) {
+        FIND_END_MARKER: while (1) {
+          while ($next_end_marker ne '') {
+            next LINE unless /\Q$next_end_marker\E/;
+            s/.*?\Q$next_end_marker\E//;
+            ($current_begin_marker, $next_end_marker, $start_marker_line) = ('', '', '');
+            $parsed_block_markers = 1;
+          }
+          my @captured = (/^.*?$begin_block_re/);
+          last unless (@captured);
+          for my $capture (0 .. $#captured) {
+            if ($captured[$capture]) {
+              ($current_begin_marker, $next_end_marker, $start_marker_line) = ($begin_block_list[$capture], $end_block_list[$capture], "$.:1 ... 1");
+              s/^.*?\Q$begin_block_list[$capture]\E//;
+              $parsed_block_markers = 1;
+              next FIND_END_MARKER;
+            }
+          }
+        }
+        next if $parsed_block_markers;
+      }
 
       my $ignore_this_line = $ignore_next_line;
       $ignore_next_line = ($_ =~ /$ignore_next_line_pattern/);
@@ -733,6 +817,14 @@ sub split_file {
           last;
         }
       }
+    }
+    if ($next_end_marker) {
+      if ($start_marker_line) {
+        my $wrapped = CheckSpelling::Util::wrap_in_backticks($current_begin_marker);
+        print $warnings_fh ":$start_marker_line, Warning - Failed to find matching end marker for $wrapped (unclosed-block-ignore-begin)\n";
+      }
+      my $wrapped = CheckSpelling::Util::wrap_in_backticks($next_end_marker);
+      print $warnings_fh ":$.:1 ... 1, Warning - Expected to find end block marker $wrapped (unclosed-block-ignore-end)\n";
     }
 
     alarm 0;
