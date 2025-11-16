@@ -34,6 +34,8 @@ The enemy of that goal is repetition or near repetition. The longer the file, th
 
 #### uppercase
 
+<!--no check spelling-->
+
 `about.txt`
 
 ```
@@ -51,7 +53,11 @@ Explanation: `IKEA` isn't in the dictionary.
 This doesn't mean that it would be ok to write `Ikea` or `ikea`.
 `Ikea` is definitely wrong (and outside of domain names, `ikea` is probably also wrong).
 
+<!--/-->
+
 #### proper noun
+
+<!--no check spelling-->
 
 `file.txt`
 
@@ -67,7 +73,11 @@ Microsoft
 
 Explanation: `Microsoft` isn't in the dictionary.
 
+<!--/-->
+
 ### proper noun and uppercase
+
+<!--no check spelling-->
 
 `file.js`
 
@@ -88,7 +98,11 @@ Explanation: `Microsoft` isn't in the dictionary, but there's a reasonable expec
 This doesn't mean that a project has decided to allow `microsoft`,
 in a documentation oriented project `microsoft` would be wrong.
 
+<!--/-->
+
 ### lowercase, proper noun, and uppercase
+
+<!--no check spelling-->
 
 `file.js`
 
@@ -105,6 +119,8 @@ microsoft
 ```
 
 Explanation: `microsoft` isn't in the dictionary, and there's a reasonable expectation that in some cases it will have to be written as `Microsoft` (because in English the first word of a sentence will have its first letter capitalized) or as `MICROSOFT` (because programmers tend to write things in uppercase for constants).
+
+<!--/-->
 
 ## GitHub Action
 
