@@ -1190,6 +1190,84 @@
                   "code-reviews"
                 ]
               }
+            },
+            {
+              "id": "unclosed-block-ignore-begin",
+              "name": "UnclosedBlockIgnoreBegin",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#unclosed-block-ignore-begin",
+              "shortDescription": {
+                "text": "Unclosed block ignore (begin)"
+              },
+              "fullDescription": {
+                "text": "A begin block ignore was found but not a corresponding end block ignore. This is associated with the found begin mark."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Check to see if the content has text that should correspond to the end block ignore but does not, if so, correct it\n- If the begin block ignore is too general, consider making it more specific. See [block ignore examples](https://docs.check-spelling.dev/Configuration-Examples:-block-delimiters) and [block ignore feature](https://docs.check-spelling.dev/Feature:-Block-Ignore)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "unclosed-block-ignore-end",
+              "name": "UnclosedBlockIgnoreEnd",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#unclosed-block-ignore-end",
+              "shortDescription": {
+                "text": "Unclosed block ignore (end)"
+              },
+              "fullDescription": {
+                "text": "A begin block ignore was found but not a corresponding end block ignore. This is associated with the missing end mark."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Check to see if the content has text that should correspond to the end block ignore but does not, if so, correct it\n- If the begin block ignore is too general, consider making it more specific. See [block ignore examples](https://docs.check-spelling.dev/Configuration-Examples:-block-delimiters) and [block ignore feature](https://docs.check-spelling.dev/Feature:-Block-Ignore)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
+              "id": "uneven-block-delimiters",
+              "name": "UnevenBlockDelimiters",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#uneven-block-delimiters",
+              "shortDescription": {
+                "text": "Uneven block delimiters"
+              },
+              "fullDescription": {
+                "text": "The block delimiters file has a begin block ignore without a corresponding end block ignore."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- There's probably a line that should either be a comment, or not a comment\n- If you can't easily figure out the problem, try bisecting your blocks. See [block ignore examples](https://docs.check-spelling.dev/Configuration-Examples:-block-delimiters) and [block ignore feature](https://docs.check-spelling.dev/Feature:-Block-Ignore)\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
             }
           ]
         }
