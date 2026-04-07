@@ -579,6 +579,7 @@ sub split_file {
             last;
           }
         }
+        s/^\x{FEFF}//;
       }
       $_ = decode_utf8($_, FB_DEFAULT);
       if (/[\x{D800}-\x{DFFF}]/) {
@@ -586,7 +587,6 @@ sub split_file {
         last;
       }
       s/\R$//;
-      s/^\x{FEFF}// if $. == 1;
       next unless /./;
       my $raw_line = $_;
 
