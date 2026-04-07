@@ -414,7 +414,9 @@ get_previous_comment() {
 }
 
 get_a_comment() {
-  [ -z "$GITHUB_GRAPHQL_URL" ] && return
+  if [ -z "$COMMENTS_URL" ] || [ -z "$GITHUB_GRAPHQL_URL" ]; then
+    return
+  fi
   comment_search_re="$1"
   if [ -z "$comment_author_id" ]; then
     who_am_i
