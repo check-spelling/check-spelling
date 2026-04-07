@@ -324,8 +324,8 @@ sub split_line {
       $token =~ s/^(?:'|$rsqm)+//g;
       $token =~ s/(?:'|$rsqm)+s?$//g;
       my $raw_token = $token;
-      $token =~ s/^[^Ii]?'+(.*)/$1/;
-      $token =~ s/(.*?)'+$/$1/;
+      $token =~ s/^[^Ii]?'+//; # need to reconsider for French
+      $token =~ s/'+$//;
       next unless $token =~ $word_match;
       if (defined $dictionary{$token}) {
         ++$words;
