@@ -19,6 +19,8 @@ unknown-words/input/sample.file:3:8 ... 13, Error - `Alqua` is not a recognized 
 unknown-words/input/sample.file:7:23 ... 26, Error - `ico` is not a recognized word (unrecognized-spelling)
 unknown-words/input/sample.file:7:31 ... 39, Warning - `brandıng` should probably be `branding` (homoglyph-word)
 unknown-words/input/sample.file:8:1 ... 9, Error - `would’ve` is not a recognized word (unrecognized-spelling)
+unknown-words/input/sample.file:9:1 ... 5, Error - `GC'd` is not a recognized word (unrecognized-spelling)
+unknown-words/input/sample.file:10:1 ... 6, Error - `ZYX'd` is not a recognized word (unrecognized-spelling)
 unknown-words/input/test.png:1:17 ... 25, Error - `hotfixes` is not a recognized word (unrecognized-spelling)
 unknown-words/input/test.png:1:26 ... 29, Error - `png` is not a recognized word (check-file-path)
 unknown-words/input/test.png:14:1 ... 7, Error - `featue` is not a recognized word (unrecognized-spelling)

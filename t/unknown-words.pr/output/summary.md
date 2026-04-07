@@ -4,7 +4,7 @@
 ## 🔴 Please review
 ### See the [📜action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or 📝 job summary for details.
 
-<details><summary>Unrecognized words (16)</summary>
+<details><summary>Unrecognized words (18)</summary>
 
 ```
 Aiglos
@@ -15,6 +15,7 @@ continvoucly
 diid
 featue
 fixx
+GC'd
 hotfix
 hotfixes
 ico
@@ -23,6 +24,7 @@ png
 thiss
 would've
 youu
+ZYX'd
 ```
 </details>
 
@@ -53,14 +55,14 @@ check-spelling run (push) for some-base
 Signed-off-by: check-spelling-bot <check-spelling-bot@users.noreply.github.com>
 on-behalf-of: @check-spelling <check-spelling-bot@check-spelling.dev>
 ---
- t/unknown-words.pr/config/expect.txt | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ t/unknown-words.pr/config/expect.txt | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
 diff --git a/t/unknown-words.pr/config/expect.txt b/t/unknown-words.pr/config/expect.txt
 index GIT_DIFF_CHANGED_FILE
 --- a/t/unknown-words.pr/config/expect.txt
 +++ b/t/unknown-words.pr/config/expect.txt
-@@ -1,3 +1,18 @@
+@@ -1,3 +1,20 @@
 +Aiglos
 +Alqua
 +bugfix
@@ -69,6 +71,7 @@ index GIT_DIFF_CHANGED_FILE
 +diid
 +featue
 +fixx
++GC'd
 +hotfix
 +hotfixes
 +ico
@@ -80,6 +83,7 @@ index GIT_DIFF_CHANGED_FILE
 -unexpectedlylong
 +would've
 +youu
++ZYX'd
 --=
 GIT_VERSION
 
@@ -126,7 +130,7 @@ git commit -m 'Update check-spelling metadata'
 
 <details><summary>Available 📚 dictionaries could cover words (expected and unrecognized) not in the 📘 dictionary</summary>
 
-This includes both **expected items** (1) from WORKSPACE/t/unknown-words.pr/config/expect.txt and **unrecognized words** (16)
+This includes both **expected items** (1) from WORKSPACE/t/unknown-words.pr/config/expect.txt and **unrecognized words** (18)
 
 Dictionary | Entries | Covers | Uniquely
 -|-|-|-
@@ -240,6 +244,7 @@ note|path
 `diid` is not a recognized word | unknown-words/input/sample.file:2
 `featue` is not a recognized word | unknown-words/input/test.png:14
 `fixx` is not a recognized word | unknown-words/input/sample.file:2
+`GC'd` is not a recognized word | unknown-words/input/sample.file:9
 `hotfix` is not a recognized word | unknown-words/input/test.png:16
 `hotfixes` is not a recognized word | unknown-words/input/test.png:1
 `ico` is not a recognized word | unknown-words/input/sample.file:7
@@ -248,6 +253,7 @@ note|path
 `thiss` is not a recognized word | unknown-words/input/sample.file:2
 `would’ve` is not a recognized word | unknown-words/input/sample.file:8
 `youu` is not a recognized word | unknown-words/input/sample.file:2
+`ZYX'd` is not a recognized word | unknown-words/input/sample.file:10
 </details>
 
 

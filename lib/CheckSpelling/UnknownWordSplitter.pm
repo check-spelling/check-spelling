@@ -33,6 +33,8 @@ my @candidates_re_list;
 my $hunspell_dictionary_path;
 my @hunspell_dictionaries;
 my %dictionary = ();
+our @reject_re_list = ();
+our $reject_re = '$^';
 my $base_dict;
 my %unique;
 my %unique_unrecognized;
@@ -189,14 +191,24 @@ sub load_dictionary {
   %dictionary = ();
 
   open(my $dict_fh, '<:utf8', $dict);
+  my $word_match_relaxed = $word_match;
+  if ($word_match =~ /\{(\d+),/) {
+    my $three = $1;
+    if ($three > 1) {
+      my $two = $three - 1;
+      $word_match_relaxed =~ s/\b$three\b/$two/g;
+    }
+  }
   while (!eof($dict_fh)) {
     my $word = <$dict_fh>;
     chomp $word;
-    next unless $word =~ $word_match;
+    next unless $word =~ $word_match_relaxed;
     my $l = length $word;
     $longest = -1 unless not_empty($longest);
     $longest = $l if $l > $longest;
-    $shortest = $l if $l < $shortest;
+    if ($word =~ $word_match) {
+      $shortest = $l if $l < $shortest;
+    }
     $dictionary{$word}=1;
   }
   close $dict_fh;
@@ -236,6 +248,8 @@ sub init {
   our $hunspell_dictionary_path = CheckSpelling::Util::get_file_from_env('hunspell_dictionary_path', '');
   our $timeout = CheckSpelling::Util::get_val_from_env('splitter_timeout', 30);
   our %forbidden_re_descriptions;
+  our @reject_re_list;
+  our $reject_re;
   if ($hunspell_dictionary_path) {
     our @hunspell_dictionaries = ();
     if (eval 'use Text::Hunspell; 1') {
@@ -271,6 +285,14 @@ sub init {
     $candidates_re = list_to_re @candidates_re_list;
   } else {
     $candidates_re = undef;
+  }
+
+  if (-e "$configuration/reject.txt") {
+    @reject_re_list = file_to_list "$configuration/reject.txt";
+    @reject_re_list = map { my $quoted = quote_re($_); !test_re($quoted) ? '' : '^'.$quoted.'$' } @reject_re_list;
+    $reject_re = list_to_re @reject_re_list;
+  } else {
+    $reject_re = '$^';
   }
 
   our $largest_file = CheckSpelling::Util::get_val_from_env('INPUT_LARGEST_FILE', 1024*1024);
@@ -354,7 +376,7 @@ sub split_line {
       }
       unless ($disable_word_collating) {
         $key =~ s/''+/'/g;
-        $key =~ s/'[sd]$// unless length $key >= $shortest_threshold;
+        $key =~ s/'[sd]$// if length $key >= $shortest_threshold;
       }
       if (defined $dictionary{$key}) {
         ++$words;
@@ -416,6 +438,29 @@ sub maybe_ocr_file {
     }
   }
   return ($file, $file_converted);
+}
+
+sub print_word_not_in_dictionary {
+  my ($warnings_fh, $begin, $end, $match) = @_;
+  our $reject_re;
+  my $wrapped = CheckSpelling::Util::wrap_in_backticks($match);
+  if ($match =~ /^($reject_re)$/) {
+    our @reject_re_list;
+    my $found = 0;
+    for my $reject (@reject_re_list) {
+      if ($match =~ /^$reject$/) {
+        my $rejection = CheckSpelling::Util::wrap_in_backticks($reject);
+        print $warnings_fh ":$.:$begin ... $end, Error - Rejected word $wrapped matched $rejection (rejected-word)\n";
+        $found = 1;
+      }
+    }
+    unless ($found) {
+      my $rejection = CheckSpelling::Util::wrap_in_backticks($reject_re);
+      print $warnings_fh ":$.:$begin ... $end, Error - Rejected word $wrapped matched $rejection (rejected-word)\n";
+    }
+  } else {
+    print $warnings_fh ":$.:$begin ... $end: $wrapped\n";
+  }
 }
 
 sub split_file {
@@ -641,14 +686,12 @@ sub split_file {
           $found_token = 1;
           my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
           next unless $match =~ /./;
-          my $wrapped = CheckSpelling::Util::wrap_in_backticks($match);
-          print $warnings_fh ":$.:$begin ... $end: $wrapped\n";
+          print_word_not_in_dictionary($warnings_fh, $begin, $end, $match);
         }
         unless ($found_token) {
           if ($raw_line !~ /$token.*$token/ && $raw_line =~ /($token)/) {
             my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
-            my $wrapped = CheckSpelling::Util::wrap_in_backticks($raw_token);
-            print $warnings_fh ":$.:$begin ... $end: $wrapped\n";
+            print_word_not_in_dictionary($warnings_fh, $begin, $end, $match);
           } else {
             my $offset = $line_length + 1;
             my $wrapped = CheckSpelling::Util::wrap_in_backticks($raw_token);

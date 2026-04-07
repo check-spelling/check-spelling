@@ -58,16 +58,16 @@ my ($fh, $filename) = tempfile();
 print $fh "foo
 Moprh
 BROADDEPlay
-
+mm
 bar";
 close $fh;
-is(CheckSpelling::Exclude::file_to_re($filename), "(?:foo)|(?:Moprh)|(?:BROADDEPlay)|(?:bar)", 'file_to_re');
+is(CheckSpelling::Exclude::file_to_re($filename), "(?:foo)|(?:Moprh)|(?:BROADDEPlay)|(?:mm)|(?:bar)", 'file_to_re');
 $CheckSpelling::UnknownWordSplitter::word_match = CheckSpelling::UnknownWordSplitter::valid_word();
 is($CheckSpelling::UnknownWordSplitter::word_match, q<(?^u:\b(?:\w|'){3,}\b)>, 'word_match');
 $CheckSpelling::UnknownWordSplitter::shortest=100;
 $CheckSpelling::UnknownWordSplitter::longest="";
 CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
-is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 4, 'load dictionary with shortest=100');
+is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 5, 'load dictionary with shortest=100');
 is($CheckSpelling::UnknownWordSplitter::shortest, 3, 'calculate shortest');
 is($CheckSpelling::UnknownWordSplitter::longest, 13, 'calculate longest');
 is($CheckSpelling::UnknownWordSplitter::word_match, q<(?^u:\b(?:[A-Z]|[a-z]|'){3,13}\b)>, 'word_match');
@@ -76,7 +76,7 @@ $ENV{'INPUT_SHORTEST_WORD'} = '';
 $ENV{'INPUT_CHECK_HOMOGLYPHS'} = 1;
 $ENV{'homoglyph_list_path'} = '.github/actions/spelling/homoglyph.list';
 CheckSpelling::UnknownWordSplitter::load_dictionary($filename);
-is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 4, 'load dictionary with longest=5');
+is(scalar %CheckSpelling::UnknownWordSplitter::dictionary, 5, 'load dictionary with longest=5');
 is($CheckSpelling::UnknownWordSplitter::word_match, '(?^u:\b(?:[A-Z]|[a-z]|\'){3,5}\b)', 'word_match');
 open $fh, ">>:utf8", $filename;
 my $moprh_homoglyph = "Mo\x{3c1}rh";

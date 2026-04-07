@@ -58,8 +58,10 @@ diff --git a/t/unknown-words/config/expect/other.txt b/t/unknown-words/config/ex
 index GIT_DIFF_CHANGED_FILE
 --- a/t/unknown-words/config/expect/other.txt
 +++ b/t/unknown-words/config/expect/other.txt
-@@ -1 +0,0 @@
+@@ -1,3 +1,2 @@
 -unexpectedlylong
+ GC'd
+ ZYX'd
 --=
 GIT_VERSION
 
@@ -88,7 +90,7 @@ git commit -m 'Update check-spelling metadata'
 
 <details><summary>Available 📚 dictionaries could cover words (expected and unrecognized) not in the 📘 dictionary</summary>
 
-This includes both **expected items** (2) from WORKSPACE/t/unknown-words/config/expect/expect.txt WORKSPACE/t/unknown-words/config/expect/other.txt and **unrecognized words** (7)
+This includes both **expected items** (4) from WORKSPACE/t/unknown-words/config/expect/expect.txt WORKSPACE/t/unknown-words/config/expect/other.txt and **unrecognized words** (7)
 
 Dictionary | Entries | Covers | Uniquely
 -|-|-|-
