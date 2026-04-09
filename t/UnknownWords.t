@@ -76,6 +76,7 @@ sub cleanup {
     $text =~ s!^diff --git a/\.github/actions/spelling/expect/README\.md\.txt b/\.github/actions/spelling/expect/README\.md\.txt\nindex [0-9a-f]{6,}\.\.[0-9a-f]{6,} 100644\n--- a/\.github/actions/spelling/expect/README\.md\.txt\n\+\+\+ b/\.github/actions/spelling/expect/README\.md\.txt\n\@\@ -1,3 \+1,2 \@\@\n gsutil\n spammed\n-workflows\n!!gm;
     $text =~ s/^index 0+\.\.[0-9a-f]{6,}$/index GIT_DIFF_NEW_FILE/gm;
     $text =~ s/^index [0-9a-f]{6,}\.\.[0-9a-f]{6,} 100644$/index GIT_DIFF_CHANGED_FILE/gm;
+    $text =~ s!Downloaded (?:https?|file)://\S+ \(to .*\)!Downloaded DICTIONARY!;
   }
   $text =~ s!in a clone of the \[.*?\]\(.*?\) repository!in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!g;
   $text =~ s!^Devel::Cover: Deleting old coverage for changed file .*$!!m;

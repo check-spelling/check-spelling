@@ -1,6 +1,6 @@
 
 
-Downloaded https://raw.githubusercontent.com/CHECK-SPELLING/CHECK-SPELLING/dictionary-20200211/dict.txt (to ...)
+Downloaded DICTIONARY
 Retrieved extra:elvish.txt
 WORKSPACE/t/unknown-words/config/expect/expect.txt:1:8 ... 9, Error - `+` matches a line_forbidden.patterns rule: Expect entries should not include non-word characters - `(?![A-Z]|[a-z]|'|\s|=).` (forbidden-pattern)
 WORKSPACE/t/unknown-words/config/expect/expect.txt:1:8 ... 9, Warning - Ignoring entry because it contains non-alpha characters (non-alpha-in-dictionary)
