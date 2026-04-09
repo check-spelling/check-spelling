@@ -104,7 +104,7 @@ runs:
       (
         echo "err=$err"
         echo "out=$out"
-      ) >> "$GITHUB_OUTPUT"
+      ) >> "${GITHUB_OUTPUT:-/dev/stderr}"
   - name: Checkout
     id: action
     continue-on-error: true
