@@ -61,8 +61,13 @@ call_curl() {
     fi
     echo >> "$response_headers"
     response_code=$(perl -e '$_=<>; $_=0 unless s#^HTTP/[\d.]+ (\d+).*#$1#;print;' "$response_headers")
-    if [ "$curl_exit_code" -ne 0 ] && [ $response_code -eq 0 ]; then
+    if [ $response_code -eq 0 ]; then
       case $curl_exit_code in
+      0)
+        dump_curl_response
+        response_code=200
+        return
+        ;;
       2)
         dump_curl_response
         (
