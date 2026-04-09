@@ -934,6 +934,32 @@
               }
             },
             {
+              "id": "update-expect-variant",
+              "name": "UpdateExpectVariant",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#update-expect-variant",
+              "shortDescription": {
+                "text": "Update Expect Variant"
+              },
+              "fullDescription": {
+                "text": "Multiple related word variants listed in expect"
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Remove the entry from [expect](https://docs.check-spelling.dev/Configuration-Files#expect) and replace it with the more general variant if it isn't already present\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "low",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
               "id": "no-files-to-check",
               "name": "NoFilesToCheck",
               "helpUri": "https://docs.check-spelling.dev/Event-descriptions#no-files-to-check",

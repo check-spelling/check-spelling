@@ -90,7 +90,7 @@ git commit -m 'Update check-spelling metadata'
 
 <details><summary>Available 📚 dictionaries could cover words (expected and unrecognized) not in the 📘 dictionary</summary>
 
-This includes both **expected items** (4) from WORKSPACE/t/unknown-words/config/expect/expect.txt WORKSPACE/t/unknown-words/config/expect/other.txt and **unrecognized words** (7)
+This includes both **expected items** (5) from WORKSPACE/t/unknown-words/config/expect/expect.txt WORKSPACE/t/unknown-words/config/expect/other.txt and **unrecognized words** (7)
 
 Dictionary | Entries | Covers | Uniquely
 -|-|-|-
@@ -138,7 +138,7 @@ These forbidden patterns matched content:
 
 </details>
 
-<details><summary>Errors, Warnings, and Notices ❌ (5)</summary>
+<details><summary>Errors, Warnings, and Notices ❌ (6)</summary>
 
 #### See the [📜action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or 📝 job summary for details.
 
@@ -149,6 +149,7 @@ These forbidden patterns matched content:
 [⚠️ ignored-expect-variant](https://docs.check-spelling.dev/Event-descriptions#ignored-expect-variant) | 1
 [⚠️ non-alpha-in-dictionary](https://docs.check-spelling.dev/Event-descriptions#non-alpha-in-dictionary) | 1
 [ℹ️ unused-config-file](https://docs.check-spelling.dev/Event-descriptions#unused-config-file) | 1
+[⚠️ update-expect-variant](https://docs.check-spelling.dev/Event-descriptions#update-expect-variant) | 2
 
 See [❌ Event descriptions](https://docs.check-spelling.dev/Event-descriptions) for more information.
 
@@ -177,7 +178,7 @@ note|path
 
 note|path
 -|-
-`Unexpectedlylong` is ignored by check-spelling because another more general variant is also in expect | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/config/expect/expect.txt#L2
+`Unexpectedlylong` is ignored because another more general variant (`unexpectedlylong`) is also in expect | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/config/expect/expect.txt#L2
 </details>
 
 <details><summary>📂 non-alpha-in-dictionary</summary>
@@ -206,6 +207,14 @@ note|path
 note|path
 -|-
 Config file not used | unknown-words/config/unsupported.file:1
+</details>
+
+<details><summary>📂 update-expect-variant</summary>
+
+note|path
+-|-
+`Zyzles` should be replaced by the more general variant (`zyzles`) | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/config/expect/expect.txt#L4
+`ZYZLEs` should be replaced by the more general variant (`zyzles`) | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/config/expect/expect.txt#L5
 </details>
 
 

@@ -651,24 +651,37 @@ sub main {
 
 sub collate_expect {
   my ($collated, $notes) = @_;
-  my @words;
+  my %word_map;
+  my %has_canonical;
   open EXPECT, '<', $collated;
   while (<EXPECT>) {
     chomp;
     next unless /(.*) \((.*)\)/;
     my ($key, $list) = ($1, $2);
-    my @variants = split /, /, $list;
-    @variants = grep { $_ ne $key } @variants;
-    push @words, @variants;
+    for my $variant (split /, /, $list) {
+      if ($variant eq $key) {
+        $has_canonical{$key} = 1;
+      } else {
+        $word_map{$variant} = $key;
+      }
+    }
   }
   close EXPECT;
-  my $pattern = '\`(?:'.join('|', map { quotemeta($_) } @words).')`';
+  my $pattern = '`('.join('|', map { quotemeta($_) } keys %word_map).')`';
   open SOURCES, '<', $notes;
   while (<SOURCES>) {
     if ($_ =~ /$pattern/) {
+      my $match = $1;
+      my $canonical_match = $word_map{$match};
       my $print = 0;
-      $print = 1 if s/not a recognized word/ignored by check-spelling because another more general variant is also in expect/;
-      $print = 1 if s/unrecognized-spelling/ignored-expect-variant/;
+      my $wrapped = CheckSpelling::Util::wrap_in_backticks($canonical_match);
+      if (defined $has_canonical{$canonical_match}) {
+        $print = 1 if s/not a recognized word/ignored because another more general variant ($wrapped) is also in expect/;
+        $print = 1 if s/unrecognized-spelling/ignored-expect-variant/;
+      } else {
+        $print = 1 if s/is not a recognized word/should be replaced by the more general variant ($wrapped)/;
+        $print = 1 if s/unrecognized-spelling/update-expect-variant/;
+      }
       next unless $print;
     } else {
       next unless /\(((?:\w+-)+\w+)\)$/;

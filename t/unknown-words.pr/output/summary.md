@@ -4,7 +4,7 @@
 ## 🔴 Please review
 ### See the [📜action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or 📝 job summary for details.
 
-<details><summary>Unrecognized words (18)</summary>
+<details><summary>Unrecognized words (19)</summary>
 
 ```
 Aiglos
@@ -25,6 +25,7 @@ thiss
 would've
 youu
 ZYX'd
+zyzles
 ```
 </details>
 
@@ -55,14 +56,14 @@ check-spelling run (push) for some-base
 Signed-off-by: check-spelling-bot <check-spelling-bot@users.noreply.github.com>
 on-behalf-of: @check-spelling <check-spelling-bot@check-spelling.dev>
 ---
- t/unknown-words.pr/config/expect.txt | 19 ++++++++++++++++++-
- 1 file changed, 18 insertions(+), 1 deletion(-)
+ t/unknown-words.pr/config/expect.txt | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
 diff --git a/t/unknown-words.pr/config/expect.txt b/t/unknown-words.pr/config/expect.txt
 index GIT_DIFF_CHANGED_FILE
 --- a/t/unknown-words.pr/config/expect.txt
 +++ b/t/unknown-words.pr/config/expect.txt
-@@ -1,3 +1,20 @@
+@@ -1,3 +1,21 @@
 +Aiglos
 +Alqua
 +bugfix
@@ -84,6 +85,7 @@ index GIT_DIFF_CHANGED_FILE
 +would've
 +youu
 +ZYX'd
++zyzles
 --=
 GIT_VERSION
 
@@ -130,7 +132,7 @@ git commit -m 'Update check-spelling metadata'
 
 <details><summary>Available 📚 dictionaries could cover words (expected and unrecognized) not in the 📘 dictionary</summary>
 
-This includes both **expected items** (1) from WORKSPACE/t/unknown-words.pr/config/expect.txt and **unrecognized words** (18)
+This includes both **expected items** (1) from WORKSPACE/t/unknown-words.pr/config/expect.txt and **unrecognized words** (19)
 
 Dictionary | Entries | Covers | Uniquely
 -|-|-|-
@@ -221,7 +223,7 @@ note|path
 
 note|path
 -|-
-`Unexpectedlylong` is ignored by check-spelling because another more general variant is also in expect | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words.pr/config/expect.txt#L2
+`Unexpectedlylong` is ignored because another more general variant (`unexpectedlylong`) is also in expect | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words.pr/config/expect.txt#L2
 </details>
 
 <details><summary>📂 non-alpha-in-dictionary</summary>
@@ -254,6 +256,8 @@ note|path
 `would’ve` is not a recognized word | unknown-words/input/sample.file:8
 `youu` is not a recognized word | unknown-words/input/sample.file:2
 `ZYX'd` is not a recognized word | unknown-words/input/sample.file:10
+`ZYZLEs` is not a recognized word | unknown-words/input/sample.file:4
+`Zyzles` is not a recognized word | unknown-words/input/sample.file:4
 </details>
 
 

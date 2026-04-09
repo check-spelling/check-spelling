@@ -43,7 +43,7 @@ close ($fd);
   system("$spellchecker/expect-collator.pl $collated $name");
 };
 
-is($stdout, q<`Hello` ignored by check-spelling because another more general variant is also in expect (ignored-expect-variant)
+is($stdout, q<`Hello` ignored because another more general variant (`hello`) is also in expect (ignored-expect-variant)
 something else (something-else)
 >, 'expect-collator out');
 is($stderr, '', 'expect-collator err');

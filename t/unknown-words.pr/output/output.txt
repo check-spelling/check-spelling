@@ -21,7 +21,7 @@ unknown-words/input/test.png
 ::endgroup::
 ::group::Check for extra dictionaries
 ::endgroup::
-::group::Unrecognized (18)
+::group::Unrecognized (19)
 ::group::Building summary table
 ::endgroup::
 Preparing a comment for push
@@ -31,7 +31,7 @@ Preparing a comment for push
 ## 🔴 Please review
 ### See the [📜action log](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID) or 📝 job summary for details.
 
-<details><summary>Unrecognized words (18)</summary>
+<details><summary>Unrecognized words (19)</summary>
 
 ```
 Aiglos
@@ -52,6 +52,7 @@ thiss
 would've
 youu
 ZYX'd
+zyzles
 ```
 </details>
 
@@ -95,7 +96,7 @@ git commit -m 'Update check-spelling metadata'
 
 <details><summary>Available 📚 dictionaries could cover words (expected and unrecognized) not in the 📘 dictionary</summary>
 
-This includes both **expected items** (1) from WORKSPACE/t/unknown-words.pr/config/expect.txt and **unrecognized words** (18)
+This includes both **expected items** (1) from WORKSPACE/t/unknown-words.pr/config/expect.txt and **unrecognized words** (19)
 
 Dictionary | Entries | Covers | Uniquely
 -|-|-|-

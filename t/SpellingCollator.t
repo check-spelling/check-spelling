@@ -420,8 +420,8 @@ my ($stdout, $stderr, @result) = capture {
   CheckSpelling::SpellingCollator::collate_expect($collated, $notes);
 };
 is($stdout, 'Something `apple` (hello-world)
-ignored by check-spelling because another more general variant is also in expect `Apple` (hello-world)
-ignored by check-spelling because another more general variant is also in expect `Apple` (ignored-expect-variant)
+ignored because another more general variant (`apple`) is also in expect `Apple` (hello-world)
+ignored because another more general variant (`apple`) is also in expect `Apple` (ignored-expect-variant)
 is a recognized word `Apple` (ignored-expect-variant)
 ', 'collate_expect out');
 is($stderr, '', 'collate_expect err');
