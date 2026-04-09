@@ -283,8 +283,8 @@ is($stale, $expected_stale_words, "$instance: stale_words");
 }
 
 `
-rm -f "$working_directory/t/unknown-words/input/test.png"
-rm -f "$working_directory/t/unknown-words/input/logo.png"
+cd "$working_directory/t/unknown-words/input/"
+rm -f test.png logo.png
 `;
 test($sandbox, 'unknown-words');
 
@@ -295,10 +295,11 @@ $ENV{GITHUB_BASE_REF} = 'some-base';
 cd "$working_directory/t/unknown-words/input"
 curl -s -L -o test.png "https://raw.githubusercontent.com/check-spelling-sandbox/check-spelling-test-data/refs/heads/git-flow-image-with-typos/test.png"
 curl -s -L -o logo.png "https://raw.githubusercontent.com/check-spelling/art/refs/heads/main/logo/spell-check-sandbox.png"
-git add *.png
+git add *.png 2>&1
 )`;
 test($sandbox, 'unknown-words.pr');
-`git -C "$working_directory" rm -f t/unknown-words/input/*.png`;
+`
+git -C "$working_directory" rm -f t/unknown-words/input/*.png 2>&1`;
 
 system(qw(git config --unset user.email));
 system(qw(git config --unset user.name));
