@@ -392,7 +392,8 @@ sub main {
       my $reason=<SKIPPED>;
       close SKIPPED;
       chomp $reason;
-      push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because $reason\n";
+      my $wrapped = CheckSpelling::Util::wrap_in_backticks($file);
+      push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping $wrapped because $reason\n";
       print SHOULD_EXCLUDE "$file\n";
       push @cleanup_directories, $directory;
       report_timing($file, $start_time, $directory, 'skipped') if ($timing_report);
@@ -478,7 +479,8 @@ sub main {
         }
         my $warning = "noisy-$kind";
         count_warning $warning;
-        push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping `$file` because it seems to have more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). ($warning)\n";
+        my $wrapped = CheckSpelling::Util::wrap_in_backticks($file);
+        push @delayed_warnings, "$file:1:1 ... 1, Warning - Skipping $wrapped because it seems to have more noise ($unknown) than unique words ($unique) (total: $unrecognized / $words). ($warning)\n";
         push @cleanup_directories, $directory;
         next;
       }
