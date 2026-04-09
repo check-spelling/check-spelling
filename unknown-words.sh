@@ -1642,7 +1642,7 @@ download_or_quit_with_error() {
     echo "Could not download $1 (required-download-failed)" >&2
     github_step_summary_likely_fatal_event \
       'Required download failed' \
-      "Could not download $1." \
+      "Could not download $b$1$b." \
       'required-download-failed'
   )
   if [ -s "$exit_code" ]; then
