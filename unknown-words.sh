@@ -3106,7 +3106,7 @@ spelling_body() {
         referencing this comment url, as the code does not expect this to happen. -->" | strip_lead);;
   esac
   if [ -z "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
-    output_remove_items="$N$(remove_items)"
+    output_remove_items="$N$(remove_items)$n"
   fi
   if [ -n "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
     cleanup_text="remove the previously acknowledged and now absent words"
