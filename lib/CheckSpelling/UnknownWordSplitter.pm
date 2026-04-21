@@ -678,7 +678,7 @@ sub split_file {
         } elsif ($token =~ /^$upper_pattern/) {
           $before = "(?<!$upper_pattern)";
         } else {
-          $before = "(?<=$not_lower_pattern)";
+          $before = "(?<=$not_upper_or_lower_pattern)";
         }
         my $after = ($token =~ /$upper_pattern$/) ? "(?=$not_upper_or_lower_pattern)|(?=$upper_pattern$lower_pattern)" : "(?=$not_lower_pattern)";
         while ($raw_line =~ /(?:\b|$before)($token)(?:\b|$after)/g) {

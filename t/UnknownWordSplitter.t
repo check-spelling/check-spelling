@@ -21,7 +21,7 @@ binmode $builder->output,         ":utf8";
 binmode $builder->failure_output, ":utf8";
 binmode $builder->todo_output,    ":utf8";
 
-plan tests => 63;
+plan tests => 66;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 use_ok('CheckSpelling::Exclude');
@@ -131,6 +131,15 @@ close $fh;
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/skipped", 'average line width (4001) exceeds the threshold (1000) (minified-file)
 ', 'minified-file');
+open $fh, '>:utf8', $filename;
+print $fh '
+bar\uFF37oprh; bar! Moprh
+';
+close $fh;
+$output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
+check_output_file("$output_dir/name", $filename, 'name');
+check_output_file("$output_dir/stats", '{words: 3, unrecognized: 1, unknown: 1, unique: 2}', 'stats');
+check_output_file_sorted_lines("$output_dir/warnings", ":2:10 ... 14: `oprh`");
 open $fh, '>:utf8', $filename;
 print $fh "FooBar baz Bar elf baz bar supercalifragelisticexpialidocious
 FooBarBar
