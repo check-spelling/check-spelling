@@ -272,8 +272,7 @@ sub retrieve_spell_check_this {
     eval { %config = %{decode_json $spell_check_this_config}; } || die "decode_json failed in retrieve_spell_check_this with '$spell_check_this_config'";
     my ($repo, $branch, $destination, $path) = ($config{url}, $config{branch}, $config{config}, $config{path});
     my $spell_check_this_dir = tempdir();
-    my $exit_code;
-    (undef, undef, $exit_code) = capture_system(
+    my ($git_clone_out, $git_clone_err, $exit_code) = capture_system(
             'git', 'clone',
             '--depth', '1',
             '--no-tags',
@@ -282,7 +281,7 @@ sub retrieve_spell_check_this {
             $spell_check_this_dir
         );
     if ($?) {
-        die "git clone $repo#$branch failed";
+        die "git clone $repo#$branch failed\n$git_clone_out\n$git_clone_err";
     }
 
     make_path($destination);
