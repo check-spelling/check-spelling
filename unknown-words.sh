@@ -3885,21 +3885,42 @@ post_commit_comment() {
       cat "$response"
       echo " //// "
       if [ $response_code -eq 403 ]; then
+        (
         if grep -q '#create-a-commit-comment' "$response"; then
-          echo "Consider adding:"
+          echo '## This repository may have disabled commit comments'
           echo
+          case "$THIS_GITHUB_JOB_ID" in
+            *comment-push*)
+              if [ "$GITHUB_EVENT_NAME" == workflow_run ]; then
+                echo 'Consider deleting this workflow and relying on the GitHub Step Summary instead.'
+              else
+                echo 'Consider deleting this job and relying on the GitHub Step Summary instead.'
+              fi
+              ;;
+            *)
+              echo 'You could turn off comments with `post_comment: 0` or, if you really want comments, ask the repository administrator to enable them.'
+              ;;
+          esac
+          echo
+          echo "Otherwise, consider adding:"
+          echo
+          echo "${B}yaml"
           echo "permissions:"
           echo "  contents: write"
+          echo "${B}"
         elif grep -q '#create-an-issue-comment' "$response"; then
           echo "Consider adding:"
           echo
+          echo "${B}yaml"
           echo "permissions:"
           echo "  pull-requests: write"
+          echo "${B}"
         fi
         if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
           echo
           echo 'Consider switching to `on: pull_request_target`'
         fi
+        ) | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
       fi
     fi
   else
