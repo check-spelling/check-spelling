@@ -15,7 +15,14 @@ use_ok('CheckSpelling::SuggestExcludes');
 my $tests = dirname(__FILE__);
 my $base = dirname($tests);
 
-my ($fh, $list) = tempfile();
+sub fill_file {
+  my ($delim, $list) = @_;
+  my ($fh, $file) = tempfile();
+  print $fh CheckSpelling::Util::list_with_terminator $delim, @{$list};
+  close $fh;
+  return $file;
+}
+
 my @files = qw(
   test/.keep
   case/.keep
@@ -49,11 +56,8 @@ my @files = qw(
   new/meat
   new/pie
 );
-print $fh CheckSpelling::Util::list_with_terminator "\0", @files;
-close $fh;
+my $list = fill_file("\0", \@files);
 
-my $excludes_file;
-($fh, $excludes_file) = tempfile();
 my @excludes = qw (
   a/ignore
   test/.keep
@@ -71,17 +75,13 @@ my @excludes = qw (
   flour/meat
   ignored
 );
-print $fh CheckSpelling::Util::list_with_terminator "\n", @excludes;
-close $fh;
+my $excludes_file = fill_file("\n", \@excludes);
 
-my $old_excludes_file;
-($fh, $old_excludes_file) = tempfile();
 my @old_excludes = qw <
   ^test\.keep$
   ^\Qtest(0)a\E$
 >;
-print $fh CheckSpelling::Util::list_with_terminator "\n", @old_excludes;
-close $fh;
+my $old_excludes_file = fill_file("\n", \@old_excludes);
 
 my @expected_results = qw(
 (?:^|/)\.keep$
