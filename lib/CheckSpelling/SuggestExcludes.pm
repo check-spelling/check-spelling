@@ -54,7 +54,7 @@ sub quote_regex {
 sub maybe_quote_regex {
   my ($i) = @_;
   my $quoted = quote_regex($i);
-  $quoted =~ s<\\([-/])><$1>g;
+  $quoted =~ s<\\([-/@])><$1>g;
   return $i if $i eq $quoted;
   my $slashed = $i;
   if (($slashed =~ s<\.><\\.>) == 1){

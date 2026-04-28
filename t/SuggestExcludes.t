@@ -135,7 +135,7 @@ $old_excludes_file = fill_file("\n", \@old_excludes);
 @results = @{$results_ref};
 @results = sort CheckSpelling::Util::case_biased @results;
 @expected_results = qw(
-^\Qa-b/@t\E/
+^a-b/@t/
 );
 is(CheckSpelling::Util::list_with_terminator("\n", @results),
 CheckSpelling::Util::list_with_terminator("\n", @expected_results));
