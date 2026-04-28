@@ -106,6 +106,12 @@ sub set_up_counters {
   }
 }
 
+sub replace_qe {
+  my ($pattern) = @_;
+  $pattern =~ s/\\Q(.*?)\\E/quote_regex($1)/eg;
+  return $pattern;
+}
+
 sub score_patterns {
   # Each pattern is recorded as ($data):
   #   hit count (number)
@@ -119,7 +125,7 @@ sub score_patterns {
   my %scores;
   for my $pattern (@patterns) {
     my @hits;
-    $pattern =~ s/\\Q(.*?)\\E/quote_regex($1)/eg;
+    $pattern = replace_qe($pattern);
     for my $path (@excluded) {
       if ($path =~ /$pattern/) {
         push @hits, $path;
