@@ -123,9 +123,9 @@ sub score_patterns {
   my @excluded = @_;
   our @patterns;
   my %scores;
-  for my $pattern (@patterns) {
+  for my $raw_pattern (@patterns) {
     my @hits;
-    $pattern = replace_qe($pattern);
+    my $pattern = replace_qe($raw_pattern);
     for my $path (@excluded) {
       if ($path =~ /$pattern/) {
         push @hits, $path;
@@ -133,7 +133,7 @@ sub score_patterns {
     }
     my $hit_count = scalar @hits;
     # naive data structure
-    my @data = ($hit_count, $pattern, \@hits);
+    my @data = ($hit_count, $raw_pattern, \@hits);
     my @entries = defined $scores{$hit_count} ? @{$scores{$hit_count}} : ();
     push @entries, \@data;
     $scores{$hit_count} = \@entries;
@@ -245,7 +245,7 @@ sub main {
     }
   }
 
-  my $test = '(?:'.join('|', @patterns).')' if @patterns;
+  my $test = '(?:'.join('|', map { replace_qe($_) } @patterns).')' if @patterns;
   for my $file (@excluded) {
     next if $test && $file =~ /$test/;
     push @patterns, '^'.maybe_quote_regex($file).'$';

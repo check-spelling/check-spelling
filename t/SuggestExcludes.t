@@ -9,7 +9,7 @@ use File::Temp qw/ tempfile /;
 use Test::More;
 use CheckSpelling::Util;
 
-plan tests => 4;
+plan tests => 5;
 use_ok('CheckSpelling::SuggestExcludes');
 
 my $tests = dirname(__FILE__);
@@ -109,3 +109,33 @@ is(CheckSpelling::Util::list_with_terminator("\n", @drop_patterns),
 CheckSpelling::Util::list_with_terminator("\n", @expect_drop_patterns));
 
 is(CheckSpelling::SuggestExcludes::path_to_pattern('a'), '^\Qa\E$');
+
+@files = qw(
+a-b/@t/1
+a-b/@t/2/3
+a-b/@t/4
+a-b/1
+a-b/2
+a-b/3
+a-b/4
+);
+$list = fill_file("\0", \@files);
+
+@excludes = qw(
+a-b/@t/1
+a-b/@t/2/3
+a-b/@t/4
+);
+$excludes_file = fill_file("\n", \@excludes);
+
+@old_excludes = qw();
+$old_excludes_file = fill_file("\n", \@old_excludes);
+
+($results_ref, $drop_ref) = CheckSpelling::SuggestExcludes::main($list, $excludes_file, $old_excludes_file);
+@results = @{$results_ref};
+@results = sort CheckSpelling::Util::case_biased @results;
+@expected_results = qw(
+^\Qa-b/@t\E/
+);
+is(CheckSpelling::Util::list_with_terminator("\n", @results),
+CheckSpelling::Util::list_with_terminator("\n", @expected_results));
