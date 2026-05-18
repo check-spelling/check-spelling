@@ -13,9 +13,9 @@ use CheckSpelling::Util;
 binmode STDIN;
 binmode STDOUT, ':utf8';
 
-$ENV{PATH} =~ /(.*)/;
 my @paths = qw(/usr/bin /bin);
-{
+if (CheckSpelling::Util::get_val_from_env('INPUT_CHECK_IMAGES', '') =~ /^(?:1|true)$/i) {
+  $ENV{PATH} =~ /(.*)/;
   my $path = $1;
   for my $dir (split /:/, $path) {
     if (-x "$dir/tesseract") {
