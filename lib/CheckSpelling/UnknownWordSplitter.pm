@@ -343,8 +343,8 @@ sub split_line {
     while ($line =~ s/((?:$lower_pattern|$punctuation_pattern)+)($upper_pattern)/$1 $2/g) {}
     for my $token (split /\s+/, $line) {
       next unless $token =~ /$pattern/;
-      $token =~ s/^(?:'|$rsqm)+//g;
-      $token =~ s/(?:'|$rsqm)+s?$//g;
+      $token =~ s/^(?:'|$rsqm)+|(?:'|$rsqm)+$//g;
+      $token =~ s/(?:'|$rsqm)+s$//g; # need to reconsider for not English
       my $raw_token = $token;
       $token =~ s/^[^Ii]?'+//; # need to reconsider for French
       $token =~ s/'+$//;
