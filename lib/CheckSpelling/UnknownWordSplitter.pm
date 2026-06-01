@@ -646,21 +646,23 @@ sub split_file {
       if ($check_homoglyphs) {
         my $check_line_for_homoglyphs = $_;
         my $homoglyphs = $CheckSpelling::Homoglyph::homoglyphs;
-        # problematic characters: `\\`, `-`, `]`
-        $homoglyphs =~ s/([-\\\]])/\\$1/g;
-        $homoglyphs = "[$homoglyphs]";
-        our ($longest_word, $shortest_word);
-        my $longest_word_string = defined $longest_word && ($longest_word =~ /^\d+$/) ? $longest_word : '';
-        my $dollar = '$';
-        my $homoglyph_re = "(?=(?:${homoglyphs}|(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})){${shortest_word},${longest_word_string}}(?:${not_upper_or_lower_pattern}|${dollar}))((?:${upper_pattern}|${lower_pattern})+${homoglyphs}(?:(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})|${homoglyphs})*|${homoglyphs}+(?:${upper_pattern}|${lower_pattern})(?:(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})|${homoglyphs})*)";
-        while ($check_line_for_homoglyphs =~ /((?=(?:${homoglyphs}|(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})){${shortest_word},${longest_word_string}}(?:${not_upper_or_lower_pattern}|${dollar}))((?:${upper_pattern}|${lower_pattern})+${homoglyphs}(?:(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})|${homoglyphs})*|${homoglyphs}+(?:${upper_pattern}|${lower_pattern})(?:(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})|${homoglyphs})*))/g) {
-          my ($token, $token_raw, $begin, $end) = ($1, $1, $-[0], $+[0]);
-          $token =~ s/($homoglyphs)/$CheckSpelling::Homoglyph::homoglyph_to_glyph{$1}/g;
-          if (defined $dictionary{$token}) {
-            my $token_raw = CheckSpelling::Util::wrap_in_backticks($token_raw);
-            my $token = CheckSpelling::Util::wrap_in_backticks($token);
-            my $wrapped = "$token_raw should probably be $token (homoglyph-word)";
-            print $warnings_fh ":$.:$begin ... $end, Error - $wrapped\n";
+        if ($homoglyphs =~ /./) {
+          # problematic characters: `\\`, `-`, `]`
+          $homoglyphs =~ s/([-\\\]])/\\$1/g;
+          $homoglyphs = "[$homoglyphs]";
+          our ($longest_word, $shortest_word);
+          my $longest_word_string = defined $longest_word && ($longest_word =~ /^\d+$/) ? $longest_word : '';
+          my $dollar = '$';
+          my $homoglyph_re = "(?=(?:${homoglyphs}|(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})){${shortest_word},${longest_word_string}}(?:${not_upper_or_lower_pattern}|${dollar}))((?:${upper_pattern}|${lower_pattern})+${homoglyphs}(?:(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})|${homoglyphs})*|${homoglyphs}+(?:${upper_pattern}|${lower_pattern})(?:(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})|${homoglyphs})*)";
+          while ($check_line_for_homoglyphs =~ /((?=(?:${homoglyphs}|(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})){${shortest_word},${longest_word_string}}(?:${not_upper_or_lower_pattern}|${dollar}))((?:${upper_pattern}|${lower_pattern})+${homoglyphs}(?:(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})|${homoglyphs})*|${homoglyphs}+(?:${upper_pattern}|${lower_pattern})(?:(?:${upper_pattern}|${lower_pattern}|${punctuation_pattern})|${homoglyphs})*))/g) {
+            my ($token, $token_raw, $begin, $end) = ($1, $1, $-[0], $+[0]);
+            $token =~ s/($homoglyphs)/$CheckSpelling::Homoglyph::homoglyph_to_glyph{$1}/g;
+            if (defined $dictionary{$token}) {
+              my $token_raw = CheckSpelling::Util::wrap_in_backticks($token_raw);
+              my $token = CheckSpelling::Util::wrap_in_backticks($token);
+              my $wrapped = "$token_raw should probably be $token (homoglyph-word)";
+              print $warnings_fh ":$.:$begin ... $end, Error - $wrapped\n";
+            }
           }
         }
       }

@@ -20,6 +20,7 @@ sub init {
     my $lower_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_LOWER_PATTERN', '[a-z]');
     my $punctuation_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_PUNCTUATION_PATTERN', q<'>);
     local $/ = "\n";
+    %homoglyph_map = ();
     while (<$fh>) {
         next if /^#/;
         s/^\\//;
