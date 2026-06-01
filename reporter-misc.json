@@ -237,6 +237,18 @@
             ]
         },
         {
+            "owner": "check-spelling-perl-invalid-character-class-range",
+            "severity": "warning",
+            "pattern": [
+                {
+                    "regexp": "(Invalid \\[\\] range \".*\" in regex).*? at (?:/home/runner/work/(?:_actions/[^/]+|)/[^/]+/[^/]+/|.*/check-spelling/)(\\S+) line (\\d+)(?:[,.]|$)",
+                    "message": 1,
+                    "file": 2,
+                    "line": 3
+                }
+            ]
+        },
+        {
             "owner": "github-internal-server-error",
             "pattern": [
                 {
