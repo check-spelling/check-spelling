@@ -8,7 +8,7 @@ use Capture::Tiny ':all';
 
 use Test::More;
 
-plan tests => 76;
+plan tests => 79;
 use_ok('CheckSpelling::LoadEnv');
 
 {
@@ -95,12 +95,21 @@ is(scalar keys %mapped, 2, 'array_to_map length');
 
 my $json = '{"hello":"world"}';
 open my $fh, '<', \$json;
-my $parsed = CheckSpelling::LoadEnv::parse_config_file($fh);
+my $parsed = CheckSpelling::LoadEnv::parse_config_file($fh, 'json string');
 is($parsed->{'hello'}, 'world', 'parse config file');
+
+my $bad_json = '{"key": ["a" "b"]}';
+open $fh, '<', \$bad_json;
+($stdout, $stderr, @result) = capture {
+    CheckSpelling::LoadEnv::parse_config_file($fh, 'bad json');
+};
+is($stdout, '', 'parse bad json (out)');
+like($stderr, qr{, or \] expected while parsing array}, 'parse bad json (err)');
+is(scalar @{$result[0]}, 0, 'parse bad json (result)');
 
 my $not_json = '';
 open $fh, '<', \$not_json;
-my $ref = CheckSpelling::LoadEnv::parse_config_file($fh);
+my $ref = CheckSpelling::LoadEnv::parse_config_file($fh, 'empty string');
 is(ref $ref, 'HASH', 'parse_config_file fallback is ref');
 is(keys %{$ref}, 0, 'parse_config_file fallback has no entries');
 

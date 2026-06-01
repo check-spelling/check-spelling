@@ -69,24 +69,42 @@ sub escape_var_val {
 }
 
 sub parse_config_file {
-    my ($config_data) = @_;
+    my ($config_data, $config_file_path) = @_;
     local $/ = undef;
     my $base_config_data = <$config_data>;
     close $config_data;
-    return decode_json($base_config_data || '{}');
+    if (wantarray) {
+        my @parsed_config = eval {
+            @parsed_config = decode_json($base_config_data || '[]');
+        };
+        if ($@) {
+            print STDERR "Error decoding `$config_file_path`: $@:\n";
+            return decode_json('[]');
+        }
+        return @parsed_config;
+    }
+    my $parsed_config = eval {
+        decode_json($base_config_data || '{}');
+    };
+    if ($@) {
+        print STDERR "Error decoding `$config_file_path`: $@:\n";
+        return {};
+    }
+    return $parsed_config;
 }
 
 sub read_config_from_sha {
     my ($github_head_sha, $parsed_inputs) = @_;
     my $file = get_json_config_path($parsed_inputs);
     open (my $config_data, '-|:raw', qq!git show '$github_head_sha':'$file' 2> /dev/null || echo '{"broken":1}'!);
-    return parse_config_file($config_data);
+    return parse_config_file($config_data, "$file\@$github_head_sha");
 }
 
 sub read_config_from_file {
     my ($parsed_inputs) = @_;
-    open my $config_data, '<:raw', get_json_config_path($parsed_inputs);
-    return parse_config_file($config_data);
+    my $config_file_path = get_json_config_path($parsed_inputs);
+    open my $config_data, '<:raw', $config_file_path;
+    return parse_config_file($config_data, $config_file_path);
 }
 
 sub parse_inputs {
