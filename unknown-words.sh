@@ -2337,7 +2337,9 @@ set_up_files() {
             fi
             wait
             # Items that aren't proper should be moved to patterns instead
-            "$spellchecker/dictionary-word-filter.pl" ./* | sort -u >> "$dict"
+            find . ! -name '.*' -type f -print0 |
+              xargs -0 -r "$spellchecker/dictionary-word-filter.pl" |
+              sort -u >> "$dict"
           )
         fi
       fi
