@@ -687,7 +687,7 @@ sub split_file {
           $line_flagged = 1;
           $found_token = 1;
           my ($begin, $end, $match) = ($-[0] + 1, $+[0] + 1, $1);
-          next unless $match =~ /./;
+          next unless defined $match && $match =~ /./;
           print_word_not_in_dictionary($warnings_fh, $begin, $end, $match);
         }
         unless ($found_token) {
