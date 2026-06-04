@@ -608,8 +608,7 @@ get_workflow_path() {
     return
   fi
   action_run="$(mktemp_json)"
-  [ -z "$GITHUB_API_URL" ] && return
-  if call_curl \
+  if [ -n "$GITHUB_API_URL" ] && call_curl \
     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$action_run"; then
     workflow_url="$(jq -r '.workflow_url // empty' "$action_run")"
     if [ -n "$workflow_url" ]; then
@@ -617,8 +616,11 @@ get_workflow_path() {
       if call_curl \
         "$workflow_url" > "$workflow_json"; then
         jq -r .path "$workflow_json" | tee "$action_workflow_path_file"
+        return
       fi
-    elif [ -d .github/workflows ]; then
+    fi
+  fi
+  if [ -d .github/workflows ]; then
       possible_workflows=$(mktemp)
       if [ -n "$GITHUB_JOB" ]; then
         github_job_pattern="^\s\s*$GITHUB_JOB\s*:\s*$"
@@ -643,7 +645,6 @@ get_workflow_path() {
         xargs -0 < "$possible_workflows" | tee "$action_workflow_path_file"
       fi
     fi
-  fi
 }
 
 should_patch_head() {
