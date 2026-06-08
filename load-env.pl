@@ -2,6 +2,8 @@
 use 5.022;
 use CheckSpelling::LoadEnv;
 
+binmode STDOUT, ':utf8';
+
 my $load_config_from_key = 'load-config-from';
 my $parsed_inputs = CheckSpelling::LoadEnv::parse_inputs($load_config_from_key);
 
