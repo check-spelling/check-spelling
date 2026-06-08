@@ -11,4 +11,7 @@ binmode STDOUT, ':utf8';
 $/ = undef;
 my $content = <>;
 my $res = YAML::PP::Load($content);
-print encode_json($res)
+my $encoded = encode_json($res);
+utf8::decode($encoded);
+utf8::decode($encoded);
+print $encoded;
