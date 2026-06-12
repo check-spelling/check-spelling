@@ -519,7 +519,7 @@ sub download_latest_artifact {
             );
         return ("$out\n$err", $result);
     }
-    my ($out, $err, $headers, $result) = ($maybe_download{'out'}, $maybe_download{'err'}, $maybe_download{'headers'}, $maybe_download{'result'});
+    my ($out, $err, $headers, $result) = ($maybe_download{'out'}, $maybe_download{'err'}, $maybe_download{'headers'} || '', $maybe_download{'result'});
     return ("$out\n$err\n$headers", $result);
 }
 
