@@ -57,6 +57,7 @@ fi
 `;
 
 $ENV{'warning_output'} = $warnings;
+$ENV{'INPUT_REPORT_TITLE_SUFFIX'} = 'test';
 ($fh, $sarif_merged) = tempfile();
 
 my ($stdout, $stderr, $sarif_generated) = capture {

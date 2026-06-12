@@ -4,7 +4,7 @@
 "columnKind": "unicodeCodePoints",
 "tool": {
 "driver": {
-"name": "check-spelling",
+"name": "check-spelling-test",
 "isComprehensive": false,
 "shortDescription": {
 "markdown": "Action to check spelling in a repository. [check-spelling.dev](https://www.check-spelling.dev/)",

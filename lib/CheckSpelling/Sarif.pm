@@ -392,6 +392,12 @@ sub main {
     my %sarif = %{$sarif_json};
 
     $sarif{'runs'}[0]{'tool'}{'driver'}{'version'} = $ENV{CHECK_SPELLING_VERSION};
+    my $report_suffix = CheckSpelling::Util::get_file_from_env('INPUT_REPORT_TITLE_SUFFIX', '');
+    if ($report_suffix ne '') {
+        $report_suffix =~ s/^\s+|\s+$//g;
+        $report_suffix =~ s/\s+/-/g;
+        $sarif{'runs'}[0]{'tool'}{'driver'}{'name'} .= "-$report_suffix";
+    }
 
     my $results = parse_warnings $ENV{warning_output};
     if ($results) {
