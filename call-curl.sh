@@ -79,6 +79,14 @@ call_curl() {
         dump_curl_response
         return
         ;;
+      6)
+        dump_curl_response
+        response_code=404
+        (
+          echo "call_curl got an exit code $curl_exit_code from curl for '$curl_url'"
+        ) >&2
+        return
+        ;;
       *)
         delay=0
         (
