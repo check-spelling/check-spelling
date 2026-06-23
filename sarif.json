@@ -778,11 +778,11 @@
               }
             },
             {
-              "id": "utf16-surrogate",
-              "name": "Utf16Surrogate",
-              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#utf16-surrogate",
+              "id": "utf16-surrogate-file",
+              "name": "Utf16SurrogateFile",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#utf16-surrogate-file",
               "shortDescription": {
-                "text": "UTF-16 Surrogate"
+                "text": "UTF-16 Surrogate File"
               },
               "fullDescription": {
                 "text": "File contains a utf-16 surrogate. It's likely not a text file."
