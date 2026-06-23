@@ -1,4 +1,4 @@
-#!/usr/bin/env -S perl -T -Ilib
+#!/usr/bin/env -S perl -Ilib
 
 use warnings;
 use CheckSpelling::Util;

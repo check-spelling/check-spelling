@@ -1,2 +1,2 @@
 #!/bin/sh
-/usr/bin/env -S perl -T -I"$spellchecker/lib" "$spellchecker/calculate-delay.pl" "$@"
+/usr/bin/env -S perl -I"$spellchecker/lib" "$spellchecker/calculate-delay.pl" "$@"

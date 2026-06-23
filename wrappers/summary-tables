@@ -1,5 +1,5 @@
 #!/bin/sh
-if ! timeout 120s /usr/bin/env -S perl -T -I"$spellchecker/lib" "$spellchecker/summary-tables.pl" "$@"; then
+if ! timeout 120s /usr/bin/env -S perl -I"$spellchecker/lib" "$spellchecker/summary-tables.pl" "$@"; then
   error='Please [review the list of known 🐛 bugs](https://github.com/check-spelling/check-spelling/issues?q=is%3Aissue%20%22summary-tables-error%22) and if you cannot find one that matches this case, please [file a 🐛 bug](https://github.com/check-spelling/check-spelling/issues/new?title=%5Bsummary-tables-error%5D%20scenario&body=Please%20provide%20details+preferably%20including%20a%20link%20to%20a%20workflow%20run,%20the%20configuration%20of%20the%20repository,%20and%20anything%20else%20you%20may%20know%20about%20the%20problem%2e) (summary-tables-error)'
   echo "😦 Failed to build summary tables. $error"
   echo "::warning title=Summary Tables failed::$error" >&2

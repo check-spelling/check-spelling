@@ -1,4 +1,4 @@
-#!/usr/bin/env -S perl -T
+#!/usr/bin/env -S perl
 
 use warnings;
 use CheckSpelling::Exclude;

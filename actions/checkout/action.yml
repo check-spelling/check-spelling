@@ -108,7 +108,7 @@ runs:
   - name: Checkout
     id: action
     continue-on-error: true
-    uses: actions/checkout@v6
+    uses: actions/checkout@v7
     with:
       clean: ${{ inputs.clean }}
       fetch-depth: ${{ inputs.fetch-depth }}

@@ -97,7 +97,7 @@ jobs:
           git config --global init.defaultBranch silence_warning_about_default_branch
           echo 'cleanup=1' >> "$GITHUB_OUTPUT"
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: ${{ !contains(env.workflow_check_commit_messages, 'commits') && '1' || '2147483647' }}
           filter: ${{ contains(env.workflow_check_commit_messages, 'commits') && 'tree:0' || '' }}

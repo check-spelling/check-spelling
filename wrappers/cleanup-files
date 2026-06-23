@@ -1,2 +1,2 @@
 #!/bin/sh
-/usr/bin/env -S ignored_events="$INPUT_IGNORED" perl -T -I"$spellchecker/lib" "$spellchecker/cleanup-files.pl" "$@"
+/usr/bin/env -S ignored_events="$INPUT_IGNORED" perl -I"$spellchecker/lib" "$spellchecker/cleanup-files.pl" "$@"

@@ -17,7 +17,7 @@ jobs:
     steps:
     - name: Checkout merge
       if: contains(github.event_name, 'pull_request')
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         ref: refs/pull/${{github.event.pull_request.number}}/merge
       env:
@@ -26,7 +26,7 @@ jobs:
         GIT_SSH_COMMAND: ssh -v -v -v
     - name: Checkout
       if: github.event_name == 'push'
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       env:
         GIT_CURL_VERBOSE: True
         GIT_TRACE: True
@@ -284,7 +284,7 @@ jobs:
     steps:
     - name: Checkout merge
       if: contains(github.event_name, 'pull_request')
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         ref: refs/pull/${{github.event.pull_request.number}}/merge
       env:
@@ -293,7 +293,7 @@ jobs:
         GIT_SSH_COMMAND: ssh -v -v -v
     - name: Checkout
       if: github.event_name == 'push'
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       env:
         GIT_CURL_VERBOSE: True
         GIT_TRACE: True
