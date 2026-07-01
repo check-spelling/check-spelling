@@ -1691,6 +1691,13 @@ apt_install() {
   ${SUDO:+"$SUDO"} apt-get -qq -y --no-install-recommends satisfy "$1" > $apt_out 2> $apt_err
 }
 
+apt_get_update_once() {
+  ${SUDO:+"$SUDO"} apt-get -qq update
+  apt_get_update_once() {
+    :
+  }
+}
+
 install_tools() {
   if [ -n "$apps$perl_libs" ]; then
     if has_command apt-get; then
@@ -1704,7 +1711,7 @@ install_tools() {
       )
       apps="$apps $perl_debian_packages"
       if ! apt_install "$apps"; then
-        ${SUDO:+"$SUDO"} apt-get -qq update
+        apt_get_update_once
         if apt_install "$apps"; then
           :
         else
