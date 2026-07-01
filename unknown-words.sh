@@ -10,6 +10,10 @@ if [ -z "$THIS_ACTION_PATH$spellchecker" ]; then
 fi
 export spellchecker="${spellchecker:-$THIS_ACTION_PATH}"
 
+has_command() {
+  command -v "$1" >/dev/null 2>/dev/null
+}
+
 basic_setup() {
   if [ -z "$GITHUB_ENV" ]; then
     export GITHUB_EVENT_PATH=$(mktemp)
@@ -25,7 +29,7 @@ basic_setup() {
     maybe_set_env GITHUB_STEP_SUMMARY /dev/stderr
   fi
 
-  if ! command -v act-summary > /dev/null; then
+  if ! has_command act-summary; then
     PATH="$spellchecker/wrappers:$PATH"
   fi
   if [ "$(id -u)" != 0 ]; then
@@ -715,10 +719,6 @@ offer_quote_reply() {
     offer_quote_reply_cached=1
   fi
   return "$offer_quote_reply_cached"
-}
-
-command_v() {
-  command -v "$1" >/dev/null 2>/dev/null
 }
 
 react_comment_and_die() {
@@ -1693,7 +1693,7 @@ apt_install() {
 
 install_tools() {
   if [ -n "$apps$perl_libs" ]; then
-    if command_v apt-get; then
+    if has_command apt-get; then
       limit_apt_repositories
 
       export DEBIAN_FRONTEND=noninteractive
@@ -1720,14 +1720,14 @@ install_tools() {
       full_perl_libs="$perl_libs"
       perl_libs=
       for perl_lib in $perl_libs; do add_perl_lib $perl_lib; done
-      if [ -n "$perl_libs" ] && ! command_v cpanm; then
+      if [ -n "$perl_libs" ] && ! has_command cpanm; then
         apt_install cpanm
       fi
       apps=
-    elif command_v apk; then
+    elif has_command apk; then
       echo "$apps" | xargs apk add
       apps=
-    elif command_v brew; then
+    elif has_command brew; then
       echo "$apps" | xargs brew install
       apps=
     else
@@ -1735,7 +1735,7 @@ install_tools() {
     fi
   fi
   if [ -n "$perl_libs" ]; then
-    if ! command_v cpanm; then
+    if ! has_command cpanm; then
       curl -s -S -L https://cpanmin.us | perl - --sudo App::cpanminus
     fi
     echo "$perl_libs" | xargs perl "$(command -v cpanm)" --notest
@@ -1743,7 +1743,7 @@ install_tools() {
   fi
 }
 
-if command_v "apk"; then
+if has_command "apk"; then
 add_app() {
   if ! apk -e info "$1" >/dev/null; then
     apps="$apps $@"
@@ -1764,7 +1764,7 @@ add_app() {
   ;
 else
 add_app() {
-  if ! command_v "$1"; then
+  if ! has_command "$1"; then
     apps="$apps $(echo "$@"|perl -pe 's/\s+(?=\S)/,/g;s/,*$/,/')"
   fi
 }
@@ -1788,7 +1788,7 @@ need_hunspell() {
 }
 
 check_perl_libraries() {
-  if command_v apt-get; then
+  if has_command apt-get; then
     HAS_APT=1
   fi
 
@@ -1811,11 +1811,11 @@ set_up_tools() {
   add_app file
   add_app git
   add_app zip
-  if to_boolean "$INPUT_CHECK_IMAGES" && ! command_v tesseract; then
+  if to_boolean "$INPUT_CHECK_IMAGES" && ! has_command tesseract; then
     add_app tesseract-ocr
   fi
-  if ! command_v gh; then
-    if command_v apt-get && ! apt-cache policy gh | grep -q Candidate:; then
+  if ! has_command gh; then
+    if has_command apt-get && ! apt-cache policy gh | grep -q Candidate:; then
       curl -A "$curl_ua" -f -s -S -L https://cli.github.com/packages/githubcli-archive-keyring.gpg |
         $SUDO dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2> /dev/null
       $SUDO chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -1830,7 +1830,7 @@ set_up_tools() {
 }
 
 set_up_jq() {
-  if ! command_v jq || jq --version | perl -ne 'exit 0 unless s/^jq-//;exit 1 if /^(?:[2-9]|1\d|1\.(?:[6-9]|1\d+))/; exit 0'; then
+  if ! has_command jq || jq --version | perl -ne 'exit 0 unless s/^jq-//;exit 1 if /^(?:[2-9]|1\d|1\.(?:[6-9]|1\d+))/; exit 0'; then
     if [ "$(uname)" == "Linux" ]; then
       spellchecker_bin="$spellchecker/bin"
       jq_bin="$spellchecker_bin/jq"
