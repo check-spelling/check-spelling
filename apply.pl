@@ -662,28 +662,25 @@ sub update_repository {
 
 sub extract_artifacts_from_file {
     my ($artifact) = @_;
-    open my $artifact_reader, '-|', 'unzip', '-l', $artifact;
-    my ($has_artifact, $only_file) = (0, 0);
+    open my $artifact_reader, '-|', 'unzip', '-Z1', $artifact;
+    my ($artifact_name, $other_files) = (undef, 0);
     while (my $line = <$artifact_reader>) {
         chomp $line;
-        if ($line =~ /\s+artifact\.zip$/) {
-            $has_artifact = 1;
+        if ($line =~ /^(artifact.*?\.zip)$/) {
+            $artifact_name = $1;
             next;
         }
-        if ($line =~ /\s+1 file$/) {
-            $only_file = 1;
-            next;
-        }
-        $only_file = 0 if $only_file;
+        $other_files = 1;
+        last;
     }
     close $artifact_reader;
     my @artifacts;
-    if ($has_artifact && $only_file) {
+    if ($other_files == 0 && defined $artifact_name) {
         my $artifact_dir = tempdir(CLEANUP => 1);
         my ($fh, $gh_err) = tempfile();
         close $fh;
-        system('unzip', '-q', '-d', $artifact_dir, $artifact, 'artifact.zip');
-        @artifacts = ("$artifact_dir/artifact.zip");
+        system('unzip', '-q', '-d', $artifact_dir, $artifact, $artifact_name);
+        @artifacts = ("$artifact_dir/$artifact_name");
     } else {
         @artifacts = ($artifact);
     }
