@@ -1,5 +1,5 @@
 WORKSPACE/t/unknown-words.pr/config/expect.txt:1:8 ... 9, Error - `+` matches a line_forbidden.patterns rule: Expect entries should not include non-word characters - `(?![A-Z]|[a-z]|'|\s|=).` (forbidden-pattern)
-WORKSPACE/t/unknown-words.pr/config/expect.txt:1:8 ... 9, Warning - Ignoring entry because it contains non-alpha characters (non-alpha-in-dictionary)
+WORKSPACE/t/unknown-words.pr/config/expect.txt:1:8 ... 9, Warning - Ignoring entry because it contains non-alpha characters - `+` (non-alpha-in-dictionary)
 WORKSPACE/t/unknown-words.pr/config/expect.txt:2:1 ... 17, Warning - `Unexpectedlylong` is ignored because another more general variant (`unexpectedlylong`) is also in expect (ignored-expect-variant)
 WORKSPACE/t/unknown-words.pr/config/patterns.txt:1:1 ... 2, Warning - Quantifier follows nothing: `+` (bad-regex)
 unknown-words/input/logo.png:1:1 ... 1, Warning - Skipping `unknown-words/input/logo.png` because it appears to be a binary file (`image/png`) (binary-file)

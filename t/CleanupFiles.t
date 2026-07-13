@@ -146,6 +146,6 @@ is($stdout, 'worldly
 this
 ', 'cleanup-files (stdout)');
 is($stderr, "$tests/empty.txt:1:1 ... 1, Notice - File is empty (empty-file)
-$tests/non-alpha.txt:2:6 ... 7, Warning - Ignoring entry because it contains non-alpha characters (non-alpha-in-dictionary)
+$tests/non-alpha.txt:2:6 ... 7, Warning - Ignoring entry because it contains non-alpha characters - `:` (non-alpha-in-dictionary)
 ", 'cleanup-files (stderr)');
 is($result, 0, 'cleanup-files (exit code)');

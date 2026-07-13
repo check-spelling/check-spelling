@@ -30,7 +30,7 @@ is($line, 'hello', 'valid entry (result)');
 
 $ENV{comment_char} = '$';
 ($line, $warning) = CheckSpelling::CheckDictionary::process_line($hello);
-is($warning, "6 ... 10, Warning - Ignoring entry because it contains non-alpha characters (non-alpha-in-dictionary)
+is($warning, "6 ... 10, Warning - Ignoring entry because it contains non-alpha characters - `#123` (non-alpha-in-dictionary)
 ", 'invalid entry (warning)');
 is($line, '', 'invalid entry (result)');
 

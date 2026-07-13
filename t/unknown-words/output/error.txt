@@ -3,7 +3,7 @@
 Downloaded DICTIONARY
 Retrieved extra:elvish.txt
 WORKSPACE/t/unknown-words/config/expect/expect.txt:1:8 ... 9, Error - `+` matches a line_forbidden.patterns rule: Expect entries should not include non-word characters - `(?![A-Z]|[a-z]|'|\s|=).` (forbidden-pattern)
-WORKSPACE/t/unknown-words/config/expect/expect.txt:1:8 ... 9, Warning - Ignoring entry because it contains non-alpha characters (non-alpha-in-dictionary)
+WORKSPACE/t/unknown-words/config/expect/expect.txt:1:8 ... 9, Warning - Ignoring entry because it contains non-alpha characters - `+` (non-alpha-in-dictionary)
 WORKSPACE/t/unknown-words/config/expect/expect.txt:2:1 ... 17, Warning - `Unexpectedlylong` is ignored because another more general variant (`unexpectedlylong`) is also in expect (ignored-expect-variant)
 WORKSPACE/t/unknown-words/config/expect/expect.txt:4:1 ... 7, Warning - `Zyzles` should be replaced by the more general variant (`zyzles`) (update-expect-variant)
 WORKSPACE/t/unknown-words/config/expect/expect.txt:5:1 ... 7, Warning - `ZYZLEs` should be replaced by the more general variant (`zyzles`) (update-expect-variant)
