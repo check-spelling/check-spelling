@@ -60,7 +60,7 @@ sub cleanup {
       $text =~ s/\Q$am_marker\E/AM_MARKER/g;
       $text =~ s/^From [0-9a-f]{40} Mon Sep 17 00:00:00 2001/From COMMIT_SHA Mon Sep 17 00:00:00 2001/gm;
       $text =~ s/^Date: (?:Sun|Mon|Tue|Wed|Thu|Fri|Sat), \d+ (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d+ \d+:\d+:\d+ [-+]\d+/Date: COMMIT_DATE/gm;
-      $text =~ s/\n--=\n2\.\d+\.\d+\n/\n--=\nGIT_VERSION\n/;
+      $text =~ s/\n--=\n2\.\d+\.\d+(?: \(.*?\)|)\n/\n--=\nGIT_VERSION\n/;
     }
     if ($text =~ m{create mode 100644 .github/actions/spelling/expect/([0-9a-f]{3})([0-9a-f]{37})\.txt}) {
       my ($sha_prefix, $sha_suffix) = ($1, $2);
