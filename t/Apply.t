@@ -206,7 +206,7 @@ unless (defined $GH_TOKEN) {
 # 1. parse for artifact id
 # 2. repository renamed (need to store updated repository id)
 # 3. artifacts paginated
-while ($state < 4) {
+while ($state < 4 && $retries <= 3) {
   `curl -s -H "Authorization: token $GH_TOKEN" '$api_url' -o '$expired_artifacts' -D '$expired_artifacts_log'`;
   if (-s $expired_artifacts) {
     $expired_artifact = `grep -q '"artifacts":' '$expired_artifacts' && jq -r '$jq_expression' '$expired_artifacts' 2> '$jq_expired_artifacts_log' || touch '$jq_expired_artifacts_log'`;
@@ -239,10 +239,10 @@ while ($state < 4) {
           last;
         }
       }
-      if (m{^HTTP/2 403}) {
-        $http_state=403;
+      if (m{^HTTP/2 (40[13])}) {
+        $http_state=$1;
         ++$retries;
-        last if $retries == 3;
+        last if $retries > 3;
       } elsif ($http_state == 403 && m/^x-ratelimit-remaining: 0/) {
         my $sleep_delay=10+(rand(10) | 0);
         print STDERR "Hit rate limit. Sleeping $sleep_delay seconds\n";
