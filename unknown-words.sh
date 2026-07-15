@@ -14,6 +14,14 @@ has_command() {
   command -v "$1" >/dev/null 2>/dev/null
 }
 
+maybe_append_to_stderr() {
+  if [ "$1" = /dev/stderr ]; then
+    cat >&2
+  else
+    cat >> "$1"
+  fi
+}
+
 basic_setup() {
   if [ -z "$GITHUB_ENV" ]; then
     export GITHUB_EVENT_PATH=$(mktemp)
@@ -42,7 +50,7 @@ basic_setup() {
 }
 
 workflow_skipped() {
-  echo "# ⏭️ Workflow skipped$N$@" >> "$GITHUB_STEP_SUMMARY"
+  echo "# ⏭️ Workflow skipped$N$@" | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
   exit 0
 }
 
@@ -198,7 +206,7 @@ dispatcher() {
                     echo 'Unfortunately, check-spelling could not identify the workflow file to ensure the presence of this event handler.'
                     echo 'If you cannot find a corresponding job run for a pull_request or pull_request_target,'
                     echo 'then you should fix the workflow to include one of these events.'
-                  ) >> "$GITHUB_STEP_SUMMARY"
+                  ) | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
                 fi
                 echo "::notice title=Workflow skipped::See ${b}check-spelling${b} ${b}$pull_request_event_name${b} $workflow in PR #$open_pr_number. $workflow_run_link $checks_link"
                 if [ -n "$ACT" ]; then
@@ -578,7 +586,7 @@ get_pr_sha_from_url() {
 pr_head_sha_task() {
   pull_request_url="$(get_pull_request_url)"
   if [ -n "$pull_request_url" ]; then
-    echo "PR_HEAD_SHA=$(get_pr_sha_from_url "$pull_request_url")" >> "$GITHUB_ENV"
+    echo "PR_HEAD_SHA=$(get_pr_sha_from_url "$pull_request_url")" | maybe_append_to_stderr "$GITHUB_ENV"
   fi
   quit
 }
@@ -728,9 +736,7 @@ react_comment_and_die() {
   echo "::error ::$message"
   react "$trigger_comment_url" "$react" > /dev/null
   report="@check-spelling-bot: ${react_prefix}$message${N}See [log]($(get_action_log)) for details."
-  if [ -n "$GITHUB_STEP_SUMMARY" ]; then
-    echo "$report" >> "$GITHUB_STEP_SUMMARY"
-  fi
+  echo "$report" | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
   if [ -n "$COMMENTS_URL" ] && [ -z "${COMMENTS_URL##*:*}" ]; then
     PAYLOAD="$(mktemp_json)"
     wrap_in_json 'body' "$report" > "$PAYLOAD"
@@ -889,7 +895,7 @@ show_github_actions_push_disclaimer() {
 
   <!--$n$report_header$n-->
   To trigger another validation round and hopefully a ✅, please add a blank line, e.g. to [$expect_file]($GITHUB_SERVER_URL/$repository_edit_branch/$expect_file?pr=$pr_path_escaped) and commit the change."
-  echo "$OUTPUT" | tee -a "$GITHUB_STEP_SUMMARY" > "$BODY"
+  echo "$OUTPUT" | tee "$BODY" | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
   body_to_payload
   COMMENTS_URL="$(jq -r '.issue.comments_url' "$GITHUB_EVENT_PATH")"
   response="$(mktemp)"
@@ -1170,7 +1176,7 @@ handle_comment() {
   if git remote get-url origin | grep -q ^https://; then
     show_github_actions_push_disclaimer
   else
-    echo "## ✅ check-spelling changes applied" >> "$GITHUB_STEP_SUMMARY"
+    echo "## ✅ check-spelling changes applied" | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
   fi
   echo "
   ### Metadata updates
@@ -1178,7 +1184,7 @@ handle_comment() {
   $B
   $(git diff HEAD~..HEAD --stat=2000)
   $B
-  " | strip_lead >> "$GITHUB_STEP_SUMMARY"
+  " | strip_lead | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
   echo "# end"
   quit 0
 }
@@ -2858,8 +2864,8 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
   if to_boolean "$INPUT_USE_SARIF"; then
     SARIF_FILE="$(mktemp).sarif.json"
     UPLOAD_SARIF_LIMITED=$(mktemp)
-    echo UPLOAD_SARIF="$SARIF_FILE" >> "$GITHUB_ENV"
-    echo UPLOAD_SARIF_LIMITED="$UPLOAD_SARIF_LIMITED" >> "$GITHUB_ENV"
+    echo UPLOAD_SARIF="$SARIF_FILE" | maybe_append_to_stderr "$GITHUB_ENV"
+    echo UPLOAD_SARIF_LIMITED="$UPLOAD_SARIF_LIMITED" | maybe_append_to_stderr "$GITHUB_ENV"
     warning_output="$warning_output" "$generate_sarif" > "$SARIF_FILE" || (
       echo "::error title=Sarif generation failed::Please file a bug (sarif-generation-failed)"
       cp "$spellchecker/sarif.json" "$SARIF_FILE"
@@ -3481,7 +3487,7 @@ flush_step_summary_warnings() {
 }
 
 quit() {
-  flush_step_summary_warnings >> "$GITHUB_STEP_SUMMARY"
+  flush_step_summary_warnings | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
   echo "::remove-matcher owner=check-spelling::"
   echo "::remove-matcher owner=check-spelling-https::"
   status="$1"
@@ -3497,7 +3503,7 @@ quit() {
   echo "result_code=$status" >> "$GITHUB_OUTPUT"
   echo "followup=$followup" >> "$GITHUB_OUTPUT"
   echo "$followup" > "$data_dir/followup"
-  echo "result_code=$status" >> "$GITHUB_ENV"
+  echo "result_code=$status" | maybe_append_to_stderr "$GITHUB_ENV"
   if [ -e /proc/self/cgroup ]; then
     echo "docker_container=$(perl -ne 'next unless m{:/docker/(.*)}; print $1;last' /proc/self/cgroup)" >> "$GITHUB_OUTPUT"
   fi
@@ -3853,7 +3859,7 @@ post_summary() {
     fi
     end_group
   fi
-  cat "$step_summary_draft" >> "$GITHUB_STEP_SUMMARY"
+  cat "$step_summary_draft" | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
 }
 
 get_comment_url() {
