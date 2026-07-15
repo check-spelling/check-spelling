@@ -3245,7 +3245,7 @@ spelling_body() {
 
       " | strip_leading 6)"
   fi
-  if [ -s "$should_exclude_file" ]; then
+  if ! to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES" ] && [ -s "$should_exclude_file" ]; then
     calculate_exclude_patterns
     set_output_variable skipped_files "$should_exclude_file"
     if ! grep -qE '\w' "$should_exclude_patterns"; then
