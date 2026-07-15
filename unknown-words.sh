@@ -116,7 +116,7 @@ dispatcher() {
       exit 1
       ;;
     push)
-      if to_boolean "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"; then
+      if [ -n "$GITHUB_REPOSITORY" ] && to_boolean "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"; then
         if ! echo "$GITHUB_REPOSITORY" | grep -q '^..*/..*$'; then
         (
           echo '$GITHUB_REPOSITORY '"($GITHUB_REPOSITORY) does not appear to be an OWNER/REPOSITORY"
