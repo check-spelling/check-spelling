@@ -49,6 +49,7 @@ sub clean_files {
   if ($type =~ /^(?:line_forbidden|patterns|excludes|only|reject)$/) {
     $check_line = \&CheckSpelling::CheckPattern::process_line;
   } elsif ($type =~ /^(?:dictionary|expect|allow)$/) {
+    CheckSpelling::CheckDictionary::init();
     $check_line = \&CheckSpelling::CheckDictionary::process_line;
   } else {
     $check_line = \&identity;

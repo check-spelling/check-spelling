@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 use utf8;
+use feature 'unicode_strings';
+use Encode qw/decode_utf8 encode_utf8 FB_DEFAULT/;
 
 use Cwd qw/ abs_path realpath /;
 use File::Copy;
@@ -10,7 +12,8 @@ use File::Temp qw/ tempfile tempdir /;
 use File::Basename;
 use Test::More;
 use Capture::Tiny ':all';
-plan tests => 6;
+binmode(STDOUT, ':utf8');
+plan tests => 7;
 use_ok('CheckSpelling::CheckDictionary');
 
 $ENV{comment_char} = '#';
@@ -19,20 +22,33 @@ delete $ENV{INPUT_IGNORE_PATTERN};
 my ($line, $warning);
 $. = 10;
 
+CheckSpelling::CheckDictionary::init();
 ($line, $warning) = CheckSpelling::CheckDictionary::process_line('hello?#123');
 is($line, 'hello?', 'valid entry (result)');
 
 my $hello = "hello#123";
 $ENV{INPUT_IGNORE_PATTERN} = "[^A-Za-z']";
+
+CheckSpelling::CheckDictionary::init();
 ($line, $warning) = CheckSpelling::CheckDictionary::process_line($hello);
 is($warning, '', 'valid entry (warning)');
 is($line, 'hello', 'valid entry (result)');
 
 $ENV{comment_char} = '$';
+
+CheckSpelling::CheckDictionary::init();
 ($line, $warning) = CheckSpelling::CheckDictionary::process_line($hello);
 is($warning, "6 ... 10, Warning - Ignoring entry because it contains non-alpha characters - `#123` (non-alpha-in-dictionary)
 ", 'invalid entry (warning)');
 is($line, '', 'invalid entry (result)');
+
+$ENV{INPUT_IGNORE_PATTERN} = encode_utf8("è");
+CheckSpelling::CheckDictionary::init();
+
+$hello .= "\N{LATIN SMALL LETTER E WITH GRAVE}";
+($line, $warning) = CheckSpelling::CheckDictionary::process_line($hello);
+is(($warning), "10 ... 11, Warning - Ignoring entry because it contains non-alpha characters - `è` (non-alpha-in-dictionary)
+", 'invalid entry (warning)');
 
 my $temp_dir = tempdir();
 my ($fh, $filepath) = tempfile();
