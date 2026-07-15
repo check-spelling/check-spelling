@@ -2519,7 +2519,7 @@ get_before() {
       BEFORE="$GITHUB_BASE_REF"
     elif [ -n "$AFTER" ] && [ -n "$GITHUB_REF_NAME" ]; then
       BEFORE="$(git reflog --no-abbrev --decorate|grep -v "$AFTER" |grep "$GITHUB_REF_NAME" | head -1 | perl -pe 's/\s.*//')"
-    else
+    elif [ -n "$AFTER" ]; then
       BEFORE="$(git rev-parse "$AFTER"~)"
     fi
     if [ -n "$BEFORE" ]; then
