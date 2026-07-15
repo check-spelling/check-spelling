@@ -2898,6 +2898,10 @@ to_retrieve_expect() {
   esac
 }
 
+report_error_excludes_generation_failed() {
+  echo "::error title=Excludes generation failed::Please file a bug (excludes-generation-failed)" >&2
+}
+
 calculate_exclude_patterns() {
   to_boolean "$INPUT_ONLY_CHECK_CHANGED_FILES" ] || \
   [ -s "$should_exclude_patterns" ] || \
@@ -2915,7 +2919,7 @@ calculate_exclude_patterns() {
   should_exclude_patterns="$should_exclude_patterns" \
   current_exclude_patterns="$excludes" \
     "$suggest_excludes" ||
-    echo "::error title=Excludes generation failed::Please file a bug (excludes-generation-failed)" >&2
+    report_error_excludes_generation_failed
 }
 
 remove_items() {
@@ -3239,7 +3243,7 @@ spelling_body() {
     calculate_exclude_patterns
     set_output_variable skipped_files "$should_exclude_file"
     if ! grep -qE '\w' "$should_exclude_patterns"; then
-      echo '::error title=Excludes generation failed::Please file a bug (excludes-generation-failed)' >&2
+      report_error_excludes_generation_failed
     else
       set_output_variable should_exclude_patterns "$should_exclude_patterns"
       exclude_files_text="update file exclusions"
