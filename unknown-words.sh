@@ -386,7 +386,7 @@ load_env() {
      [ ! -L "$private_workflow_path" ]; then
      cp "$private_workflow_path" "$retrieved_default_workflow_file"
   fi
-  action_yml="$spellchecker/action.yml" "$spellchecker/wrappers/load-env" > "$input_variables"
+  action_yml="$spellchecker/action.yml" workflow_yml="$private_workflow_path" "$spellchecker/wrappers/load-env" > "$input_variables"
   . "$input_variables"
 }
 

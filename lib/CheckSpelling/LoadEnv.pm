@@ -19,13 +19,24 @@ sub print_var_val {
     print qq<export INPUT_$var='$val';\n>;
 }
 
+sub unsupported_configuration {
+    my ($message) = @_;
+    my $workflow_yml = $ENV{workflow_yml};
+    if (defined $workflow_yml && $workflow_yml =~ /(.*)/) {
+      $workflow_yml = decode_utf8($1);
+    } else {
+      $workflow_yml = 'workflow-configuration';
+    }
+    print STDERR "$workflow_yml:1:1 ... 1, Notice - $message (unsupported-configuration)\n";
+}
+
 sub expect_array {
     my ($ref, $label) = @_;
     my $ref_kind = ref $ref;
     if ($ref eq '') {
         $ref = [];
     } elsif (ref $ref ne 'ARRAY') {
-        print STDERR "'$label' should be an array (unsupported-configuration)\n";
+        unsupported_configuration "'$label' should be an array";
         $ref = [];
     }
     return $ref;
@@ -37,7 +48,7 @@ sub expect_map {
     if ($ref_kind eq '') {
         $ref = {};
     } elsif ($ref_kind ne 'HASH') {
-        print STDERR "'$label' was '$ref_kind' but should be a map (unsupported-configuration)\n";
+        unsupported_configuration "'$label' was '$ref_kind' but should be a map";
         $ref = {};
     }
     return $ref;
@@ -238,11 +249,11 @@ sub load_untrusted_config {
     for my $key (keys %trust_pr_key_map) {
         if (defined $use_pr_base_key_map{$key}) {
             delete $trust_pr_key_map{$key};
-            print STDERR "'$key' found in both $use_pr_base_keys and $trust_pr_keys of $load_config_from_key (unsupported-configuration)\n";
+            unsupported_configuration "'$key' found in both $use_pr_base_keys and $trust_pr_keys of $load_config_from_key";
         }
         unless (defined $supported_keys{$key}) {
             delete $trust_pr_key_map{$key};
-            print STDERR "'$key' cannot be set in $trust_pr_keys of $load_config_from_key (unsupported-configuration)\n";
+            unsupported_configuration "'$key' cannot be set in $trust_pr_keys of $load_config_from_key";
         }
     }
     return unless %use_pr_base_key_map or %trust_pr_key_map;
