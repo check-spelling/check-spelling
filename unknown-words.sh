@@ -368,9 +368,15 @@ load_env() {
   private_workflow_path=${repository_and_workflow_path_without_ref#*/*/}
   default_branch=$(jq -r '.repository.default_branch // empty' "$GITHUB_EVENT_PATH")
   if [ "$GITHUB_EVENT_NAME" = 'pull_request_target' ]; then
-    if [ -n "$default_branch" ] &&
-      git fetch origin "$GITHUB_WORKFLOW_SHA:refs/private/workflow-ref" --depth 1; then
-      if [ -n "$private_workflow_path" ]; then
+    if [ -n "$default_branch" ]; then
+      get_private_workflow_ref() {
+        if [ "$(git cat-file -t "$GITHUB_WORKFLOW_SHA")" == commit ]; then
+          git update-ref refs/private/workflow-ref "$GITHUB_WORKFLOW_SHA"
+        else
+          git fetch origin "$GITHUB_WORKFLOW_SHA:refs/private/workflow-ref" --depth 1
+        fi
+      }
+      if get_private_workflow_ref && [ -n "$private_workflow_path" ]; then
         git show "refs/private/workflow-ref:$private_workflow_path" > "$retrieved_default_workflow_file" || true
       fi
     fi
