@@ -62,7 +62,7 @@ is(join (',', @{$result[0]}), '1,2', 'expect_array result');
     return CheckSpelling::LoadEnv::expect_array(\'hello', 'world');
 };
 is($stdout, '', 'bad expect_array out');
-is($stderr, q<'world' should be an array (unsupported-configuration)
+is($stderr, q<workflow-configuration:1:1 ... 1, Notice - 'world' should be an array (unsupported-configuration)
 >, 'bad expect_array err');
 is(@{$result[0]}, 0, 'bad expect_array result');
 
@@ -84,7 +84,7 @@ is(join (',', %{$result[0]}), '1,2', 'expect_map result');
     return CheckSpelling::LoadEnv::expect_map(\'hello', 'bad map');
 };
 is($stdout, '', 'bad expect_map out');
-is($stderr, q<'bad map' was 'SCALAR' but should be a map (unsupported-configuration)
+is($stderr, q<workflow-configuration:1:1 ... 1, Notice - 'bad map' was 'SCALAR' but should be a map (unsupported-configuration)
 >, 'bad expect_map err');
 is(%{$result[0]}, 0, 'bad expect_map result');
 
@@ -200,7 +200,7 @@ chdir $sandbox;
     CheckSpelling::LoadEnv::load_untrusted_config($parsed_inputs, 'pull_request_target');
 };
 is($stdout, '', 'load_untrusted_config pull_request_target out');
-is($stderr, q<'untrustworthy' cannot be set in pr-trusted-keys of load-config-from (unsupported-configuration)
+is($stderr, q<workflow-configuration:1:1 ... 1, Notice - 'untrustworthy' cannot be set in pr-trusted-keys of load-config-from (unsupported-configuration)
 ... need to read base file
 ... will read live file (dangerous)
 Ignoring 'base' from attacker config
@@ -225,11 +225,12 @@ is($inputs->{'UNTRUSTWORTHY'}, undef, 'untrusted_config pull_request_target untr
 is($inputs->{'WARNINGS'}, 'otherwise', 'untrusted_config pull_request_target warnings');
 is($inputs->{'FAR'}, undef, 'untrusted_config pull_request_target far');
 
+$ENV{workflow_yml} = '.github/workflows/test.yml';
 ($stdout, $stderr, @result) = capture {
     CheckSpelling::LoadEnv::load_untrusted_config($parsed_inputs, 'pull_request');
 };
 is($stdout, '', 'load_untrusted_config pull_request out');
-is($stderr, q<'untrustworthy' cannot be set in pr-trusted-keys of load-config-from (unsupported-configuration)
+is($stderr, qq<$ENV{workflow_yml}:1:1 ... 1, Notice - 'untrustworthy' cannot be set in pr-trusted-keys of load-config-from (unsupported-configuration)
 ... need to read base file
 ... will read live file
 Ignoring 'base' from local config
