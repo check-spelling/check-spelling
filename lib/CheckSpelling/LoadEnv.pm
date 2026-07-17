@@ -178,6 +178,7 @@ sub parse_action_config {
 
 sub get_supported_key_list {
     my @supported_key_list = qw(
+        check_extra_dictionaries
         check_file_names
         dictionary_source_prefixes
         dictionary_url
