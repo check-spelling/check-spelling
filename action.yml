@@ -357,6 +357,10 @@ inputs:
         ],
         "": []
       }
+  run-id:
+    description: "Run ID with comment artifact"
+    required: false
+    default: "${{ github.run_id }}"
 
 outputs:
   unknown_words:
@@ -550,6 +554,7 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         suffix: ${{ inputs.report_title_suffix }}
+        RUN_ID: "${{ inputs.run-id || github.run_id }}"
       run: |
         : Retrieve comment
         "$spellchecker/gh-run-download.sh"
@@ -558,7 +563,7 @@ runs:
           gh_api_err=$(mktemp)
           canary=$(mktemp)
           (
-            if ! gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=1" > "$gh_api_out" 2> "$gh_api_err"; then
+            if ! gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=1" > "$gh_api_out" 2> "$gh_api_err"; then
               if grep -q 'HTTP 403' "$gh_api_err"; then
                 act-summary
                 if grep -q '#rate-limiting' "$gh_api_out"; then
@@ -580,7 +585,11 @@ runs:
             fi
             if [ -e "$canary" ]; then
               echo '#### Could not find artifact'
-              echo "Artifact retrieval failed, please check the list of [known issues](https://github.com/check-spelling/check-spelling/issues?q=is%3Aissue%20retrieve-comment) and [file an issue](https://github.com/check-spelling/check-spelling/issues/new?title=%60retrieve-comment%60%20scenario&body=Please%20provide%20details+preferably%20including%20a%20link%20to%20a%20workflow%20run,%20the%20configuration%20of%20the%20repository,%20and%20anything%20else%20you%20may%20know%20about%20the%20problem%2e) if you can't find a related issue."
+              if [ "$RUN_ID" != "$GITHUB_RUN_ID" ]; then
+                echo "See [run $RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$RUN_ID) for details."
+              else
+                echo "Artifact retrieval failed, please check the list of [known issues](https://github.com/check-spelling/check-spelling/issues?q=is%3Aissue%20retrieve-comment) and [file an issue](https://github.com/check-spelling/check-spelling/issues/new?title=%60retrieve-comment%60%20scenario&body=Please%20provide%20details+preferably%20including%20a%20link%20to%20a%20workflow%20run,%20the%20configuration%20of%20the%20repository,%20and%20anything%20else%20you%20may%20know%20about%20the%20problem%2e) if you can't find a related issue."
+              fi
             fi
           ) >> "$GITHUB_STEP_SUMMARY"
           echo "no-comment=1" >> "$GITHUB_OUTPUT"
