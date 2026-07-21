@@ -9,7 +9,7 @@ is_number() {
 }
 
 get_comment_artifact_flavor() {
-  keep_headers=1 call_curl "$GITHUB_API_URL/repositories/$GITHUB_REPOSITORY_ID/actions/runs/$GITHUB_RUN_ID/artifacts?name=$1&per_page=1" > "$comment_artifact_json"
+  keep_headers=1 call_curl "$GITHUB_API_URL/repositories/$GITHUB_REPOSITORY_ID/actions/runs/$RUN_ID/artifacts?name=$1&per_page=1" > "$comment_artifact_json"
   total_count=$(jq '.total_count // empty' "$comment_artifact_json")
   if [ -n "$total_count" ] && [ $total_count -gt 1 ]; then
     link=$(get_link last "$response_headers")
