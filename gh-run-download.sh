@@ -61,4 +61,8 @@ get_comment_artifact() {
   fi
 }
 
+if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
+  set -x
+fi
+
 get_comment_artifact
