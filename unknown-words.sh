@@ -1382,6 +1382,7 @@ define_variables() {
   homoglyph_list_path="$data_dir/homoglyph.list"
   file_list="$data_dir/checked_files.lst"
   BODY="$data_dir/comment.md"
+  comments_url_file="$data_dir/comment.url"
   delay_step_summary_warnings="$(mktemp)"
   output_variables="$(mktemp)"
   instructions_preamble="$(mktemp)"
@@ -3641,6 +3642,12 @@ set_comments_url() {
   file="$2"
   sha="$3"
   case "$event" in
+    workflow_run)
+      if [ -s "$comments_url_file" ]; then
+        COMMENTS_URL="$(cat "$comments_url_file")"
+      fi
+      # XXX check that COMMENTS_URL is compatible with github.repository.comments_url or github.repository.issue_comment_url
+      ;;
     issue_comment)
       COMMENTS_URL="$(jq -r '.issue.comments_url // empty' "$file")";;
     pull_request|pull_request_target|pull_request_review_comment)
@@ -3648,6 +3655,9 @@ set_comments_url() {
     push|commit_comment)
       COMMENTS_URL="$(jq -r '.repository.commits_url // empty' "$file" | perl -pe 's#\{/sha}#/'"$sha"'/comments#')";;
   esac
+  if [ -n "$COMMENTS_URL" ] && [ ! -s "$comments_url_file" ]; then
+    echo "$COMMENTS_URL" > "$comments_url_file"
+  fi
 }
 
 trim_commit_comment() {
