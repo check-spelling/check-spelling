@@ -73,12 +73,27 @@ report_cached_warning_output() {
 }
 
 dispatcher() {
+  if [ ! -s "$data_dir/workflow_trigger_event" ]; then
+    echo "$GITHUB_EVENT_NAME" > "$data_dir/workflow_trigger_event"
+  fi
   if [ -n "$INPUT_EVENT_ALIASES" ]; then
     GITHUB_EVENT_NAME="$(echo "$INPUT_EVENT_ALIASES" | jq -r ".$GITHUB_EVENT_NAME // $Q$GITHUB_EVENT_NAME$Q")"
   fi
   case "$INPUT_TASK" in
     '')
-      ;;
+    ;;
+    followup)
+      set -x
+      if [ -n "$INPUT_INTERNAL_STATE_DIRECTORY" ] &&
+         [ -s "$INPUT_INTERNAL_STATE_DIRECTORY/followup" ]; then
+        followup="$(cat "$INPUT_INTERNAL_STATE_DIRECTORY/followup")"
+        echo "followup=$followup" >> "$GITHUB_OUTPUT"
+        if [ -s "$data_dir/workflow_trigger_event" ]; then
+          echo "event=$(cat "$data_dir/workflow_trigger_event")" >> "$GITHUB_OUTPUT"
+        fi
+      fi
+      exit 0
+    ;;
     comment|collapse_previous_comment)
       if ! to_boolean "$INPUT_POST_COMMENT"; then
         INPUT_POST_COMMENT=1

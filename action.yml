@@ -387,6 +387,9 @@ outputs:
   followup:
     description: "Next task"
     value: ${{ steps.spelling.outputs.followup }}
+  trigger-event:
+    description: "Original event that triggered workflow"
+    value: ${{ steps.spelling.outputs.event }}
   docker_container:
     description: "Hack for nektos/act - pass to inputs.caller_container to give check-spelling a way to retrieve data it needs to report a comment"
     value: ${{ steps.spelling.outputs.docker_container }}
