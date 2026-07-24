@@ -3093,18 +3093,21 @@ spelling_body() {
   extra="$2"
   err="$3"
   action_log_url="$(get_action_log)"
+  pr_number=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
   if [ -n "$action_log_url" ]; then
     action_log_markdown="the [📜action log]($action_log_url)"
   else
     action_log_markdown=""
   fi
   if [ -e "$job_id_ref" ]; then
-    memo="[📝 job summary]($jobs_summary_link#summary-$(cat "$job_id_ref" 2>/dev/null))"
+    if [ -n "$pr_number" ]; then
+      jobs_summary_pr_link="?pr=$pr_number"
+    fi
+    memo="[📝 job summary]($jobs_summary_link$jobs_summary_pr_link#summary-$(cat "$job_id_ref" 2>/dev/null))"
   else
     memo='📝 job summary'
   fi
   if to_boolean "$INPUT_USE_SARIF"; then
-    pr_number=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
     if [ -n "$pr_number" ]; then
       sarif_report_query="pr:$pr_number"
     else
