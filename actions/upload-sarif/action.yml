@@ -184,7 +184,7 @@ runs:
         cat "$sarif_payload"
         echo
         echo "Partial response headers:"
-        grep -E -i 'x-github-request-id|x-rate-limit-|retry-after|server' "$response_headers"
+        grep -E -i 'x-github-request-id|x-rate-limit-|retry-after|server' "$headers_file"
         echo
         echo "Response:"
         cat "$result"
