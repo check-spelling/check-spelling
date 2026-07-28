@@ -338,8 +338,10 @@ dispatcher() {
 
           If you think it can, consider using:
 
+          ${B}yml
             with:
               event_aliases: '{$Q$GITHUB_EVENT_NAME$Q:${Q}supported_event_name${Q}}'
+          ${B}
 
           Future versions may support this feature." \
         | strip_leading 10
