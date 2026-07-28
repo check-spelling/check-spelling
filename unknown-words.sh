@@ -136,7 +136,7 @@ dispatcher() {
         'GITHUB_EVENT_NAME is empty' \
         'Please see the log for more information.' \
         'Is `event_aliases` misconfigured? Are you using `act` or a similar shim?'
-      exit 1
+      quit 4
       ;;
     push)
       if [ -n "$GITHUB_REPOSITORY" ] && to_boolean "$INPUT_SUPPRESS_PUSH_FOR_OPEN_PULL_REQUEST"; then
@@ -346,7 +346,7 @@ dispatcher() {
       )"
       echo "$body" >&2
       github_step_summary_likely_fatal_event 'Unsupported event name' "$body" 'unsupported-configuration-event'
-      exit 1
+      quit 4
       ;;
   esac
 }
@@ -3524,6 +3524,7 @@ quit() {
     1) followup='comment';;
     2) followup='debug';;
     3) followup='collapse_previous_comment';;
+    4) followup='error';;
   esac
   echo "result_code=$status" >> "$GITHUB_OUTPUT"
   echo "followup=$followup" >> "$GITHUB_OUTPUT"
