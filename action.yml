@@ -656,12 +656,12 @@ runs:
         analysis-key: ${{ steps.spelling.outputs.workflow-path }}:check-spelling
       env:
         trace: ${{ case((inputs.debug || github.run_attempt > 1) && true, '1', '') }}
-    - name: Report SARIF information in Github Step Summary
+    - name: Report SARIF information in GitHub Step Summary
       continue-on-error: true
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && (github.run_attempt > 1 || env.ACT || steps.upload-sarif.outcome == 'failure') && env.UPLOAD_SARIF_LIMITED != ''
       shell: bash
       run: |
-        : Report SARIF information in Github Step Summary
+        : Report SARIF information in GitHub Step Summary
         (
           echo
           echo '---'
