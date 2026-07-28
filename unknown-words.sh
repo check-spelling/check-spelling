@@ -3165,7 +3165,7 @@ spelling_body() {
       ;;
     *)
       details_note=$(echo "<!-- If you can see this, please [file a bug](https://github.com/$GH_ACTION_REPOSITORY/issues/new)
-        referencing this comment url, as the code does not expect this to happen. -->" | strip_lead);;
+        referencing this summary/comment url, as the code does not expect this to happen. -->" | strip_lead);;
   esac
   if [ -z "$err" ] && [ -e "$fewer_misspellings_canary" ]; then
     output_remove_items="$N$(remove_items)$n"
