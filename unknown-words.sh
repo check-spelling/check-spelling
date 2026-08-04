@@ -3656,7 +3656,12 @@ comment() {
 
 track_comment() {
   HTML_COMMENT_URL="$(jq -r '.html_url // empty' "$response")"
-  echo "Comment posted to ${HTML_COMMENT_URL:-"$COMMENT_URL"}"
+  maybe_html_comment_url="${HTML_COMMENT_URL:-"$COMMENT_URL"}"
+  echo "Comment posted to $maybe_html_comment_url"
+  (
+    echo "## Comment posted"
+    echo "$maybe_html_comment_url"
+  ) | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
   comment_author_id="$(jq -r '.user.id // empty' "$response")"
   posted_comment_node_id="$(jq -r '.node_id // empty' "$response")"
 }
