@@ -1715,6 +1715,10 @@ limit_apt_repositories() {
       s%\bmain restricted\b%main # restricted%;
     ' /etc/apt/sources.list
   fi
+  if [ -z "$NO_APT_TIMEOUT" ]; then
+    APT_GET_INSTALL_TIMEOUT=${APT_GET_INSTALL_TIMEOUT:-240}
+    APT_GET_UPDATE_TIMEOUT=${APT_GET_UPDATE_TIMEOUT:-180}
+  fi
   limit_apt_repositories() {
     :
   }
@@ -1723,11 +1727,15 @@ limit_apt_repositories() {
 apt_install() {
   apt_out=$(mktemp)
   apt_err=$(mktemp)
-  ${SUDO:+"$SUDO"} apt-get -qq -y --no-install-recommends satisfy "$1" > $apt_out 2> $apt_err
+  ${SUDO:+"$SUDO"} \
+  ${APT_GET_INSTALL_TIMEOUT:+timeout $APT_GET_INSTALL_TIMEOUT} \
+  apt-get -qq -y --no-install-recommends satisfy "$1" > $apt_out 2> $apt_err
 }
 
 apt_get_update_once() {
-  ${SUDO:+"$SUDO"} apt-get -qq update
+  ${SUDO:+"$SUDO"} \
+  ${APT_GET_UPDATE_TIMEOUT:+timeout $APT_GET_UPDATE_TIMEOUT} \
+  apt-get -qq update
   apt_get_update_once() {
     :
   }
