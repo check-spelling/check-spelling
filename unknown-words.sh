@@ -3145,7 +3145,7 @@ spelling_body() {
     else
       sarif_report_query="branch:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
     fi
-    sarif_report="[👼 SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+tool:check-spelling+$sarif_report_query),"
+    sarif_report="[👼 SARIF report]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is:open+tool:check-spelling${INPUT_REPORT_TITLE_SUFFIX:+-$INPUT_REPORT_TITLE_SUFFIX}+$sarif_report_query),"
     # check-spelling here corresponds to the uses github/codeql-action/upload-sarif / with / category
     code_scanning_results_run=$(
       github_codeql_app_id=57789
