@@ -2182,6 +2182,10 @@ set_up_files() {
     env -i \
     SHELL="$SHELL" \
     PERL5OPT="$PERL5OPT" \
+    PERL5LIB="$PERL5LIB" \
+    PERL_LOCAL_LIB_ROOT="$PERL_LOCAL_LIB_ROOT" \
+    PERL_MB_OPT="$PERL_MB_OPT" \
+    PERL_MM_OPT="$PERL_MM_OPT" \
     PATH="$PATH" \
     LC_ALL="C" \
     HOME="$HOME" \
@@ -2217,6 +2221,10 @@ set_up_files() {
     env -i \
     SHELL="$SHELL" \
     PERL5OPT="$PERL5OPT" \
+    PERL5LIB="$PERL5LIB" \
+    PERL_LOCAL_LIB_ROOT="$PERL_LOCAL_LIB_ROOT" \
+    PERL_MB_OPT="$PERL_MB_OPT" \
+    PERL_MM_OPT="$PERL_MM_OPT" \
     PATH="$PATH" \
     LC_ALL="C" \
     HOME="$HOME" \
@@ -2825,6 +2833,10 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
   env -i \
     SHELL="$SHELL" \
     PERL5OPT="$PERL5OPT" \
+    PERL5LIB="$PERL5LIB" \
+    PERL_LOCAL_LIB_ROOT="$PERL_LOCAL_LIB_ROOT" \
+    PERL_MB_OPT="$PERL_MB_OPT" \
+    PERL_MM_OPT="$PERL_MM_OPT" \
     PATH="$PATH" \
     LC_ALL="C" \
     HOME="$HOME" \
