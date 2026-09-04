@@ -4,6 +4,8 @@ package CheckSpelling::LoadEnv;
 
 use feature 'unicode_strings';
 use Encode qw/decode_utf8 encode_utf8 FB_DEFAULT/;
+use File::Basename;
+use Cwd qw( abs_path );
 use YAML::PP;
 use JSON::PP;
 
@@ -104,10 +106,28 @@ sub parse_config_file {
     return $parsed_config;
 }
 
+$ENV{broken} = '{"broken":1}';
+sub read_file_from_sha {
+    my ($file, $sha) = @_;
+    open (my $data, '-|:raw', qq!git show '$sha':'$file' 2> /dev/null || echo "\$broken"!);
+    return $data;
+}
+
 sub read_config_from_sha {
     my ($github_head_sha, $parsed_inputs) = @_;
     my $file = get_json_config_path($parsed_inputs);
-    open (my $config_data, '-|:raw', qq!git show '$github_head_sha':'$file' 2> /dev/null || echo '{"broken":1}'!);
+    my $config_data = read_file_from_sha($file, $github_head_sha);
+    open (my $config_data_type, '-|:raw', qq!git ls-files '$github_head_sha' --stage -- '$file' 2> /dev/null || echo '120000 $github_head_sha 0\t$file'!);
+    $config_data_type = <$config_data_type>;
+    if ($config_data_type =~ /^120000\b/) {
+        $config_data = <$config_data>;
+        $file = File::Spec->abs2rel(abs_path(File::Spec->rel2abs($config_data, abs_path(dirname($file)))), '.');
+        if ($file =~ m{^/|^\.\./}) {
+            open $config_data, '<', \$ENV{broken};
+        } else {
+            $config_data = read_file_from_sha($file, $github_head_sha);
+        }
+    }
     return parse_config_file($config_data, "$file\@$github_head_sha");
 }
 
