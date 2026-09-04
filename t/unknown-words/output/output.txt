@@ -1,13 +1,13 @@
 ::add-matcher::WORKSPACE/reporter.json
-Retrieving expect from:
-WORKSPACE/t/unknown-words/config/expect/expect.txt
-WORKSPACE/t/unknown-words/config/expect/other.txt
-Retrieving excludes from WORKSPACE/t/unknown-words/config/excludes.txt
 ::group::Retrieving check extra dictionaries
 ::endgroup::
 Retrieving only from WORKSPACE/t/unknown-words/config/only.txt
 Retrieving line_forbidden from WORKSPACE/t/unknown-words/config/line_forbidden.patterns
 Retrieving candidate from WORKSPACE/t/unknown-words/config/candidate.patterns
+Retrieving expect from:
+WORKSPACE/t/unknown-words/config/expect/expect.txt
+WORKSPACE/t/unknown-words/config/expect/other.txt
+Retrieving excludes from WORKSPACE/t/unknown-words/config/excludes.txt
 Retrieving homoglyph from WORKSPACE/t/unknown-words/config/homoglyph.list
 Checking spelling...
 ::group::Spell checking (2) files

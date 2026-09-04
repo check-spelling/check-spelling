@@ -2142,6 +2142,7 @@ set_up_files() {
       fi
     fi
   fi
+  delay_get_expect() {
   get_project_files word_expectations.words "$expect_path"
   get_project_files expect.txt "$expect_path"
   expect_files="$from_expanded_file"
@@ -2261,6 +2262,7 @@ set_up_files() {
   excludes_file="$excludes_file" \
   spelling_config="${spelling_config:-"$bucket/$project/"}" \
   "$spellchecker/generate-apply.pl" > "$data_dir/apply.json"
+  }
   should_exclude_file=$data_dir/should_exclude.txt
   should_exclude_patterns=$data_dir/should_exclude.patterns
   remove_exclude_patterns=$data_dir/remove_exclude.patterns
@@ -2449,6 +2451,7 @@ set_up_files() {
       export INPUT_EXTRA_DICTIONARIES=$(cat "$extra_dictionaries_list")
     fi
   fi
+  delay_get_expect
   extra_dictionaries_cover_entries="$(mktemp)"
   get_project_files line_masks.patterns "$patterns_path"
   get_project_files patterns.txt "$patterns_path"
