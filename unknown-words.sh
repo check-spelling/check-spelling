@@ -2200,6 +2200,7 @@ set_up_files() {
     INPUT_DISABLE_CHECKS="single-line-file" \
     sandbox="$splitter_sandbox" \
     dict="$dict" \
+    hunspell_dictionary_path="$hunspell_dictionary_path" \
     spellchecker="$spellchecker" \
     "$word_splitter" \
     "$expect_path" 2> /dev/null |
