@@ -310,6 +310,32 @@
               }
             },
             {
+              "id": "file-not-available",
+              "name": "FileNotAvailable",
+              "helpUri": "https://docs.check-spelling.dev/Event-descriptions#file-not-available",
+              "shortDescription": {
+                "text": "File Not Available"
+              },
+              "fullDescription": {
+                "text": "Configuration file was found but not available."
+              },
+              "help": {
+                "text": "?",
+                "markdown": "**Remediation (click \"Show more\" below)**:\n\n- Perhaps this is a dangling symlink... If so, fix the symlink or create the file.\n\n"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "tags": [
+                  "source-code",
+                  "code-reviews"
+                ]
+              }
+            },
+            {
               "id": "limited-references",
               "name": "LimitedReferences",
               "helpUri": "https://docs.check-spelling.dev/Event-descriptions#limited-references",

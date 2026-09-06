@@ -53,9 +53,26 @@ $result = $results[0];
 is($result, 4, 'cleanup-files (exit code)');
 
 $ENV{GITHUB_WORKSPACE} = $tests;
+my @files_to_clean = (
+  "$tests/empty.txt",
+  "$tests/missing-eol-at-eof.txt",
+);
+my @expected_errors = (
+  "$tests/empty.txt:1:1 ... 1, Notice - File is empty (empty-file)",
+  "$tests/missing-eol-at-eof.txt:4:1 ... 32, Warning - Missing newline at end of file (no-newline-at-eof)",
+);
+my $symlink_path = "$tests/no-such-file.txt";
+my $symlink_exists = eval { symlink("imaginary-file", $symlink_path); 1 };
+if ($symlink_exists) {
+  unshift @files_to_clean, $symlink_path;
+  push @expected_errors, "$tests/no-such-file.txt:1:1 ... 1, Error - No such file or directory (file-not-available)";
+}
 ($stdout, $stderr, @results) = capture {
-  return CheckSpelling::CleanupFiles::clean_files("$tests/no-such-file.txt", "$tests/empty.txt", "$tests/missing-eol-at-eof.txt");
+  return CheckSpelling::CleanupFiles::clean_files(@files_to_clean);
 };
+if ($symlink_exists) {
+  unlink($symlink_path);
+}
 $result = $results[0];
 is($stdout, 'this
 file
@@ -64,9 +81,7 @@ is
 eol at eof
 
 ', 'cleanup-files (stdout)');
-is($stderr, "$tests/empty.txt:1:1 ... 1, Notice - File is empty (empty-file)
-$tests/missing-eol-at-eof.txt:4:1 ... 32, Warning - Missing newline at end of file (no-newline-at-eof)
-", 'cleanup-files (stderr)');
+is($stderr, (join '', map { "$_\n" } @expected_errors), 'cleanup-files (stderr)');
 is($result, 0, 'cleanup-files (exit code)');
 
 ($stdout, $stderr, @results) = capture {
@@ -98,9 +113,9 @@ world
 what
 ever
 ', 'cleanup-files (stdout)');
-is($stderr, "$tests/mixed-dos-mac.txt:4:1 ... 24, Warning - Mixed DOS [2] and Mac classic [2] line endings (mixed-line-endings)
-$tests/mixed-dos-mac.txt:3:0 ... 5, Warning - Entry has inconsistent line endings (unexpected-line-ending)
+is($stderr, "$tests/mixed-dos-mac.txt:3:0 ... 5, Warning - Entry has inconsistent line endings (unexpected-line-ending)
 $tests/mixed-dos-mac.txt:4:0 ... 5, Warning - Entry has inconsistent line endings (unexpected-line-ending)
+$tests/mixed-dos-mac.txt:4:1 ... 24, Warning - Mixed DOS [2] and Mac classic [2] line endings (mixed-line-endings)
 ", 'cleanup-files (stderr)');
 is($result, 0, 'cleanup-files (exit code)');
 
