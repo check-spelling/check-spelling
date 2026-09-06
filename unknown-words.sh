@@ -1564,6 +1564,10 @@ get_project_files() {
     echo "Retrieving $file from $from"
     printf "$from\0" > "$from_expanded_file"
     cleanup_files "$type" "$dest" "$from_expanded_file"
+  elif readlink "$from" > /dev/null; then
+    echo "Could not retrieve $file from $from"
+    printf "$from\0" > "$from_expanded_file"
+    cleanup_files "$type" "$(mktemp)" "$from_expanded_file"
   else
     if [ ! -e "$from" ]; then
       from="${from%.$ext}"

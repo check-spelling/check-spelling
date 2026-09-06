@@ -68,9 +68,9 @@ sub clean_files {
       return 4;
     }
     my $fh;
+    print $used_config_files_fh "$file\0";
     if (open($fh, '<:encoding(UTF-8)', $file)) {
       $ARGV = $file;
-      print $used_config_files_fh "$file\0";
       seek($fh, -1, 2);
       read($fh, $buffer, 1);
       my $length = tell($fh);
@@ -120,10 +120,12 @@ sub clean_files {
         if (scalar @line_endings > 1) {
           my $line_length = length $_;
           my $mixed_endings = CheckSpelling::EnglishList::build(@line_endings);
-          maybe_log_event(STDERR, "$file:$.:1 ... $length, Warning - Mixed $mixed_endings line endings", 'mixed-line-endings');
+          maybe_log_event($warnings_fh, "$file:$.:1 ... $length, Warning - Mixed $mixed_endings line endings", 'mixed-line-endings');
         }
       }
       close($fh);
+    } else {
+      maybe_log_event($warnings_fh, "$file:1:1 ... 1, Error - $!", 'file-not-available');
     }
   }
   close $used_config_files_fh;

@@ -32,7 +32,7 @@ my $github_sha = $ENV{GITHUB_SHA} || `git rev-parse HEAD`;
 chomp $github_sha;
 
 my @environment_variables_to_drop = split /\n/, `git ls-files -z |
-  xargs -0 grep GITHUB_ |
+  xargs -0 grep GITHUB_ 2> /dev/null |
   perl -pe 's/[^_A-Z]+/\n/g' |
   grep ^GITHUB_ |
   sort -u`;
