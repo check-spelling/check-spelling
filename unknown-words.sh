@@ -2675,7 +2675,11 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
 ')" >> "$GITHUB_OUTPUT"
   set_output_variable internal_state_directory "$data_dir"
 
-  synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
+  if [ -n "$GITHUB_REPOSITORY" ]; then
+    synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
+  else
+    synthetic_base=$(mktemp -d)
+  fi
   ocr_directory="$synthetic_base/ocr"
   echo "^\Q$synthetic_base/\E" >> "$patterns"
   mkdir -p "$synthetic_base"
