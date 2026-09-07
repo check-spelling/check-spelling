@@ -2156,25 +2156,64 @@ set_up_files() {
       shortest_word="${INPUT_SHORTEST_WORD:-3}"
       shortest_word_minus_one=$(( $shortest_word - 1 ))
       longest_word="$INPUT_LONGEST_WORD"
+      # Some people write `GC'ed`
       allow_ed_suffix=$(
         if apostrophe="'" perl -e '
           my $a = $ENV{apostrophe};
-          exit 0 if $a =~ /$ENV{INPUT_PUNCTUATION_PATTERN}/;
+          my $pattern = $ENV{INPUT_PUNCTUATION_PATTERN};
+          exit 0 if defined $pattern && $a =~ /$pattern/;
           exit 1;
         '; then
-          echo "(?!'ed$)"
+          echo "(?$bang'ed$)"
         fi
       )
-      echo '# Expect entries should be one entry per line'
-      echo '# Please do not mix a capitalized word with an initially capitalized word'
-      echo "$INPUT_UPPER_PATTERN(?:$INPUT_UPPER_PATTERN|$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN)*?$INPUT_LOWER_PATTERN(?:$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN)*$INPUT_UPPER_PATTERN"
-      echo
-      echo '# Expect entries should be one entry per line'
-      echo '# Please do not merge an uppercase / capitalized word after a lowercase word'
-      echo "(?:$INPUT_LOWER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}(?:(?:$INPUT_UPPER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word,$longest_word}|$INPUT_UPPER_PATTERN(?:$INPUT_LOWER_PATTERN|$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN){$shortest_word_minus_one,$longest_word})"
+      maybe_use_or() {
+        if [ -n "$1" ] && [ -n "$2" ]; then
+          echo "$1|$2"
+        else
+          echo "$1$2"
+        fi
+      }
+      maybe_range() {
+        if [ -n "$1" ]; then
+          echo "(?:$1){$2,$3}"
+        fi
+      }
+      if [ -n "$INPUT_UPPER_PATTERN" ] && [ -n "$INPUT_LOWER_PATTERN" ]; then
+        echo '# Expect entries should be one entry per line'
+        echo '# Please do not mix a capitalized word with an initially capitalized word'
+        echo "$INPUT_UPPER_PATTERN(?:$INPUT_UPPER_PATTERN|$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN)*?$INPUT_LOWER_PATTERN(?:$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN)*$INPUT_UPPER_PATTERN"
+        echo
+        echo '# Expect entries should be one entry per line'
+        echo '# Please do not merge an uppercase / capitalized word after a lowercase word'
+        # last condition involving INPUT_UPPER_PATTERN or allow_ed_suffix or or_capitalized_word_pattern
+        # needs to be able to handle only INPUT_UPPER_PATTERN or only allow_ed_suffix or only or_capitalized_word_pattern
+        # or any combination of those three while still properly inserting `|`s as relevant.
+        echo "$(
+          maybe_range "$(
+            maybe_use_or "$INPUT_LOWER_PATTERN" "$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN"
+          )" "$shortest_word" "$longest_word"
+        )(?:$(
+          maybe_use_or "$(
+            maybe_range "$(
+              maybe_use_or "$INPUT_UPPER_PATTERN" "$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN"
+            )" "$shortest_word" "$longest_word"
+          )" "$INPUT_UPPER_PATTERN$(
+            maybe_range "$(
+              maybe_use_or "$INPUT_LOWER_PATTERN" "$allow_ed_suffix$INPUT_PUNCTUATION_PATTERN"
+            )" "$shortest_word_minus_one" "$longest_word"
+          )"
+        ))"
+      fi
       echo
       echo '# Expect entries should not include non-word characters'
-      echo "(?$bang$INPUT_UPPER_PATTERN|$INPUT_LOWER_PATTERN|$INPUT_PUNCTUATION_PATTERN|\\s|=)."
+      echo "(?$bang$(
+        maybe_use_or "$(
+          maybe_use_or "$INPUT_UPPER_PATTERN" "$INPUT_LOWER_PATTERN"
+        )" "$(
+          maybe_use_or "$INPUT_PUNCTUATION_PATTERN" '='
+        )"
+      ))."
     ) > "$expect_splitter_configuration/forbidden.txt"
     (
       echo '# Allow commented lines in `expect.txt` files'
