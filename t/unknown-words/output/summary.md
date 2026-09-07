@@ -160,7 +160,7 @@ See [❌ Event descriptions](https://docs.check-spelling.dev/Event-descriptions)
 
 note|path
 -|-
-`+` matches a line_forbidden.patterns rule: Expect entries should not include non-word characters - `(?![A-Z]\|[a-z]\|'\|\s\|=).` | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/config/expect/expect.txt#L1
+`+` matches a line_forbidden.patterns rule: Expect entries should not include non-word characters - `(?![A-Z]\|[a-z]\|'\|=).` | GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/blame/GITHUB_SHA/t/unknown-words/config/expect/expect.txt#L1
 `Bad news` matches a line_forbidden.patterns rule: Should be `good news` - `(?i)\bbad news\b` | unknown-words/input/sample.file:7
 `documentation.file` matches a line_forbidden.patterns rule: Should be `documentation.pdf` - `\bdocumentation\.file\b` | unknown-words/input/sample.file:5
 `logo.ico` matches a line_forbidden.patterns rule: Should be `logo.png` - `\blogo\.ico\b` | unknown-words/input/sample.file:7
