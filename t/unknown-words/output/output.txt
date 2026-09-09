@@ -11,7 +11,7 @@ Retrieving excludes from WORKSPACE/t/unknown-words/config/excludes.txt
 Retrieving homoglyph from WORKSPACE/t/unknown-words/config/homoglyph.list
 Checking spelling...
 ::group::Spell checking (2) files
-TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/paths-of-checked-files.txt
+SYNTHETIC_BASE/paths-of-checked-files.txt
 unknown-words/input/sample.file
 ::endgroup::
 ::group::Spell check

@@ -2695,6 +2695,7 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
   ocr_directory="$synthetic_base/ocr"
   echo "^\Q$synthetic_base/\E" >> "$patterns"
   mkdir -p "$synthetic_base"
+  set_output_variable synthetic_base "$synthetic_base"
   if to_boolean "$INPUT_CHECK_IMAGES"; then
     get_ocr_cache || true
   fi
