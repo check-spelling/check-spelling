@@ -8,7 +8,7 @@ Retrieving excludes from WORKSPACE/t/unknown-words.pr/config/excludes.txt
 Retrieving patterns from WORKSPACE/t/unknown-words.pr/config/patterns.txt
 Checking spelling...
 ::group::Spell checking (4) files
-TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/paths-of-checked-files.txt
+SYNTHETIC_BASE/paths-of-checked-files.txt
 unknown-words/input/logo.png
 unknown-words/input/sample.file
 unknown-words/input/test.png

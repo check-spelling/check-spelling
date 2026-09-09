@@ -188,11 +188,14 @@ chdir($working_directory);
 my $github_sha = $ENV{GITHUB_SHA} || `git rev-parse HEAD`;
 $github_sha =~ s/\n|\r//g;
 
+my $output = read_file($github_output, ());
+my $synthetic_base = retrieve_value('synthetic_base', $output);
+
 my %cleanup_quoted = (
   $working_directory => 'ENGINE',
   $github_repository => 'GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME',
   $github_sha => 'GITHUB_SHA',
-  "/tmp/check-spelling/$github_repository" => 'TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME',
+  $synthetic_base => 'SYNTHETIC_BASE',
   '/tmp/check-spelling' => 'TEMP_DIRECTORY',
   "file://$extra_dictionaries_dir" => 'EXTRA_DICTIONARIES_PROTO',
   $sandbox => 'WORKSPACE',
@@ -212,7 +215,7 @@ my $expected_summary = read_file("$outputs/summary.md", @cleanup_arguments);
 my $expected_warnings = read_file("$outputs/warnings.txt", @cleanup_arguments);
 my $expected_stale_words = read_file("$outputs/stale.txt", @cleanup_arguments);
 
-my $output = read_file($github_output, @cleanup_arguments);
+$output = read_file($github_output, @cleanup_arguments);
 
 my $followup = retrieve_value('followup', $output);
 my $internal_state_directory = retrieve_value('internal_state_directory', $output);
