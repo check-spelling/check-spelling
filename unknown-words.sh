@@ -2688,7 +2688,11 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
   set_output_variable internal_state_directory "$data_dir"
 
   if [ -n "$GITHUB_REPOSITORY" ]; then
-    synthetic_base="/tmp/check-spelling/$GITHUB_REPOSITORY"
+    synthetic_base="/tmp/check-spelling"
+    if [ -d "$synthetic_base" ] && [ ! -O "$synthetic_base" ]; then
+      synthetic_base="$synthetic_base.$$"
+    fi
+    synthetic_base="$synthetic_base/$GITHUB_REPOSITORY"
   else
     synthetic_base=$(mktemp -d)
   fi
