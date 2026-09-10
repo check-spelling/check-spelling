@@ -21,7 +21,7 @@ binmode $builder->output,         ":utf8";
 binmode $builder->failure_output, ":utf8";
 binmode $builder->todo_output,    ":utf8";
 
-plan tests => 66;
+plan tests => 68;
 
 use_ok('CheckSpelling::UnknownWordSplitter');
 use_ok('CheckSpelling::Exclude');
@@ -387,6 +387,9 @@ close $fh;
 $output_dir=CheckSpelling::UnknownWordSplitter::split_file($filename);
 check_output_file("$output_dir/warnings", ":128:9 ... 14: `wrnog`
 ", 'not minified');
+
+is(CheckSpelling::UnknownWordSplitter::quote_re('hi'), 'hi', 'quote_re boring');
+is(CheckSpelling::UnknownWordSplitter::quote_re('\Qhi?\E'), 'hi\\?', 'quote_re question');
 
 SKIP: {
     skip 'could not find an expired artifact', 3 unless eval { symlink("",""); 1 };
