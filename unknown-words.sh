@@ -814,7 +814,7 @@ git_commit() {
     commit \
     "$COMMIT_AUTHOR" \
     --date="$created_at" \
-    -m "$(echo "[check-spelling] Update metadata
+    -m "$(echo "[check-spelling] Update metadata${INPUT_REPORT_TITLE_SUFFIX:+ ($INPUT_REPORT_TITLE_SUFFIX)}
 
                 $commit_reason
 
