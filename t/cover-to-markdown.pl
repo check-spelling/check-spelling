@@ -29,7 +29,7 @@ while (<>) {
   $last_line = $_;
   s/ \.+ ok/|✅/ || s/ \.+ /|/;
   s/^\s+(.*):\s*/... $1|/;
-  s/^# (Looks like.*[^.])\.$/... $1|⚠️/;
+  s,^# (Looks like.*[^.]|Failed \d+/\d+ subtests)\.$,... $1|⚠️,;
   s/\s+(\([Ww]stat)/|❌ $1/ unless /\|/;
   s/All tests successful\./&nbsp;|\nAll tests|✅/;
   s/Result: PASS/Result|✅/;
