@@ -2667,31 +2667,54 @@ build_file_list() {
       "$scope_files" > "$1"
 }
 
-get_ocr_cache_ref() {
+get_artifacts_urls() {
+  jq -r '.workflow_runs[].artifacts_url // empty' 2>/dev/null
+}
+
+get_cache_ref() {
   ref="$1"
   event="$2"
-  artifacts_url=$(
-    call_curl "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/${workflow_path##*/}/runs?branch=$ref&event=$event&per_page=1" | jq -r '.workflow_runs[].artifacts_url // empty' 2>/dev/null
-  )
-  if [ -z "$artifacts_url" ]; then
+  kind="$3"
+  dest="$4"
+  if [ -z "$actions_workflows_url" ]; then
+    repo_id=$(jq -r '.event.repository.id // empty' "$GITHUB_EVENT_PATH")
+    if [ -n "$repo_id" ]; then
+      repo_self="repositories/$repo_id"
+    else
+      repo_self="repos/$GITHUB_REPOSITORY"
+    fi
+    actions_workflows_url="$GITHUB_API_URL/$repo_self/actions/workflows/${workflow_path##*/}"
+  fi
+  artifacts_urls=$(call_curl "$actions_workflows_url/runs?branch=$ref&event=$event&per_page=1" | get_artifacts_urls)
+  if [ -z "$artifacts_urls" ]; then
     false
     return
   fi
-  artifacts=$(mktemp)
-  keep_headers=1 call_curl "$artifacts_url" > $artifacts
-  artifact=$(jq -r '.artifacts[] | select(.name|match ("^ocr")).id // empty' "$artifacts" | sort -n | tail -1)
-  if [ -z "$artifact" ]; then
-    false
-    return
-  fi
+  cache_artifacts=$(mktemp)
   artifact_zip=$(mktemp)
-  call_curl "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact/zip" > "$artifact_zip"
-  if [ "$(head -c2 "$artifact_zip")" != 'PK' ]; then
+  while IFS= read -r artifacts_url; do
+    keep_headers=1 call_curl "$artifacts_url" | tee "$cache_artifacts" > /dev/null
+    cache_artifact=$(jq -r '.artifacts[] | select(.name|match ("^'"$kind"'")).id // empty' "$cache_artifacts" | sort -n | tail -1)
+    if [ -z "$cache_artifact" ]; then
+      cat "$cache_artifacts" >&2
+      continue
+    fi
+    call_curl "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$cache_artifact/zip" | tee "$artifact_zip" > /dev/null
+    if [ "$(head -c2 "$artifact_zip")" != 'PK' ]; then
+      rm -f "$artifact_zip"
+      continue
+    fi
+  done <<< "$artifacts_urls"
+  if [ ! -s "$artifact_zip" ]; then
     false
     return
   fi
-  unzip -q -o "$artifact_zip" -d "$ocr_directory" && rm "$artifact_zip"
+  unzip -q -o "$artifact_zip" -d "$dest" && rm "$artifact_zip"
   # grep -i '^link:' "$response_headers"
+}
+
+get_ocr_cache_ref() {
+  get_cache_ref "$1" "$2" ocr "$ocr_directory"
 }
 
 get_ocr_cache() {
