@@ -23,6 +23,8 @@ binmode $builder->todo_output,    ":utf8";
 
 plan tests => 68;
 
+$ENV{'PATH'} = "/bin:/usr/bin:/opt/homebrew/bin";
+
 use_ok('CheckSpelling::UnknownWordSplitter');
 use_ok('CheckSpelling::Exclude');
 
