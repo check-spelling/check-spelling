@@ -622,6 +622,15 @@ runs:
           ${{ format('{0}{1}', 'check-spelling-comment', steps.spelling.outputs.dash-suffix) }}
         path:
           ${{ steps.spelling.outputs.internal_state_directory }}
+    - name: Store Scan
+      continue-on-error: true
+      if: ${{ !cancelled() && steps.spelling.outputs.work-cache != '' }}
+      uses: ./../check-spelling-actions/upload-artifact
+      with:
+        name: ${{ format('{0}{1}', 'data', steps.spelling.outputs.dash-suffix) }}
+        include-hidden-files: true
+        path:
+          ${{ steps.spelling.outputs.work-cache }}
     - name: Store OCR
       continue-on-error: true
       if: steps.spelling.outputs.ocr_directory != ''
