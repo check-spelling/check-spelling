@@ -18,9 +18,10 @@ use File::Basename;
 use Cwd 'abs_path';
 use File::Spec;
 use File::Temp qw/ tempfile tempdir /;
-use File::Path qw/ make_path /;
+use File::Path qw/ make_path remove_tree /;
 use CheckSpelling::Util;
 use Digest::SHA;
+use JSON::PP;
 our $VERSION='0.1.0';
 
 my ($longest_word, $shortest_word, $word_match, $forbidden_re, $patterns_re, $candidates_re, $disable_word_collating, $check_file_names);
@@ -33,6 +34,8 @@ my @candidates_re_list;
 my $hunspell_dictionary_path;
 my @hunspell_dictionaries;
 my %dictionary = ();
+my $cache_dir = '';
+my %file_map = ();
 our @reject_re_list = ();
 our $reject_re = '$^';
 my $base_dict;
@@ -252,6 +255,7 @@ sub init {
   our %forbidden_re_descriptions;
   our @reject_re_list;
   our $reject_re;
+  our %file_map;
   if ($hunspell_dictionary_path) {
     our @hunspell_dictionaries = ();
     if (eval 'use Text::Hunspell; 1') {
@@ -323,6 +327,15 @@ sub init {
   our $base_dict = CheckSpelling::Util::get_file_from_env('dict', "$configuration/words");
   $base_dict = '/usr/share/dict/words' unless -e $base_dict;
   load_dictionary($base_dict);
+
+  our $cache_dir = CheckSpelling::Util::get_file_from_env('work_cache', '');
+  if ($cache_dir) {
+    if (open my $cache_map, '<:utf8', "$cache_dir/files.json") {
+      local $/ = undef;
+      %file_map = %{JSON::PP::decode_json(<$cache_map>)};
+      close $cache_map;
+    }
+  }
 }
 
 sub split_line {
@@ -465,8 +478,40 @@ sub print_word_not_in_dictionary {
   }
 }
 
+sub get_sha {
+  my ($file) = @_;
+  my $sha;
+  if (open(my $file_fh, '-|',
+           '/usr/bin/env',
+           'shasum',
+           '-a',
+           '256',
+           '-b',
+           $file)) {
+    $sha = <$file_fh>;
+    close $file_fh;
+    $sha =~ s/\s.*//;
+  }
+  return $sha;
+}
+
 sub split_file {
   my ($file) = @_;
+  our %file_map;
+  my $sha = get_sha($file);
+  if (defined $file_map{$file}) {
+    our $cache_dir;
+    my $cache_entry = "$cache_dir/$file_map{$file}";
+    if (open(my $file_fh, '<', "$cache_entry/sha")) {
+      my $old_sha = <$file_fh>;
+      close $file_fh;
+      if (($sha cmp $old_sha) == 0) {
+        print STDERR "using cached result for file: $file\n" if defined $ENV{'DEBUG'};
+        return $cache_entry;
+      }
+    }
+    remove_tree($cache_entry);
+  }
   our (
     $unrecognized, $shortest, $largest_file, $words,
     $word_match, %unique, %unique_unrecognized, $forbidden_re,
@@ -494,6 +539,9 @@ sub split_file {
   open(my $name_fh, '>', "$temp_dir/name");
     print $name_fh $file;
   close $name_fh;
+  open(my $sha_fh, '>', "$temp_dir/sha");
+    print $sha_fh $sha;
+  close $sha_fh;
   if (defined readlink($file) &&
       rindex(File::Spec->abs2rel(abs_path($file)), '../', 0) == 0) {
     skip_file($temp_dir, "symbolic link points outside repository (out-of-bounds-symbolic-link)\n");

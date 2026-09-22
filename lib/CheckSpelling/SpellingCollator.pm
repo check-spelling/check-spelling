@@ -7,8 +7,9 @@ use 5.022;
 use utf8;
 use feature 'unicode_strings';
 use warnings;
-use File::Path qw(remove_tree);
+use File::Basename;
 use CheckSpelling::Util;
+use JSON::PP;
 
 my %letter_map;
 my $disable_word_collating;
@@ -647,6 +648,19 @@ sub main {
         print $words[0];
       }
       print "\n";
+    }
+  }
+  my $work_cache = CheckSpelling::Util::get_file_from_env('work_cache', '');
+  if ($work_cache ne '') {
+    if (open (my $work_files, '>:utf8', "$work_cache/files.json")) {
+      for my $k (keys %file_map) {
+        $file_map{$k} = basename($file_map{$k});
+      }
+      print $work_files JSON::PP::encode_json(\%file_map);
+      close $work_files;
+    }
+    for my $directory (@directories, @cleanup_directories) {
+      rename($directory, "$work_cache/".basename($directory));
     }
   }
 }
