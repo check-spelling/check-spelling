@@ -104,6 +104,7 @@ sub cleanup {
   $text =~ s!in a clone of the \[.*?\]\(.*?\) repository!in a clone of the [GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME](GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME) repository!g;
   $text =~ s!^Devel::Cover: Deleting old coverage for changed file .*$!!m;
   $text =~ s!(locally downloaded to )\`.*?\`!$1...!;
+  $text =~ s!^checking file:.*\n!!gm;
   $text =~ s/\Q$sandbox\E/WORKSPACE/g;
   $text =~ s/\Q$working_directory\E/ENGINE/g;
   $text =~ s!\Q$github_repository\E!GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME!g if $github_repository !~ /^\.?$/;

@@ -82,6 +82,7 @@ sub cleanup {
   $text =~ s!^Devel::Cover: Deleting old coverage for changed file .*$!!m;
   $text =~ s!(locally downloaded to )\`.*?\`!$1...!;
   $text =~ s/^Installed: .*\n//g;
+  $text =~ s!^checking file:.*\n!!gm;
   $text =~ s/on the \`[^`]+?\` branch/on the \`GITHUB_BRANCH\` branch/g;
   $text =~ s!\S*(\Q/expect.words.txt\E)!EXPECT_SANDBOX$1!gm;
   for my $k (sort {
