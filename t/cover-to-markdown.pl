@@ -37,6 +37,7 @@ while (<>) {
     next;
   }
   next if /^(?:Reading database from |Devel::Cover: merging data)/;
+  next if /^Devel::Cover:/;
   $last_line = $_;
   s/ \.+ ok/|✅/ || s/ \.+ /|/;
   s/^\s+(.*):\s*/... $1|/;
