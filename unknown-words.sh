@@ -2905,6 +2905,7 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
     splitter_timeout="$INPUT_WORD_SPLITTER_TIMEOUT" \
     early_warnings="$early_warnings" \
     spellchecker="$spellchecker" \
+    DEBUG="$DEBUG" \
   xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
     expect="$expect_path" \
     warning_output="$warning_output" \
@@ -2923,6 +2924,7 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
     pr_description_file="$pr_description_file" \
     commit_messages="$commit_messages" \
     timing_report="$timing_report" \
+    DEBUG="$DEBUG" \
     "$word_collator" |\
   "$strip_word_collator_suffix" > "$run_output"
   word_splitter_status="${PIPESTATUS[2]} ${PIPESTATUS[3]}"
