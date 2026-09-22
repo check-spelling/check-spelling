@@ -1928,18 +1928,28 @@ expand_dictionary_url() {
   echo "$1" | perl -pe "$dictionary_alias_pattern"
 }
 
+get_etag() {
+  perl -ne 'next unless s/^etag: //;chomp; print' "$1"
+}
+
 get_extra_dictionary() {
   extra_dictionary_url="$1"
   source_link="$dictionaries_dir"/."$2"
+  etag_file="$source_link.etag"
   url="$(expand_dictionary_url "$extra_dictionary_url")"
   dest="$dictionaries_dir"/"$2"
+  if [ -s "$dest" ] && [ -s "$etag_file" ]; then
+    etag_flag='If-None-Match: '"$(perl -pn -e 's/\s+//' "$etag_file")"
+  fi
   if [ "$url" != "${url#"${GITHUB_SERVER_URL}"/*}" ]; then
     no_curl_auth=1
   fi
   keep_headers=$(mktemp)
+  temp_dictionary=$(mktemp)
   keep_headers="$keep_headers" call_curl \
     "$url" \
-    > "$dest"
+    ${etag_flag:+--header} ${etag_flag:+"$etag_flag"} \
+    > "$temp_dictionary"
   if echo "$url"|grep -q -E '^https?://'; then
     if { [ -z "$response_code" ] || [ $response_code -ge 400 ] || [ $response_code -eq 000 ] ; } 2> /dev/null; then
       echo "::error ::Failed to retrieve $extra_dictionary_url -- HTTP $response_code for $url ($dictionary_class-dictionary-not-found)" >> "$early_warnings"
@@ -1958,6 +1968,9 @@ get_extra_dictionary() {
       rm -f "$keep_headers"
       return
     fi
+    if [ $response_code -eq 200 ]; then
+      get_etag "$keep_headers" | tee "$etag_file" >/dev/null
+    fi
   elif [ $curl_exit_code -gt 0 ]; then
     rm -f "$dest"
     echo "::error ::Failed to retrieve $extra_dictionary_url -- HTTP $response_code for $url ($dictionary_class-dictionary-not-found)" >> "$early_warnings"
@@ -1968,6 +1981,7 @@ get_extra_dictionary() {
     rm -f "$keep_headers"
     return
   fi
+  mv "$temp_dictionary" "$dest"
   rm -f "$keep_headers"
   echo "Retrieved $extra_dictionary_url" >&2
   echo "$extra_dictionary_url" > "$source_link"
@@ -2324,6 +2338,12 @@ set_up_files() {
   forbidden_summary="$data_dir/forbidden_summary.txt"
   get_project_files README.md "$(mktemp -d)/README.md"
   if [ "$INPUT_TASK" = 'spelling' ]; then
+    work_cache="$(mktemp -d)"
+    if get_data_cache; then
+      if [ -d "$work_cache/dictionaries" ]; then
+        cp -R "$work_cache/dictionaries/" "$spellchecker/dictionaries/"
+      fi
+    fi
     get_project_files dictionary.words "$dictionary_path"
     get_project_files dictionary.txt "$dictionary_path"
     if [ -s "$dictionary_path" ]; then
@@ -2453,12 +2473,12 @@ set_up_files() {
           (
             cd "$extra_dictionaries_dir"
             if [ -d "$hunspell_dictionary_path" ]; then
-              for a in ./*.aff ./*.dic; do mv "$a" ".$(basename "$a")" "$hunspell_dictionary_path" 2>/dev/null || true & done
+              for a in ./*.aff ./*.dic; do cp "$a" ".$(basename "$a")" "$hunspell_dictionary_path" 2>/dev/null || true & done
             fi
             wait
             # Items that aren't proper should be moved to patterns instead
-            find . ! -name '.*' -type f -print0 |
-              xargs -0 -r "$spellchecker/dictionary-word-filter.pl" |
+            find . ! -name '.*' ! -name '*.aff' ! -name '*.dic' -type f -print0 |
+              xargs -0 -r "$dictionary_word_filter" |
               sort -u >> "$dict"
           )
         fi
@@ -2556,6 +2576,41 @@ set_up_files() {
         print "$file:1:1 ... $len, Notice - Config file not used (unused-config-file)\n";
       }
     ' >> "$early_warnings"
+  fi
+  if [ -n "$work_cache" ]; then
+    cache_may_be_valid=1
+    cache_files_checked=0
+    for item in \
+      "$allow_path" \
+      "$forbidden_path" \
+      "$homoglyph_list_path" \
+      "$patterns_path" \
+      "$reject_path" \
+    ; do
+      if [ -n "$item" ] && [ -s "$item" ]; then
+        if ! diff -q "$item" "$work_cache/config/$(basename "$item")" >/dev/null 2>/dev/null; then
+          cache_may_be_valid=
+          break
+        fi
+        cache_files_checked=$(( cache_files_checked + 1 ))
+      fi
+    done
+    if [ -n "$cache_may_be_valid" ] && [ $(find "$work_cache/config" -type f ! -empty | wc -l) -ne $cache_files_checked ]; then
+      cache_may_be_valid=
+    fi
+    if [ -d "$work_cache/dictionaries/extra/" ]; then
+      if [ -z "$extra_dictionaries_dir" ]; then
+        extra_dictionaries_dir=$(mktemp -d)
+      fi
+      if ! diff -qr -x '.*' "$work_cache/dictionaries/extra/" "$extra_dictionaries_dir" >/dev/null 2>&1 ; then
+        cache_may_be_valid=
+      fi
+    fi
+    if [ -z "$cache_may_be_valid" ] && [ -e "$work_cache/files.json" ]; then
+      mv "$work_cache" "$work_cache.0"
+      rm -rf "$work_cache.0" &
+      mkdir "$work_cache"
+    fi
   fi
 }
 
@@ -2676,7 +2731,7 @@ build_file_list() {
 }
 
 get_artifacts_urls() {
-  jq -r '.workflow_runs[].artifacts_url // empty' 2>/dev/null
+  jq -r ".workflow_runs[] $1 .artifacts_url // empty" 2>/dev/null
 }
 
 get_cache_ref() {
@@ -2693,7 +2748,30 @@ get_cache_ref() {
     fi
     actions_workflows_url="$GITHUB_API_URL/$repo_self/actions/workflows/${workflow_path##*/}"
   fi
-  artifacts_urls=$(call_curl "$actions_workflows_url/runs?branch=$ref&event=$event&per_page=2" | get_artifacts_urls)
+  if [ -z "$two_weeks_ago" ]; then
+    two_weeks_ago=$(perl -e '
+use strict;
+use warnings;
+use Time::Piece;
+use Time::Seconds; # Provides the ONE_WEEK constant
+
+my $two_weeks_ago = localtime() - (2 * ONE_WEEK);
+
+print $two_weeks_ago->strftime(q{%Y-%m-%d}), "\n";
+');
+  fi
+
+  pull_request_filter=""
+  if [ "$event" = "push" ]; then
+    branch_filter="branch=$ref&per_page=2"
+  else
+    branch_filter=""
+    pr_number="$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")"
+    if [ -n "$pr_number" ]; then
+      pull_request_filter="| select (.pull_requests[].number == $pr_number) |"
+    fi
+  fi
+  artifacts_urls=$(call_curl "$actions_workflows_url/runs?$branch_filter&event=$event&created=>$two_weeks_ago" | get_artifacts_urls "$pull_request_filter")
   if [ -z "$artifacts_urls" ]; then
     false
     return
@@ -2724,7 +2802,8 @@ get_ocr_cache_ref() {
 }
 
 get_ocr_cache() {
-  if get_ocr_cache_ref "$GITHUB_REF_NAME" "$GITHUB_EVENT_NAME"; then
+  if [ -z "$GITHUB_REF_NAME" ] ||
+    get_ocr_cache_ref "$GITHUB_REF_NAME" "$GITHUB_EVENT_NAME"; then
     return
   fi
   case "$GITHUB_EVENT_NAME" in
@@ -2736,6 +2815,35 @@ get_ocr_cache() {
       ;;
     *)
       get_ocr_cache_ref "$GITHUB_REF_NAME" push
+      ;;
+  esac
+}
+
+get_data_cache_ref() {
+  get_cache_ref "$1" "$2" "$artifact" "$work_cache"
+}
+
+get_data_cache() {
+  if [ -z "$GITHUB_REF_NAME" ]; then
+    work_cache=
+    false
+    return
+  fi
+  data_directory=$(mktemp -d)
+  artifact="data${INPUT_REPORT_TITLE_SUFFIX:+-$INPUT_REPORT_TITLE_SUFFIX}"'$'
+  if get_data_cache_ref "$GITHUB_REF_NAME" "$GITHUB_EVENT_NAME"; then
+    return
+  fi
+  case "$GITHUB_EVENT_NAME" in
+    push)
+      [ "$default_branch" != "$GITHUB_BASE_REF" ] && get_data_cache_ref "$default_branch" push
+      ;;
+    pull_request|pull_request_target|merge_group)
+      [ "$default_branch" != "$GITHUB_BASE_REF" ] && get_data_cache_ref "$GITHUB_BASE_REF" push ||
+      get_data_cache_ref "$default_branch" push
+      ;;
+    *)
+      get_data_cache_ref "$GITHUB_REF_NAME" push
       ;;
   esac
 }
@@ -2933,6 +3041,7 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
     splitter_timeout="$INPUT_WORD_SPLITTER_TIMEOUT" \
     early_warnings="$early_warnings" \
     spellchecker="$spellchecker" \
+    work_cache="$work_cache" \
     DEBUG="$DEBUG" \
   xargs -0 -n$queue_size "-P$job_count" "$word_splitter" |\
     expect="$expect_path" \
@@ -2952,6 +3061,7 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
     pr_description_file="$pr_description_file" \
     commit_messages="$commit_messages" \
     timing_report="$timing_report" \
+    work_cache="$work_cache" \
     DEBUG="$DEBUG" \
     "$word_collator" |\
   "$strip_word_collator_suffix" > "$run_output"
@@ -2992,6 +3102,9 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
   cat "$warning_output" >&2
   . "$severity_list"
   set_output_variable warnings "$warning_output"
+  if [ -d "$work_cache" ]; then
+    set_output_variable work-cache "$work_cache"
+  fi
   if [ -d "$ocr_directory" ]; then
     set_output_variable ocr_directory "$ocr_directory"
   fi
@@ -3646,6 +3759,22 @@ quit() {
     echo "docker_container=$(perl -ne 'next unless m{:/docker/(.*)}; print $1;last' /proc/self/cgroup)" >> "$GITHUB_OUTPUT"
   fi
   set_output_variable workflow-path "$workflow_path"
+  if [ -n "$work_cache" ]; then
+    rm -rf "$work_cache/dictionaries"
+    [ -e "$spellchecker/dictionaries" ] && mv "$spellchecker/dictionaries" "$work_cache/" || true
+    rm -rf "$work_cache/config"
+    mkdir -p "$work_cache/config"
+    stash() {
+      if [ -n "$1" ] && [ -e "$1" ]; then
+        cp "$1" $work_cache/config
+      fi
+    }
+    stash "$allow_path"
+    stash "$forbidden_path"
+    stash "$homoglyph_list_path"
+    stash "$patterns_path"
+    stash "$reject_path"
+  fi
   cat "$output_variables" >> "$GITHUB_OUTPUT"
   if [ -n "$GH_OUTPUT_STUB" ]; then
     perl -pe 's/^(\S+)=(.*)/::set-output name=$1::$2/' "$GITHUB_OUTPUT"
