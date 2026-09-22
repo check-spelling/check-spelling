@@ -7,6 +7,7 @@ use 5.022;
 use utf8;
 use feature 'unicode_strings';
 use warnings;
+use File::Path qw(remove_tree);
 use CheckSpelling::Util;
 
 my %letter_map;
