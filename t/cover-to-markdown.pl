@@ -30,6 +30,7 @@ while (<>) {
   s/ \.+ ok/|✅/ || s/ \.+ /|/;
   s/^\s+(.*):\s*/... $1|/;
   s,^# (Looks like.*[^.]|Failed \d+/\d+ subtests)\.$,... $1|⚠️,;
+  next if m/^#/;
   s/\s+(\([Ww]stat)/|❌ $1/ unless /\|/;
   s/All tests successful\./&nbsp;|\nAll tests|✅/;
   s/Result: PASS/Result|✅/;
