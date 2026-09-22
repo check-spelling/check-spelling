@@ -2685,7 +2685,7 @@ get_cache_ref() {
     fi
     actions_workflows_url="$GITHUB_API_URL/$repo_self/actions/workflows/${workflow_path##*/}"
   fi
-  artifacts_urls=$(call_curl "$actions_workflows_url/runs?branch=$ref&event=$event&per_page=1" | get_artifacts_urls)
+  artifacts_urls=$(call_curl "$actions_workflows_url/runs?branch=$ref&event=$event&per_page=2" | get_artifacts_urls)
   if [ -z "$artifacts_urls" ]; then
     false
     return
@@ -2696,7 +2696,6 @@ get_cache_ref() {
     keep_headers=1 call_curl "$artifacts_url" | tee "$cache_artifacts" > /dev/null
     cache_artifact=$(jq -r '.artifacts[] | select(.name|match ("^'"$kind"'")).id // empty' "$cache_artifacts" | sort -n | tail -1)
     if [ -z "$cache_artifact" ]; then
-      cat "$cache_artifacts" >&2
       continue
     fi
     call_curl "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$cache_artifact/zip" | tee "$artifact_zip" > /dev/null
