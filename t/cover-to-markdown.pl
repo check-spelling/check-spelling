@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 my $new_state = 0;
 my $no_such_file = "Could not open file (no-such-file)";
+my $in_summary = 0;
 
 print q<
 # Tests
@@ -15,6 +16,9 @@ test|result
 
 test_header();
 while (<>) {
+  if ($in_summary) {
+    test_header() if /^--/;
+  }
   if (m<t/.*\.t \.+ \w*$|^---|^\s*Failed test:|^\s*Non-zero exit status:|\([W]stat>) {
     $new_state = 1;
   }
@@ -24,7 +28,14 @@ while (<>) {
   next unless /\w/;
   next if $last_line eq $_;
   next if /\Q$no_such_file\E/;
-  next if /^Files=\d+, Tests=\d+,/;
+  if (/^Files=\d+, Tests=\d+,/) {
+    if ($in_summary) {
+      $in_summary=0;
+      print "\n";
+      test_header();
+    }
+    next;
+  }
   next if /^(?:Reading database from |Devel::Cover: merging data)/;
   $last_line = $_;
   s/ \.+ ok/|✅/ || s/ \.+ /|/;
@@ -36,5 +47,8 @@ while (<>) {
   s/Result: PASS/Result|✅/;
   s/Result: FAIL/Result|❌/;
   s/\.($)/|😳$1/ if / at .* line \d+\./ && !/\|/;
+  if (s/^(Test Summary Report)/\n## $1/) {
+    $in_summary = 1;
+  }
   print;
 }
