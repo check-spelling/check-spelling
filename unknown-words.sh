@@ -1960,10 +1960,6 @@ get_extra_dictionary() {
     return
   fi
   echo "Retrieved $extra_dictionary_url" >&2
-  if [ -n "$real_dest" ]; then
-    mv "$dest" "$real_dest"
-    dest="$real_dest"
-  fi
   echo "$extra_dictionary_url" > "$source_link"
 }
 
