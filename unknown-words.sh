@@ -1931,7 +1931,8 @@ get_extra_dictionary() {
   if [ "$url" != "${url#"${GITHUB_SERVER_URL}"/*}" ]; then
     no_curl_auth=1
   fi
-  keep_headers=1 call_curl \
+  keep_headers=$(mktemp)
+  keep_headers="$keep_headers" call_curl \
     "$url" \
     > "$dest"
   if echo "$url"|grep -q -E '^https?://'; then
@@ -1939,15 +1940,17 @@ get_extra_dictionary() {
       echo "::error ::Failed to retrieve $extra_dictionary_url -- HTTP $response_code for $url ($dictionary_class-dictionary-not-found)" >> "$early_warnings"
       (
         echo "Failed to retrieve $extra_dictionary_url ($url)"
-        cat "$response_headers"
+        cat "$keep_headers"
       ) >&2
       dictionary_name=$(mktemp)
       echo "$extra_dictionary_url" > "$dictionary_name"
       mv "$dictionary_name" "$failed_dictionaries_dir"
       rm -f "$dictionaries_canary"
+      rm -f "$keep_headers"
       return
     fi
     if [ $response_code -eq 304 ]; then
+      rm -f "$keep_headers"
       return
     fi
   elif [ $curl_exit_code -gt 0 ]; then
@@ -1955,10 +1958,12 @@ get_extra_dictionary() {
     echo "::error ::Failed to retrieve $extra_dictionary_url -- HTTP $response_code for $url ($dictionary_class-dictionary-not-found)" >> "$early_warnings"
     (
       echo "Failed to retrieve $extra_dictionary_url ($url)"
-      cat "$response_headers"
+      cat "$keep_headers"
     ) >&2
+    rm -f "$keep_headers"
     return
   fi
+  rm -f "$keep_headers"
   echo "Retrieved $extra_dictionary_url" >&2
   echo "$extra_dictionary_url" > "$source_link"
 }
@@ -1974,7 +1979,6 @@ get_extra_dictionaries() {
   dictionaries_canary="$3"
   failed_dictionaries_dir="$dictionaries_dir.failed"
   mkdir -p "$dictionaries_dir" "$failed_dictionaries_dir"
-  response_headers="$(mktemp)"
   if [ -n "$extra_dictionaries" ]; then
     parallel_task_list=$(mktemp -d)
     parallel_task_list_output=$(mktemp -d)
@@ -2003,7 +2007,6 @@ get_extra_dictionaries() {
       done
     ) >&2
   fi
-  rm -f "$response_headers"
   echo "$dictionaries_dir"
 }
 
