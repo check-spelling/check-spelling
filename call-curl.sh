@@ -24,9 +24,16 @@ curl_auth() {
 dump_curl_response() {
   cat "$response_body"
   rm -f "$response_body"
-  if [ -z "$keep_headers" ]; then
+  case "$keep_headers" in
+  "")
     rm -f "$response_headers"
-  fi
+    ;;
+  1)
+    ;;
+  *)
+    mv "$response_headers" "$keep_headers"
+    ;;
+  esac
 }
 
 get_link() {
