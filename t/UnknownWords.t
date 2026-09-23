@@ -195,7 +195,6 @@ my %cleanup_quoted = (
   $working_directory => 'ENGINE',
   $github_repository => 'GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME',
   $github_sha => 'GITHUB_SHA',
-  $synthetic_base => 'SYNTHETIC_BASE',
   '/tmp/check-spelling' => 'TEMP_DIRECTORY',
   "file://$extra_dictionaries_dir" => 'EXTRA_DICTIONARIES_PROTO',
   $sandbox => 'WORKSPACE',
@@ -203,6 +202,8 @@ my %cleanup_quoted = (
   $ENV{GITHUB_RUN_ID} => 'GITHUB_RUN_ID',
   'raw.githubusercontent.com/check-spelling/check-spelling' => 'raw.githubusercontent.com/CHECK-SPELLING/CHECK-SPELLING',
 );
+
+$cleanup_quoted{$synthetic_base} = 'SYNTHETIC_BASE' if defined $synthetic_base;
 $cleanup_quoted{$github_repository} = 'GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME' if $github_repository !~ /^\.?$/;
 $cleanup_quoted{'TEMP_DIRECTORY/./'} = 'TEMP_DIRECTORY/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/' if $github_repository eq '.';
 
