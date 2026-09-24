@@ -2712,7 +2712,6 @@ get_cache_ref() {
     return
   fi
   unzip -q -o "$artifact_zip" -d "$dest" && rm "$artifact_zip"
-  # grep -i '^link:' "$response_headers"
 }
 
 get_ocr_cache_ref() {
