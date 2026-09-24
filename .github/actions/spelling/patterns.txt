@@ -66,3 +66,6 @@ Signed-off-by: .*
 
 # Markdown anchors
 [#]\w+\)
+
+# perl qr regex
+(?<!\$)\bqr(?:\{.*?\}|<.*?>|\(.*?\)|([|!/@#,;']).*?\g{-1})
