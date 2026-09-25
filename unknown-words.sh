@@ -1990,7 +1990,7 @@ get_extra_dictionaries() {
     for extra_dictionary in $extra_dictionaries; do
     parallel_task=$(( parallel_task + 1 ))
     (
-      dictionary_base="$(basename "$extra_dictionary")"
+      dictionary_base="$(basename "${extra_dictionary##*:}")"
       if [ "$dictionary_base" = index.dic ]; then
         dictionary_base="$(get_hunspell_stem "$extra_dictionary")".dic
       fi
