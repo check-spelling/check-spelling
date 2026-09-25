@@ -28,7 +28,7 @@ sub get_file_from_env_utf8 {
 sub get_val_from_env {
   my ($var, $fallback) = @_;
   return $fallback unless defined $ENV{$var};
-  $ENV{$var} =~ /^(\d+)$/;
+  return $fallback unless $ENV{$var} =~ /^(\d+)$/;
   return $1 || $fallback;
 }
 
