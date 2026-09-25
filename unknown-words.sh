@@ -386,6 +386,9 @@ load_env() {
       echo "$check_spelling_with"
     )"
   fi
+  if [ -n "$INPUT_EXPERIMENTAL_PATH" ]; then
+    cd "$INPUT_EXPERIMENTAL_PATH"
+  fi
   repository_and_workflow_path_without_ref=${GITHUB_WORKFLOW_REF%%@*}
   private_workflow_path=${repository_and_workflow_path_without_ref#*/*/}
   default_branch=$(jq -r '.repository.default_branch // empty' "$GITHUB_EVENT_PATH")
@@ -2531,7 +2534,7 @@ set_up_files() {
     tee "$seen_config_files" |
     used_config_files="$used_config_files" perl -e '
       use File::Spec;
-      my $base = $ENV{INPUT_EXPERIMENTAL_PATH} || "";
+      my $base = "";
       $/="\0";
       my %used_files;
       open my $used, "<", $ENV{used_config_files};
@@ -2570,9 +2573,6 @@ welcome() {
       echo 'No only paths restriction file'
     fi
     end_group
-  fi
-  if [ -n "$INPUT_EXPERIMENTAL_PATH" ]; then
-    cd "$INPUT_EXPERIMENTAL_PATH"
   fi
 }
 
