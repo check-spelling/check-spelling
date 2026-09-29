@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 if [ "$1" = 'config' ] || [ "$1" = 'version' ]; then
   /tmp/.check-spelling-git-logs/git "$@" 2> /dev/null
   exit $?
@@ -16,6 +16,7 @@ err="${checkout_git_err:-$git_logs/err}"
 ) >> "$GITHUB_OUTPUT"
 touch "$err"
 
+set -o pipefail
 (
   log="$(mktemp)"
   /tmp/.check-spelling-git-logs/git "$@" 2> "$log"
