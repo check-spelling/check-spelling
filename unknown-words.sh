@@ -2044,6 +2044,9 @@ set_up_reporter() {
         WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY="$INPUT_USE_SARIF"
       elif grep -Eq 'not authorized|not accessible' "$sarif_output"; then
         WARN_USE_SARIF_NEEDS_SECURITY_EVENTS_WRITE="$INPUT_USE_SARIF"
+      elif grep -Eq 'API rate limit exceeded|rate-limiting' "$sarif_output"; then
+        rate_limit_message="$(jq -r '.message // empty' "$sarif_output")"
+        echo "::notice ::${rate_limit_message:-GitHub Rate limit hit} (rate-limit-hit)"
       else
         echo "::notice ::Unexpected response from GitHub code-scanning (check-for-bug-report)"
         WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY="$INPUT_USE_SARIF"
