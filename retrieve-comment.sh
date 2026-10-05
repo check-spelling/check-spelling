@@ -1,4 +1,10 @@
 #!/bin/bash
+
+no_comment() {
+  echo "no-comment=1" >> "$GITHUB_OUTPUT"
+  exit
+}
+
 # Check if run was skipped
 gh_api_out=$(mktemp)
 gh_api_err=$(mktemp)
@@ -7,12 +13,12 @@ check_run_url=$(jq -r '.jobs[] | select (.status=="completed" and (.name | start
 if [ -n "$check_run_url" ]; then
   gh api "$check_run_url/annotations" > "$gh_api_out" 2> "$gh_api_err"
   if [ -n "$(jq -r '.[] | select(.title == "Workflow skipped").title // empty' "$gh_api_out")" ]; then
-    echo "no-comment=1" >> "$GITHUB_OUTPUT"
-    exit
+    no_comment
   fi
 fi
 
 "$spellchecker/gh-run-download.sh"
+
 if [ -s artifact.zip ]; then
   exit
 fi
@@ -48,4 +54,4 @@ canary=$(mktemp)
     fi
   fi
 ) >> "$GITHUB_STEP_SUMMARY"
-echo "no-comment=1" >> "$GITHUB_OUTPUT"
+no_comment
