@@ -1,11 +1,22 @@
 #!/bin/bash
+# Check if run was skipped
+gh_api_out=$(mktemp)
+gh_api_err=$(mktemp)
+gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" > "$gh_api_out" 2> "$gh_api_err"
+check_run_url=$(jq -r '.jobs[] | select (.status=="completed" and (.name | startswith("Check Spelling"))).check_run_url // empty' "$gh_api_out")
+if [ -n "$check_run_url" ]; then
+  gh api "$check_run_url/annotations" > "$gh_api_out" 2> "$gh_api_err"
+  if [ -n "$(jq -r '.[] | select(.title == "Workflow skipped").title // empty' "$gh_api_out")" ]; then
+    echo "no-comment=1" >> "$GITHUB_OUTPUT"
+    exit
+  fi
+fi
+
 "$spellchecker/gh-run-download.sh"
 if [ -s artifact.zip ]; then
   exit
 fi
 
-gh_api_out=$(mktemp)
-gh_api_err=$(mktemp)
 canary=$(mktemp)
 (
   if ! gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=1" > "$gh_api_out" 2> "$gh_api_err"; then
