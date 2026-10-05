@@ -20,6 +20,9 @@ fi
 "$spellchecker/gh-run-download.sh"
 
 if [ -s artifact.zip ]; then
+  if ! unzip -p artifact.zip followup | grep -q .; then
+    no_comment
+  fi
   exit
 fi
 
