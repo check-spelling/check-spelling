@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
+  set -x
+fi
+
 no_comment() {
   echo "no-comment=1" >> "$GITHUB_OUTPUT"
   exit
