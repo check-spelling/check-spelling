@@ -8,6 +8,13 @@ no_comment() {
 # Check if run was skipped
 gh_api_out=$(mktemp)
 gh_api_err=$(mktemp)
+gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > "$gh_api_out" 2> "$gh_api_err"
+case "$(jq -r '.event // empty' "$gh_api_out")" in
+  issue_comment)
+    no_comment
+    ;;
+esac
+
 gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" > "$gh_api_out" 2> "$gh_api_err"
 check_run_url=$(jq -r '.jobs[] | select (.status=="completed" and (.name | startswith("Check Spelling"))).check_run_url // empty' "$gh_api_out")
 if [ -n "$check_run_url" ]; then
