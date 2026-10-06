@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
+  set -x
+fi
+
 no_comment() {
   echo "no-comment=1" >> "$GITHUB_OUTPUT"
   exit
@@ -19,6 +23,10 @@ gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" > "$gh_api_out" 2> 
 check_run_url=$(jq -r '.jobs[] | select (.status=="completed" and (.name | startswith("Check Spelling"))).check_run_url // empty' "$gh_api_out")
 if [ -n "$check_run_url" ]; then
   gh api "$check_run_url/annotations" > "$gh_api_out" 2> "$gh_api_err"
+  if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
+    cat "$gh_api_out"
+    cat "$gh_api_err"
+  fi
   if [ -n "$(jq -r '.[] | select(.title == "Workflow skipped").title // empty' "$gh_api_out")" ]; then
     no_comment
   fi
