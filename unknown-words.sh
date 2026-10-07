@@ -871,7 +871,7 @@ show_github_actions_push_disclaimer() {
       steps:
       ...
       - name: apply spelling updates
-        uses: ${action_ref:-check-spelling/check-spelling@...}
+        uses: '"${action_ref:-check-spelling/check-spelling@...}"'
         with:
           checkout: '"$INPUT_CHECKOUT"'
   +       ssh_key: "${{ secrets.CHECK_SPELLING }}"
