@@ -336,34 +336,47 @@ like($stdout, qr{The referenced repository \(check-spelling/imaginary-repository
 is($stderr, '', 'apply.pl (stderr) imaginary-repository');
 is($result, 8, 'apply.pl (exit code) imaginary-repository');
 
-my $gh_token = $ENV{GH_TOKEN};
-delete $ENV{GH_TOKEN};
-my $real_home = $ENV{HOME};
-my $real_http_socket = `gh config get http_unix_socket`;
-$ENV{HOME} = $sandbox;
 sub check_tools_are_not_ready {
   CheckSpelling::Apply::tools_are_ready($CheckSpelling::Apply::program);
 }
+
 ($stdout, $stderr, $result) = run_sub_and_parse_outputs(\&check_tools_are_not_ready);
 
-like($stdout, qr{gh auth login|(?:populate|set) the GH_TOKEN environment variable}, 'apply.pl (stdout) not authenticated');
-like($stderr, qr{[Aa]pply.\w+ requires a happy gh, please try 'gh auth login'}, 'apply.pl (stderr) not authenticated');
-is($result, 1, 'apply.pl (exit code) not authenticated');
-$ENV{GH_TOKEN} = $gh_token;
+my $gh_token = $ENV{GH_TOKEN};
+my $real_home = $ENV{HOME};
+my $real_http_socket = `gh config get http_unix_socket`;
+$ENV{HOME} = $sandbox;
 
-if (-d "$real_home/.config/gh/") {
-  mkdir "$sandbox/.config";
-  mkdir "$sandbox/.config/gh";
-  `cp -R '$real_home/.config/gh/'* '$sandbox/.config/gh/'`;
+SKIP: {
+  my $requires_a_happy_gh = qr{[Aa]pply.\w+ requires a happy gh, please try 'gh auth login'};
+  my $no_github_token = $stderr =~ $requires_a_happy_gh;
+
+  skip 'no github token', 7 if $no_github_token;
+
+  delete $ENV{GH_TOKEN};
+
+  ($stdout, $stderr, $result) = run_sub_and_parse_outputs(\&check_tools_are_not_ready);
+
+  like($stdout, qr{gh auth login|(?:populate|set) the GH_TOKEN environment variable}, 'apply.pl (stdout) not authenticated');
+  like($stderr, $requires_a_happy_gh, 'apply.pl (stderr) not authenticated');
+  is($result, 1, 'apply.pl (exit code) not authenticated');
+  $ENV{GH_TOKEN} = $gh_token;
+
+  if (-d "$real_home/.config/gh/") {
+    mkdir "$sandbox/.config";
+    mkdir "$sandbox/.config/gh";
+    `cp -R '$real_home/.config/gh/'* '$sandbox/.config/gh/'`;
+  }
+
+  `gh config set http_unix_socket /dev/null`;
+  ($stdout, $stderr, $result) = run_sub_and_parse_outputs(\&check_tools_are_not_ready);
+
+  like($stdout, qr{: Unix http socket is not working\.}, 'apply.pl (stdout) bad_socket');
+  like($stdout, qr{http_unix_socket: /dev/null}, 'apply.pl (stdout) bad_socket');
+  is($stderr, '', 'apply.pl (stderr) bad_socket');
+  is($result, 7, 'apply.pl (exit code) bad_socket');
 }
 
-`gh config set http_unix_socket /dev/null`;
-($stdout, $stderr, $result) = run_sub_and_parse_outputs(\&check_tools_are_not_ready);
-
-like($stdout, qr{: Unix http socket is not working\.}, 'apply.pl (stdout) bad_socket');
-like($stdout, qr{http_unix_socket: /dev/null}, 'apply.pl (stdout) bad_socket');
-is($stderr, '', 'apply.pl (stderr) bad_socket');
-is($result, 7, 'apply.pl (exit code) bad_socket');
 $ENV{HOME} = $real_home;
 
 `gh config set http_unix_socket '$real_http_socket'`;
