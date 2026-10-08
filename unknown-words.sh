@@ -2819,6 +2819,7 @@ get_data_cache() {
   fi
   case "$GITHUB_EVENT_NAME" in
     push)
+      [ "$default_branch" != "$GITHUB_BASE_REF" ] && get_data_cache_ref "$default_branch" push
       ;;
     pull_request|pull_request_target|merge_group)
       [ "$default_branch" != "$GITHUB_BASE_REF" ] && get_data_cache_ref "$GITHUB_BASE_REF" push ||
