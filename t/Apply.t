@@ -11,7 +11,9 @@ use File::Basename;
 use Test::More;
 use Capture::Tiny ':all';
 
-plan tests => 51;
+plan tests => 52;
+
+is(1, 1, 'before use CheckSpelling::Apply');
 
 my @apply_script;
 {
