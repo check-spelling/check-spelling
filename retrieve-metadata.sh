@@ -22,13 +22,14 @@ esac
 gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" > "$gh_api_out" 2> "$gh_api_err"
 check_run_url=$(jq -r '.jobs[] | select (.status=="completed" and (.name | startswith("Check Spelling"))).check_run_url // empty' "$gh_api_out")
 if [ -n "$check_run_url" ]; then
-  gh api "$check_run_url/annotations" > "$gh_api_out" 2> "$gh_api_err"
-  if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
-    cat "$gh_api_out"
-    cat "$gh_api_err"
-  fi
-  if [ -n "$(jq -r '.[] | select(.title == "Workflow skipped").title // empty' "$gh_api_out")" ]; then
-    no_comment
+  if gh api "$check_run_url/annotations" > "$gh_api_out" 2> "$gh_api_err"; then
+    if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
+      cat "$gh_api_out"
+      cat "$gh_api_err"
+    fi
+    if [ -n "$(jq -r '.[] | select(.title == "Workflow skipped").title // empty' "$gh_api_out")" ]; then
+      no_comment
+    fi
   fi
 fi
 
