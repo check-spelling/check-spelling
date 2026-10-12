@@ -619,7 +619,7 @@ runs:
       uses: ./../check-spelling-actions/upload-artifact
       with:
         name:
-          ${{ case(inputs.report_title_suffix != '', format('{0}-{1}', 'check-spelling-comment', inputs.report_title_suffix), 'check-spelling-comment') }}
+          ${{ format('{0}{1}', 'check-spelling-comment', steps.spelling.outputs.dash-suffix) }}
         path:
           ${{ steps.spelling.outputs.internal_state_directory }}
     - name: Store OCR
@@ -636,7 +636,7 @@ runs:
       if: (success() || (failure() && env.MERGE_FAILED != '1')) && env.UPLOAD_SARIF != ''
       uses: ./../check-spelling-actions/upload-artifact
       with:
-        name: ${{ case(inputs.report_title_suffix != '', format('{0}-{1}', 'check-spelling-sarif', inputs.report_title_suffix), 'check-spelling-sarif') }}
+        name: ${{ format('{0}{1}', 'check-spelling-sarif', steps.spelling.outputs.dash-suffix) }}
         retention-days: 1
         path: ${{ env.UPLOAD_SARIF }}
     - name: Report SARIF
@@ -647,7 +647,7 @@ runs:
       with:
         wait-for-processing: ${{ case(inputs.wait-for-sarif-processing != '', inputs.wait-for-sarif-processing, 'false') }}
         sarif_file: ${{ env.UPLOAD_SARIF_LIMITED }}
-        category: ${{ case(inputs.report_title_suffix != '', format('{0}-{1}', 'check-spelling', inputs.report_title_suffix), 'check-spelling') }}
+        category: ${{ format('{0}{1}', 'check-spelling', steps.spelling.outputs.dash-suffix) }}
         checkout_path: ${{ inputs.experimental_path }}
         ref: ${{ env.PRIVATE_CHECKOUT_REF }}
         sha: ${{ env.PRIVATE_MERGE_SHA }}

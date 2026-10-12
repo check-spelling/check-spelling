@@ -1419,6 +1419,7 @@ define_variables() {
   report_header="# @check-spelling-bot Report"
   if [ -n "$INPUT_REPORT_TITLE_SUFFIX" ]; then
     report_header="$report_header $INPUT_REPORT_TITLE_SUFFIX"
+    set_output_variable 'dash-suffix' "-$INPUT_REPORT_TITLE_SUFFIX"
   fi
   if [ -z "$GITHUB_OUTPUT" ]; then
     GITHUB_OUTPUT=$(mktemp)
