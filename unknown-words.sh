@@ -51,6 +51,9 @@ basic_setup() {
 
 workflow_skipped() {
   echo "# ⏭️ Workflow skipped$N$@" | maybe_append_to_stderr "$GITHUB_STEP_SUMMARY"
+  skipped=$(mktemp)
+  set_output_variable skipped "$skipped"
+  report_output_variables
   exit 0
 }
 
@@ -1434,6 +1437,10 @@ define_variables() {
 
 set_output_variable() {
   echo "$1=$2" >> "$output_variables"
+}
+
+report_output_variables() {
+  cat "$output_variables" >> "$GITHUB_OUTPUT"
 }
 
 number_filter() {
@@ -3775,7 +3782,7 @@ quit() {
     stash "$patterns_path"
     stash "$reject_path"
   fi
-  cat "$output_variables" >> "$GITHUB_OUTPUT"
+  report_output_variables
   if [ -n "$GH_OUTPUT_STUB" ]; then
     perl -pe 's/^(\S+)=(.*)/::set-output name=$1::$2/' "$GITHUB_OUTPUT"
   fi
