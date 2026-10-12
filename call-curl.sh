@@ -116,10 +116,12 @@ call_curl() {
         return
         ;;
       esac
+      if [ -n "$DEBUG" ] || [ ${delay} -gt 0 ]; then
       (
         echo "call_curl received a $response_code and will wait for ${delay}s before retrying:"
         grep -E -i 'x-github-request-id|x-rate-limit-|retry-after' "$response_headers"
       ) >&2
+      fi
     fi
     sleep "$delay"
     curl_attempt="$(( curl_attempt + 1 ))"
