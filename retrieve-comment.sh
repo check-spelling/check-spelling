@@ -33,7 +33,9 @@ if [ -n "$check_run_url" ]; then
   fi
 fi
 
-"$spellchecker/gh-run-download.sh"
+if ! "$spellchecker/gh-run-download.sh" ; then
+  no_comment
+fi
 
 if [ -s artifact.zip ]; then
   if ! unzip -p artifact.zip followup | grep -q .; then
