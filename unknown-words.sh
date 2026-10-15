@@ -1361,6 +1361,7 @@ define_variables() {
   patterns_path="$temp_sandbox/patterns.txt"
   advice_path="$temp_sandbox/advice.md"
   advice_path_txt="$temp_sandbox/advice.txt"
+  dictionary_word_filter="$spellchecker/wrappers/dictionary-word-filter"
   word_splitter="$spellchecker/wrappers/spelling-unknown-word-splitter"
   word_collator="$spellchecker/wrappers/spelling-collator"
   expect_collator="$spellchecker/wrappers/expect-collator"
@@ -2485,7 +2486,7 @@ set_up_files() {
             wait
             # Items that aren't proper should be moved to patterns instead
             find . ! -name '.*' -type f -print0 |
-              xargs -0 -r "$spellchecker/dictionary-word-filter.pl" |
+              xargs -0 -r "$dictionary_word_filter" |
               sort -u >> "$dict"
           )
         fi
