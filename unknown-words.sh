@@ -2485,9 +2485,15 @@ set_up_files() {
             fi
             wait
             # Items that aren't proper should be moved to patterns instead
+            if [ -n "$DEBUG" ]; then
+              echo "dict before extra dictionaries: $(wc -l "$dict")" >&2
+            fi
             find . ! -name '.*' -type f -print0 |
               xargs -0 -r "$dictionary_word_filter" |
               sort -u >> "$dict"
+            if [ -n "$DEBUG" ]; then
+              echo "dict after extra dictionaries: $(wc -l "$dict")" >&2
+            fi
           )
         fi
       fi
