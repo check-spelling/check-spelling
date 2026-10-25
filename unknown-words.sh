@@ -3363,7 +3363,7 @@ spelling_body() {
   else
     memo='📝 job summary'
   fi
-  if to_boolean "$INPUT_USE_SARIF"; then
+  if [ -n "$GITHUB_SERVER_URL" ] && [ -n "$GITHUB_REPOSITORY" ] && to_boolean "$INPUT_USE_SARIF"; then
     if [ -n "$pr_number" ]; then
       sarif_report_query="pr:$pr_number"
     else
