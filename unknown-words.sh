@@ -76,6 +76,10 @@ report_cached_warning_output() {
 }
 
 dispatcher() {
+  export STARTED_AT="$(perl -e 'use POSIX qw(strftime);
+my $now = time();
+print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
+')"
   if [ ! -s "$data_dir/workflow_trigger_event" ]; then
     echo "$GITHUB_EVENT_NAME" > "$data_dir/workflow_trigger_event"
   fi
@@ -101,7 +105,13 @@ dispatcher() {
       if ! to_boolean "$INPUT_POST_COMMENT"; then
         INPUT_POST_COMMENT=1
       fi
+      if to_boolean "$INPUT_USE_SARIF"; then
+        sarif_task
+      fi
       comment_task
+    ;;
+    sarif)
+      sarif_task
     ;;
     pr_head_sha)
       pr_head_sha_task
@@ -2072,6 +2082,19 @@ set_up_reporter() {
     echo 'GITHUB_EVENT_PATH:'
     cat "$GITHUB_EVENT_PATH"
   fi
+  case "$INPUT_TASK" in
+    comment|collapse_previous_comment)
+      check_for_sarif_support
+      ;;
+  esac
+  if ! to_boolean "$INPUT_USE_SARIF"; then
+    echo "::add-matcher::$spellchecker/reporter.json"
+  else
+    quit_without_error=1
+  fi
+}
+
+check_for_sarif_support() {
   if to_boolean "$INPUT_USE_SARIF"; then
     sarif_error=$(mktemp)
     sarif_output=$(mktemp_json)
@@ -2107,11 +2130,6 @@ set_up_reporter() {
     if to_boolean "$WARN_USE_SARIF_NEEDS_SECURITY_EVENTS_WRITE" || to_boolean "$WARN_USE_SARIF_ONLY_CHANGED_FILES" || to_boolean "$WARN_USE_SARIF_NEEDS_ADVANCED_SECURITY"; then
       INPUT_USE_SARIF=
     fi
-  fi
-  if ! to_boolean "$INPUT_USE_SARIF"; then
-    echo "::add-matcher::$spellchecker/reporter.json"
-  else
-    quit_without_error=1
   fi
 }
 
@@ -2879,15 +2897,49 @@ get_data_cache() {
   esac
 }
 
+sarif_task() {
+  if [ -z "$SARIF_FILE" ]; then
+    SARIF_FILE="$(mktemp).sarif.json"
+    should_generate_sarif=1
+  fi
+  UPLOAD_SARIF_LIMITED=$(mktemp)
+  echo UPLOAD_SARIF="$SARIF_FILE" | maybe_append_to_stderr "$GITHUB_ENV"
+  echo UPLOAD_SARIF_LIMITED="$UPLOAD_SARIF_LIMITED" | maybe_append_to_stderr "$GITHUB_ENV"
+  if [ -n "$should_generate_sarif" ]; then
+    warning_output="$warning_output" "$generate_sarif" > "$SARIF_FILE" || (
+      echo "::error title=Sarif generation failed::Please file a bug (sarif-generation-failed)"
+      cp "$spellchecker/sarif.json" "$SARIF_FILE"
+    )
+  fi
+  jq -c '.runs[0].results = .runs[0].results[0:25000]' "$SARIF_FILE" > "$UPLOAD_SARIF_LIMITED"
+  sarif_meta_json="$data_dir/sarif-meta.json"
+  if [ -s "$sarif_meta_json" ]; then
+    export STARTED_AT=$(jq -r .started_at "$sarif_meta_json")
+    (
+      echo "PRIVATE_CHECKOUT_REF=$(jq -r .checkout_ref "$sarif_meta_json")"
+      echo "PRIVATE_MERGE_SHA=$(jq -r .merge_sha "$sarif_meta_json")"
+      echo "PRIVATE_SYNTHETIC_SHA=$(jq -r .synthetic_sha "$sarif_meta_json")"
+    ) >> "$GITHUB_ENV"
+  else
+    jq -n '{
+      "checkout_ref": (env.PRIVATE_CHECKOUT_REF // env.GITHUB_REF),
+      "merge_sha": (env.PRIVATE_MERGE_SHA // env.GITHUB_SHA),
+      "synthetic_sha": env.PRIVATE_SYNTHETIC_SHA,
+      "started_at": env.STARTED_AT,
+      "file": env.SARIF_FILE
+    } | with_entries(select(.value != null))' > "$sarif_meta_json"
+  fi
+  if ! grep -q '^started-at=' "$GITHUB_OUTPUT"; then
+    echo "started-at=$STARTED_AT" >> "$GITHUB_OUTPUT"
+  fi
+}
+
 run_spell_check() {
   if [ "$INPUT_TASK" != 'spelling' ]; then
     report_cached_warning_output
     return
   fi
-  echo "started-at=$(perl -e 'use POSIX qw(strftime);
-my $now = time();
-print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
-')" >> "$GITHUB_OUTPUT"
+  echo "started-at=$STARTED_AT" >> "$GITHUB_OUTPUT"
   set_output_variable internal_state_directory "$data_dir"
 
   if [ -n "$GITHUB_REPOSITORY" ]; then
@@ -3140,15 +3192,7 @@ print strftime(q<%Y-%m-%dT%H:%M:%SZ>, gmtime($now));
     set_output_variable ocr_directory "$ocr_directory"
   fi
   if to_boolean "$INPUT_USE_SARIF"; then
-    SARIF_FILE="$(mktemp).sarif.json"
-    UPLOAD_SARIF_LIMITED=$(mktemp)
-    echo UPLOAD_SARIF="$SARIF_FILE" | maybe_append_to_stderr "$GITHUB_ENV"
-    echo UPLOAD_SARIF_LIMITED="$UPLOAD_SARIF_LIMITED" | maybe_append_to_stderr "$GITHUB_ENV"
-    warning_output="$warning_output" "$generate_sarif" > "$SARIF_FILE" || (
-      echo "::error title=Sarif generation failed::Please file a bug (sarif-generation-failed)"
-      cp "$spellchecker/sarif.json" "$SARIF_FILE"
-    )
-    jq -c '.runs[0].results = .runs[0].results[0:25000]' "$SARIF_FILE" > "$UPLOAD_SARIF_LIMITED"
+    sarif_task
   fi
   end_group
   if [ "$word_splitter_status" != '0 0' ]; then
