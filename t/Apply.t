@@ -15,6 +15,10 @@ plan tests => 52;
 
 is(1, 1, 'before use CheckSpelling::Apply');
 
+my $timeout = 50;
+local $SIG{ALRM} = sub { die "alarm\n" }; # NB: \n required
+alarm $timeout;
+
 my @apply_script;
 {
   open(my $apply_pl, '<', 'apply.pl') || die "oops";
