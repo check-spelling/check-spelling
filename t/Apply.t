@@ -390,8 +390,20 @@ delete $ENV{'https_proxy'};
 $ENV{GH_TOKEN} = $gh_token;
 
 SKIP: {
+  my $timeout = 20;
+  local $SIG{ALRM} = sub { die "alarm\n" }; # NB: \n required
+  alarm $timeout;
+
   my ($expired_artifact, $expired_artifact_repo);
-  find_expired_artifact();
+  eval {
+    find_expired_artifact();
+  };
+  if ($@) {
+    if ($@ eq "alarm\n") {
+      skip 'timed out looking for expired artifact', 3;
+    }
+    die $@;
+  }
   skip 'could not find an expired artifact', 3 unless $expired_artifact;
   $repository = $expired_artifact_repo;
   ($stdout, $stderr, $result) = run_sub_and_parse_outputs(\&check_repository);
