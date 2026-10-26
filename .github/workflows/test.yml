@@ -169,6 +169,7 @@ jobs:
       env:
         required_perl_modules: ${{ steps.perl-config.outputs.perl-modules }}
         GH_TOKEN: ${{ github.token }}
+      timeout-minutes: 5
       run: |
         : Test
         ./Build.PL
@@ -209,6 +210,7 @@ jobs:
     - name: Calculate coverage
       id: coverage
       if: steps.test.outputs.ran == 1 && (success() || failure())
+      timeout-minutes: 2
       run: |
         : Calculate coverage
         cover_command=`command -v cover`
