@@ -1403,7 +1403,7 @@ define_variables() {
   action_log_file_name="$data_dir/action_log_file_name.txt"
   job_id_ref="$data_dir/job_id_ref.txt"
   if [ -n "$GITHUB_SERVER_URL" ] && [ -n "$GITHUB_REPOSITORY" ] && [ -n "$GITHUB_RUN_ID" ]; then
-    jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
+    jobs_summary_link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/${GITHUB_RUN_ATTEMPT:-1}"
   fi
   extra_dictionaries_json="$data_dir/suggested_dictionaries.json"
   dictionary_source_prefixes_json="$data_dir/dictionary_source_prefixes.json"

@@ -83,7 +83,7 @@ you could run the following commands</summary>
 https://docs.check-spelling.dev/Accepting-Suggestions)):
 
 ``` sh
-WORKSPACE/apply.pl 'GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID/attempts/' &&
+WORKSPACE/apply.pl 'GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID/attempts/1' &&
 git commit -m 'Update check-spelling metadata'
 ```
 </details>
