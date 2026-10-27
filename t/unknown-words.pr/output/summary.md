@@ -125,7 +125,7 @@ git fetch 'GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME' ref
 git checkout 'some-head' &&
 git merge -m 'Merge some-base' 'refs/private/check-spelling-merge-base' &&
 git push . :'refs/private/check-spelling-merge-base' &&
-WORKSPACE/apply.pl 'GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID/attempts/' &&
+WORKSPACE/apply.pl 'GITHUB_SERVER_URL/GITHUB_REPOSITORY_OWNER/GITHUB_REPOSITORY_NAME/actions/runs/GITHUB_RUN_ID/attempts/1' &&
 git commit -m 'Update check-spelling metadata'
 ```
 </details>
