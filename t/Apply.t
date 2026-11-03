@@ -188,73 +188,76 @@ sub parse_outputs {
   return ($stdout, $stderr, $result);
 }
 
-my $expired_artifacts = "$temp.artifacts";
-my $expired_artifacts_log = "$temp.artifacts.log";
-my $expired_artifact = '';
-my $expired_artifact_repo = 'check-spelling/check-spelling';
-my $state = 0;
-my $api_url = 'https://api.github.com/repos/check-spelling-sandbox/autotest-check-spelling/actions/artifacts?name=check-spelling-comment';
-my $jq_expired_artifacts_log = "$temp.jq.artifacts.log";
-my $jq_expression = '.artifacts | map(select (.expired == true))[0].workflow_run.id // empty';
+sub find_expired_artifact {
+  my $expired_artifacts = "$temp.artifacts";
+  my $expired_artifacts_log = "$temp.artifacts.log";
+  our $expired_artifact = '';
+  our $expired_artifact_repo = 'check-spelling/check-spelling';
+  my $state = 0;
+  my $api_url = 'https://api.github.com/repos/check-spelling-sandbox/autotest-check-spelling/actions/artifacts?name=check-spelling-comment';
+  my $jq_expired_artifacts_log = "$temp.jq.artifacts.log";
+  my $jq_expression = '.artifacts | map(select (.expired == true))[0].workflow_run.id // empty';
 
-my $retries = 0;
-my $GH_TOKEN = $ENV{GH_TOKEN};
-unless (defined $GH_TOKEN) {
-  $GH_TOKEN = `gh auth token`;
-  chomp $GH_TOKEN;
-}
+  my $retries = 0;
+  my $GH_TOKEN = $ENV{GH_TOKEN};
+  unless (defined $GH_TOKEN) {
+    $GH_TOKEN = `gh auth token`;
+    chomp $GH_TOKEN;
+  }
 
-# three possible passes (not counting retries for rate limits):
-# 1. parse for artifact id
-# 2. repository renamed (need to store updated repository id)
-# 3. artifacts paginated
-while ($state < 4 && $retries <= 3) {
-  `curl -s -H "Authorization: token $GH_TOKEN" '$api_url' -o '$expired_artifacts' -D '$expired_artifacts_log'`;
-  if (-s $expired_artifacts) {
-    $expired_artifact = `grep -q '"artifacts":' '$expired_artifacts' && jq -r '$jq_expression' '$expired_artifacts' 2> '$jq_expired_artifacts_log' || touch '$jq_expired_artifacts_log'`;
-    if ($?) {
-      print STDERR "jq $jq_expression failed: ".`cat '$jq_expired_artifacts_log'`;
-    } else {
-      if ($expired_artifact =~ /^(\d+).*/) {
-        $expired_artifact = $1;
-        my $expired_artifact_url = `jq -r '.artifacts[] | select (.workflow_run.id==$expired_artifact) | .url' '$expired_artifacts'`;
-        if ($expired_artifact_url =~ m{([^/]+/[^/]+)/actions/artifacts/\d+$}) {
-          $expired_artifact_repo = $1;
+  # three possible passes (not counting retries for rate limits):
+  # 1. parse for artifact id
+  # 2. repository renamed (need to store updated repository id)
+  # 3. artifacts paginated
+  while ($state < 4 && $retries <= 3) {
+    `curl -s -H "Authorization: token $GH_TOKEN" '$api_url' -o '$expired_artifacts' -D '$expired_artifacts_log'`;
+    if (-s $expired_artifacts) {
+      $expired_artifact = `grep -q '"artifacts":' '$expired_artifacts' && jq -r '$jq_expression' '$expired_artifacts' 2> '$jq_expired_artifacts_log' || touch '$jq_expired_artifacts_log'`;
+      if ($?) {
+        print STDERR "jq $jq_expression failed: ".`cat '$jq_expired_artifacts_log'`;
+      } else {
+        if ($expired_artifact =~ /^(\d+).*/) {
+          $expired_artifact = $1;
+          my $expired_artifact_url = `jq -r '.artifacts[] | select (.workflow_run.id==$expired_artifact) | .url' '$expired_artifacts'`;
+          if ($expired_artifact_url =~ m{([^/]+/[^/]+)/actions/artifacts/\d+$}) {
+            $expired_artifact_repo = $1;
+          }
+          last;
         }
-        last;
       }
     }
-  }
-  if (open(my $expired_artifacts_log_fh, '<', $expired_artifacts_log)) {
-    my $http_state=0;
-    while (<$expired_artifacts_log_fh>) {
-      if (/^location: (.*)/) {
-        $api_url = $1;
-        $state++;
-        last;
-      }
-      if (s/^link:\s+//) {
-        s/,\s*/\n/g;
-        if (/<(.*?)>; rel="last"/) {
+    if (open(my $expired_artifacts_log_fh, '<', $expired_artifacts_log)) {
+      my $http_state=0;
+      while (<$expired_artifacts_log_fh>) {
+        if (/^location: (.*)/) {
           $api_url = $1;
           $state++;
           last;
         }
+        if (s/^link:\s+//) {
+          s/,\s*/\n/g;
+          if (/<(.*?)>; rel="last"/) {
+            $api_url = $1;
+            $state++;
+            last;
+          }
+        }
+        if (m{^HTTP/2 (40[13])}) {
+          $http_state=$1;
+          ++$retries;
+          last if $retries > 3;
+        } elsif ($http_state == 403 && m/^x-ratelimit-remaining: 0/) {
+          my $sleep_delay=10+(rand(10) | 0);
+          $retries += 2;
+          print STDERR "Hit rate limit. Sleeping $sleep_delay seconds\n";
+          sleep $sleep_delay;
+          last;
+        }
       }
-      if (m{^HTTP/2 (40[13])}) {
-        $http_state=$1;
-        ++$retries;
-        last if $retries > 3;
-      } elsif ($http_state == 403 && m/^x-ratelimit-remaining: 0/) {
-        my $sleep_delay=10+(rand(10) | 0);
-        $retries += 2;
-        print STDERR "Hit rate limit. Sleeping $sleep_delay seconds\n";
-        sleep $sleep_delay;
-        last;
-      }
+      close($expired_artifacts_log_fh);
     }
-    close($expired_artifacts_log_fh);
   }
+  return ($expired_artifact, $expired_artifact_repo);
 }
 
 {
@@ -317,23 +320,14 @@ is($result, undef, 'check_basic_tools:result');
 
 $ENV{GITHUB_API_URL} = 'https://api.github.com';
 my $repository;
+our $expired_artifact;
 sub check_repository {
+  our $expired_artifact;
   CheckSpelling::Apply::get_artifacts($repository, $expired_artifact, undef);
 }
 
-SKIP: {
-  skip 'could not find an expired artifact', 3 unless $expired_artifact;
-  $repository = $expired_artifact_repo;
-  ($stdout, $stderr, $result) = run_sub_and_parse_outputs(\&check_repository);
-
-  my $sandbox_name = basename $sandbox;
-  my $temp_name = basename $temp;
-  is($stdout, "Apply.t: GitHub Run Artifact expired. You will need to trigger a new run.\n", "apply.pl (stdout) $expired_artifact_repo: expired $expired_artifact");
-  is($stderr, '', "apply.pl (stderr) $expired_artifact_repo: expired $expired_artifact");
-  is($result, 1, "apply.pl (exit code) $expired_artifact_repo: expired $expired_artifact");
-}
-
 $repository = "check-spelling/imaginary-repository";
+$expired_artifact = "12";
 ($stdout, $stderr, $result) = run_sub_and_parse_outputs(\&check_repository);
 like($stdout, qr{The referenced repository \(check-spelling/imaginary-repository\) may not exist, perhaps you do not have permission to see it\.\s+If the repository is hosted by GitHub Enterprise, check-spelling does not know how to integrate with it\.}, 'apply.pl (stdout) imaginary-repository');
 is($stderr, '', 'apply.pl (stderr) imaginary-repository');
@@ -394,3 +388,17 @@ is($stderr, '', 'apply.pl (stderr) bad_proxy');
 is($result, 6, 'apply.pl (exit code) bad_proxy');
 delete $ENV{'https_proxy'};
 $ENV{GH_TOKEN} = $gh_token;
+
+SKIP: {
+  my ($expired_artifact, $expired_artifact_repo);
+  find_expired_artifact();
+  skip 'could not find an expired artifact', 3 unless $expired_artifact;
+  $repository = $expired_artifact_repo;
+  ($stdout, $stderr, $result) = run_sub_and_parse_outputs(\&check_repository);
+
+  my $sandbox_name = basename $sandbox;
+  my $temp_name = basename $temp;
+  is($stdout, "Apply.t: GitHub Run Artifact expired. You will need to trigger a new run.\n", "apply.pl (stdout) $expired_artifact_repo: expired $expired_artifact");
+  is($stderr, '', "apply.pl (stderr) $expired_artifact_repo: expired $expired_artifact");
+  is($result, 1, "apply.pl (exit code) $expired_artifact_repo: expired $expired_artifact");
+}
