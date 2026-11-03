@@ -586,6 +586,7 @@ runs:
           ${{ format('{0}{1}', 'check-spelling-comment', steps.spelling.outputs.dash-suffix) }}
         path:
           ${{ steps.spelling.outputs.internal_state_directory }}
+        retention-days: ${{ env.comment_retention_days }}
     - name: Store Skipped
       if: ${{ !cancelled() && steps.spelling.outputs.skipped != '' }}
       uses: ./../check-spelling-actions/upload-artifact
