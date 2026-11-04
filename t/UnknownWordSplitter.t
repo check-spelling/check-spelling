@@ -394,7 +394,7 @@ is(CheckSpelling::UnknownWordSplitter::quote_re('hi'), 'hi', 'quote_re boring');
 is(CheckSpelling::UnknownWordSplitter::quote_re('\Qhi?\E'), 'hi\\?', 'quote_re question');
 
 SKIP: {
-    skip 'could not find an expired artifact', 3 unless eval { symlink("",""); 1 };
+    skip 'could not create a symlink', 3 unless eval { symlink("",""); 1 };
     ($fh, $filename) = tempfile();
     close $fh;
     unlink($filename);
