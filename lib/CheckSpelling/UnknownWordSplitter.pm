@@ -169,18 +169,42 @@ sub valid_word {
   return qr/\b$word_match\b/;
 }
 
+my %english_patterns = (
+  INPUT_IGNORE_PATTERN => q<[^a-zA-Z']>,
+  INPUT_UPPER_PATTERN => '[A-Z]',
+  INPUT_LOWER_PATTERN => '[a-z]',
+  INPUT_NOT_LOWER_PATTERN => '[^a-z]',
+  INPUT_NOT_UPPER_OR_LOWER_PATTERN => '[^A-Za-z]',
+  INPUT_PUNCTUATION_PATTERN => q<'>,
+);
+
+my $is_english = 1;
+
+sub get_from_env_or_english_fallback {
+  my ($k) = @_;
+  return CheckSpelling::Util::get_val_from_env($k, $english_patterns{$k});
+}
+
 sub load_dictionary {
   my ($dict) = @_;
   our ($word_match, $longest, $shortest, $longest_word, $shortest_word, %dictionary);
   $longest_word = CheckSpelling::Util::get_val_from_env('INPUT_LONGEST_WORD', undef);
   $shortest_word = CheckSpelling::Util::get_val_from_env('INPUT_SHORTEST_WORD', 0);
   our ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
-  $ignore_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_IGNORE_PATTERN', q<[^a-zA-Z']>);
-  $upper_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_UPPER_PATTERN', '[A-Z]');
-  $lower_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_LOWER_PATTERN', '[a-z]');
-  $not_lower_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_NOT_LOWER_PATTERN', '[^a-z]');
-  $not_upper_or_lower_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_NOT_UPPER_OR_LOWER_PATTERN', '[^A-Za-z]');
-  $punctuation_pattern = CheckSpelling::Util::get_file_from_env_utf8('INPUT_PUNCTUATION_PATTERN', q<'>);
+  $ignore_pattern = get_from_env_or_english_fallback('INPUT_IGNORE_PATTERN');
+  $upper_pattern = get_from_env_or_english_fallback('INPUT_UPPER_PATTERN');
+  $lower_pattern = get_from_env_or_english_fallback('INPUT_LOWER_PATTERN');
+  $not_lower_pattern = get_from_env_or_english_fallback('INPUT_NOT_LOWER_PATTERN');
+  $not_upper_or_lower_pattern = get_from_env_or_english_fallback('INPUT_NOT_UPPER_OR_LOWER_PATTERN');
+  $punctuation_pattern = get_from_env_or_english_fallback('INPUT_PUNCTUATION_PATTERN');
+  our $is_english =
+    $ignore_pattern eq $english_patterns{'INPUT_IGNORE_PATTERN'} &&
+    $upper_pattern eq $english_patterns{'INPUT_UPPER_PATTERN'} &&
+    $lower_pattern eq $english_patterns{'INPUT_LOWER_PATTERN'} &&
+    $not_lower_pattern eq $english_patterns{'INPUT_NOT_LOWER_PATTERN'} &&
+    $not_upper_or_lower_pattern eq $english_patterns{'INPUT_NOT_UPPER_OR_LOWER_PATTERN'} &&
+    $punctuation_pattern eq $english_patterns{'INPUT_PUNCTUATION_PATTERN'} &&
+    1;
   our $check_homoglyphs = CheckSpelling::Util::get_val_from_env('INPUT_CHECK_HOMOGLYPHS', 0);
   if ($check_homoglyphs && $check_homoglyphs !~ /false/i) {
     my $homoglyph_list_path = CheckSpelling::Util::get_file_from_env_utf8('homoglyph_list_path', '/dev/null');
@@ -347,6 +371,7 @@ sub init {
 sub split_line {
   our (%dictionary, $word_match, $disable_word_collating);
   our ($ignore_pattern, $upper_pattern, $lower_pattern, $not_lower_pattern, $not_upper_or_lower_pattern, $punctuation_pattern);
+  our ($is_english);
   our @hunspell_dictionaries;
   our $shortest;
   my $shortest_threshold = $shortest + 2;
@@ -365,9 +390,11 @@ sub split_line {
     for my $token (split /\s+/, $line) {
       next unless $token =~ /$pattern/;
       $token =~ s/^(?:'|$rsqm)+|(?:'|$rsqm)+$//g;
-      $token =~ s/(?:'|$rsqm)+s$//g; # need to reconsider for not English
       my $raw_token = $token;
-      $token =~ s/^[^Ii]?'+//; # need to reconsider for French
+      if ($is_english) {
+        $token =~ s/(?:'|$rsqm)+s$//g; # need to reconsider for not English
+        $token =~ s/^[^Ii]?'+//; # need to reconsider for French
+      }
       $token =~ s/'+$//;
       next unless $token =~ $word_match;
       if (defined $dictionary{$token}) {
