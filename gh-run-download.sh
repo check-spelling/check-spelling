@@ -1,3 +1,4 @@
+. "$spellchecker/common.sh"
 . "$spellchecker/call-curl.sh"
 
 if [ -n "$GH_TOKEN" ]; then
@@ -78,9 +79,51 @@ get_comment_artifact() {
   fi
 }
 
+get_sarif_artifact_url() {
+  artifact_json=$(mktemp)
+  flavor=check-spelling-sarif
+  if [ -n "$suffix" ]; then
+    get_artifact_flavor "$flavor-$suffix"
+    artifact_url=$(get_artifact_url)
+    if [ -n "$artifact_url" ]; then
+      return
+    fi
+  fi
+  get_artifact_flavor "$flavor"
+  artifact_url=$(get_artifact_url)
+}
+
+get_sarif_artifact() {
+  if ! to_boolean "$INPUT_USE_SARIF"; then
+    return
+  fi
+  mkdir -p /tmp/sarif
+  get_sarif_artifact_url
+  if [ -n "$artifact_url" ]; then
+    artifact_zip=$(mktemp)
+    errors=$(mktemp)
+    call_curl "$artifact_url" > "$artifact_zip" 2> "$errors"
+    if [ $curl_exit_code = 0 ]; then
+      artifact_dir=$(mktemp -d)
+      unzip -q "$artifact_zip" -d "$artifact_dir" && rm "$artifact_zip"
+      sarif=$(find "$artifact_dir" -maxdepth 1 -mindepth 1 -type f -print0 |perl -ne 's/\0.*//;print; last')
+      if [ -f "$sarif" ]; then
+        SARIF_FILE=/tmp/sarif/sarif.json
+        mv "$sarif" "$SARIF_FILE"
+        echo "SARIF_FILE=$SARIF_FILE" >> "$GITHUB_ENV"
+      else
+        rm -f /tmp/sarif/sarif.json
+      fi
+    else
+      cat "$errors"
+    fi
+  fi
+}
+
 if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
   set -x
 fi
 
 check_for_skipped_artifact
+get_sarif_artifact
 get_comment_artifact
