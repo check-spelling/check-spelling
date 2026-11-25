@@ -68,6 +68,9 @@ sub cleanup {
       $text =~ s/\.\.\.$sha_suffix/\.\.\.ELIPSIS_EXPECT_SHA/g;
     }
     $text =~ s/^ \.\.\.[0-9a-f]{38}(\.txt \| \d+ [+]+)/ ...ELIPSIS_EXPECT_SHA$1/gm;
+    $text =~ s/^Devel::Cover: Deleting old coverage for changed file.*\n//gm;
+    $text =~ s/\nThis version of Devel::Cover was built with Perl version .*\.\nIt is now being run with Perl version .*\.\nAttempting to make adjustments, but you may find that some of your modules do\nnot have coverage data collected.  You may need to alter the \+-inc, \+-ignore\nand \+-select options\.\n\n//gm;
+    $text =~ s/^Cover\.c: loadable library and perl binaries are mismatched \(got handshake key 0x[\da-f]+, needed 0x[\da-f]+\)\n//gm;
     # The README.md.txt file can sort before or after the new expect file and we don't actually care about it, as it's a fixed value.
     # First we remove the diff stat line
     $text =~ s!^ \.github/actions/spelling/expect/README\.md\.txt\s+\|\s+1 -\n!!m;
