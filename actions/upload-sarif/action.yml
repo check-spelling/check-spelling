@@ -116,21 +116,23 @@ runs:
         my $commit_oid="";
         my $base_oid="";
         my $head_oid="";
-        my $trace=$ENV{"trace"};
-        print STDERR qq<git show -s --format=raw '$sha'\n> if $trace;
-        my @lines=split /\n/, `git show -s --format=raw '$sha'`;
-        for (@lines) {
-          chomp;
-          if (/^commit (.*)/ && $commit_oid == "") {
-            $commit_oid=$1;
-          } elsif (/^parent (.*)/) {
-            if ($base_oid == "") {
-              $base_oid=$1;
-            } elsif ($head_oid == "") {
-              $head_oid=$1;
+        if (-d '.git') {
+          my $trace=$ENV{"trace"};
+          print STDERR qq<git show -s --format=raw '$sha'\n> if $trace;
+          my @lines=split /\n/, `git show -s --format=raw '$sha'`;
+          for (@lines) {
+            chomp;
+            if (/^commit (.*)/ && $commit_oid == "") {
+              $commit_oid=$1;
+            } elsif (/^parent (.*)/) {
+              if ($base_oid == "") {
+                $base_oid=$1;
+              } elsif ($head_oid == "") {
+                $head_oid=$1;
+              }
             }
+            last if /^\s*$/;
           }
-          last if /^\s*$/;
         }
         if ($commit_oid == $sha && length($base_oid) == 40 && length($head_oid) == 40) {
           $data{"base_sha"}=$base_oid;
