@@ -6,5 +6,5 @@ coverage/
 local/
 /CheckSpelling/
 MYMETA.*
-t/unknown-words/run/
+t/*/run/
 dictionaries
