@@ -2098,6 +2098,9 @@ set_up_reporter() {
 }
 
 check_for_sarif_support() {
+  if [ -z "$GITHUB_SERVER_URL" ] || [ -z "$GITHUB_REPOSITORY" ] && to_boolean "$INPUT_USE_SARIF"; then
+    INPUT_USE_SARIF=
+  fi
   if to_boolean "$INPUT_USE_SARIF"; then
     sarif_error=$(mktemp)
     sarif_output=$(mktemp_json)
