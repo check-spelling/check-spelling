@@ -487,9 +487,14 @@ sub print_word_not_in_dictionary {
 sub get_sha {
   my ($file) = @_;
   my $sha;
+  my $shasum = `/usr/bin/which shasum`;
+  $shasum =~ /(.*)/;
+  $shasum = $1;
+  chomp $shasum;
+  my ($perl) = ($^X =~ /^([-\w.\/]+)$/);
   if (open(my $file_fh, '-|',
-           '/usr/bin/env',
-           'shasum',
+           $perl,
+           $shasum,
            '-a',
            '256',
            '-b',
